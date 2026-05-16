@@ -52,7 +52,7 @@ export default function ProviderNewServicePage() {
         </div>
         <label className="label">Preço/hora (Kz)</label>
         <input className="ns-input" type="number" placeholder="Ex: 5000" value={form.budget} onChange={e=>setForm({...form,budget:e.target.value})}/>
-        <button className="submit-btn" onClick={()=>router.push("/provider/services")}>Publicar serviço →</button>
+        <button className="submit-btn" onClick={()=>router.push("/provider/service")}>Publicar serviço →</button>
       </div>
     </>
   );
