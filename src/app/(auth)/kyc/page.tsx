@@ -1,15 +1,11 @@
 "use client";
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Shield, CheckCircle, ArrowLeft } from "lucide-react";
 
 export default function KYCPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-
-  const handleSubmit = () => {
-    router.push("/provider-home");
-  };
 
   return (
     <>
@@ -25,7 +21,10 @@ export default function KYCPage() {
       `}</style>
       <div className="kyc-wrap">
         <div className="kyc-card">
-          <button onClick={()=>step===1?router.push("/provider-home"):setStep(s=>s-1)} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#4a6a6a",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit"}}>
+          <button
+            onClick={() => step === 1 ? router.push("/profile/client") : setStep(s => s - 1)}
+            style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#4a6a6a",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit"}}
+          >
             <ArrowLeft size={15}/> Voltar
           </button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
@@ -37,8 +36,10 @@ export default function KYCPage() {
               <p style={{fontSize:13,color:"#4a6a6a"}}>Passo {step} de 2</p>
             </div>
           </div>
-          <div className="prog-bar"><div className="prog-fill" style={{width:step===1?"50%":"100%"}}/></div>
-          {step===1?(
+          <div className="prog-bar">
+            <div className="prog-fill" style={{width:step===1?"50%":"100%"}}/>
+          </div>
+          {step===1 ? (
             <>
               <p style={{fontSize:14,fontWeight:600,color:"#c0d0e0",marginBottom:6}}>Documento de identidade</p>
               <p style={{fontSize:13,color:"#4a6a6a",marginBottom:20,lineHeight:1.6}}>Faz upload do teu Bilhete de Identidade (frente e verso).</p>
@@ -54,7 +55,7 @@ export default function KYCPage() {
               </div>
               <button className="step-btn" onClick={()=>setStep(2)}>Continuar →</button>
             </>
-          ):(
+          ) : (
             <>
               <p style={{fontSize:14,fontWeight:600,color:"#c0d0e0",marginBottom:6}}>Selfie com documento</p>
               <p style={{fontSize:13,color:"#4a6a6a",marginBottom:20,lineHeight:1.6}}>Tira uma foto segurando o teu BI junto ao rosto.</p>
@@ -71,7 +72,7 @@ export default function KYCPage() {
                   </div>
                 ))}
               </div>
-              <button className="step-btn" onClick={handleSubmit}>Submeter documentos →</button>
+              <button className="step-btn" onClick={()=>router.push("/home")}>Submeter documentos →</button>
             </>
           )}
         </div>
