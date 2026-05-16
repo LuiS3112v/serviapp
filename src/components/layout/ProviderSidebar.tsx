@@ -11,7 +11,7 @@ const navItems = [
     { label:"Estatísticas", icon:BarChart3, href:"/provider/stats" },
   ]},
   { section:"Trabalho", items:[
-    { label:"Pedidos", icon:Briefcase, href:"/provider/services" },
+    { label:"Pedidos", icon:Briefcase, href:"/provider/service" },
     { label:"Equipa", icon:Users, href:"/provider/company" },
     { label:"Avaliações", icon:Star, href:"/provider/reviews" },
   ]},
