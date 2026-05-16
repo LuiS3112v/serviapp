@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart3, TrendingUp, Wallet, Star, Briefcase, Clock, ArrowRight } from "lucide-react";
 
@@ -13,15 +14,17 @@ const periods = ["Esta semana","Este mês","Este ano","Total"];
 
 export default function ProviderStatsPage() {
   const router = useRouter();
+  const [activePeriod, setActivePeriod] = useState("Este mês");
+
   return (
     <>
       <style>{`
         .ps-inner{padding:28px 32px;display:flex;flex-direction:column;gap:24px}
         .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
         .stat-card{background:#131b27;border:1px solid #1a2535;border-radius:16px;padding:20px}
-        .periods{display:flex;gap:4px;background:#131b27;border-radius:12px;padding:4px;border:1px solid #1a2535;width:fit-content}
-        .period{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:#6a7a8a;transition:all 0.15s;font-family:inherit}
-        .period.on{background:#EF9F27;color:#0d1117}
+        .periods{display:flex;gap:4px;background:#131b27;border-radius:12px;padding:4px;border:1px solid #1a2535;flex-wrap:wrap}
+        .period-btn{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:#6a7a8a;transition:all 0.15s;font-family:inherit}
+        .period-btn.on{background:#EF9F27;color:#0d1117}
         .chart-card{background:#131b27;border:1px solid #1a2535;border-radius:20px;padding:28px}
         .chart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px;text-align:center}
         .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
@@ -31,7 +34,7 @@ export default function ProviderStatsPage() {
         .tip-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #1a2535}
         .tip-item:last-child{border-bottom:none}
         @media(max-width:1024px){.stats-grid{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
-        @media(max-width:640px){.ps-inner{padding:16px}.stats-grid{grid-template-columns:1fr 1fr}}
+        @media(max-width:640px){.ps-inner{padding:16px}.stats-grid{grid-template-columns:1fr 1fr}.periods{width:100%}.period-btn{flex:1;text-align:center}}
       `}</style>
 
       <div className="ps-inner">
@@ -41,8 +44,12 @@ export default function ProviderStatsPage() {
             <p style={{fontSize:13,color:"#4a6a6a"}}>Acompanha o desempenho do teu negócio</p>
           </div>
           <div className="periods">
-            {periods.map((p,i)=>(
-              <button key={p} className={`period${i===1?" on":""}`}>{p}</button>
+            {periods.map(p=>(
+              <button
+                key={p}
+                className={`period-btn${activePeriod===p?" on":""}`}
+                onClick={()=>setActivePeriod(p)}
+              >{p}</button>
             ))}
           </div>
         </div>
@@ -66,14 +73,14 @@ export default function ProviderStatsPage() {
         </div>
 
         <div className="chart-card">
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
             <div>
               <h2 style={{fontSize:16,fontWeight:700,color:"#c0d0e0",marginBottom:4}}>Evolução de ganhos</h2>
-              <p style={{fontSize:13,color:"#4a6a6a"}}>O gráfico aparece quando tiveres serviços concluídos</p>
+              <p style={{fontSize:13,color:"#4a6a6a"}}>Período: <span style={{color:"#EF9F27",fontWeight:600}}>{activePeriod}</span></p>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,background:"#EF9F2720",border:"1px solid #EF9F2740"}}>
               <TrendingUp size={14} style={{color:"#EF9F27"}}/>
-              <span style={{fontSize:12,fontWeight:600,color:"#EF9F27"}}>0 Kz este mês</span>
+              <span style={{fontSize:12,fontWeight:600,color:"#EF9F27"}}>0 Kz — {activePeriod}</span>
             </div>
           </div>
           <div className="chart-empty">
@@ -93,7 +100,7 @@ export default function ProviderStatsPage() {
         <div className="grid2">
           <div className="info-card">
             <h2 style={{fontSize:16,fontWeight:700,color:"#c0d0e0",marginBottom:4}}>Factores de ranking</h2>
-            <p style={{fontSize:13,color:"#4a6a6a",marginBottom:16}}>O que influencia a tua posição na plataforma</p>
+            <p style={{fontSize:13,color:"#4a6a6a",marginBottom:16}}>O que influencia a tua posição</p>
             {[
               {label:"Avaliação média",desc:"Peso: 40%",color:"#1D9E75"},
               {label:"Volume de serviços via app",desc:"Peso: 30%",color:"#EF9F27"},

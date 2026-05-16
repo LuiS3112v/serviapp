@@ -1,11 +1,16 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Shield, CheckCircle, ArrowLeft } from "lucide-react";
 
 export default function KYCPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+
+  const handleSubmit = () => {
+    router.push("/provider-home");
+  };
+
   return (
     <>
       <style>{`
@@ -20,7 +25,7 @@ export default function KYCPage() {
       `}</style>
       <div className="kyc-wrap">
         <div className="kyc-card">
-          <button onClick={() => step===1?router.back():setStep(s=>s-1)} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#4a6a6a",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit"}}>
+          <button onClick={()=>step===1?router.push("/provider-home"):setStep(s=>s-1)} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#4a6a6a",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit"}}>
             <ArrowLeft size={15}/> Voltar
           </button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
@@ -52,21 +57,21 @@ export default function KYCPage() {
           ):(
             <>
               <p style={{fontSize:14,fontWeight:600,color:"#c0d0e0",marginBottom:6}}>Selfie com documento</p>
-              <p style={{fontSize:13,color:"#4a6a6a",marginBottom:20,lineHeight:1.6}}>Tira uma foto segurando o teu BI junto ao rosto. Garante boa iluminação.</p>
+              <p style={{fontSize:13,color:"#4a6a6a",marginBottom:20,lineHeight:1.6}}>Tira uma foto segurando o teu BI junto ao rosto.</p>
               <div className="upload-area" style={{minHeight:180}}>
                 <span style={{fontSize:40}}>🤳</span>
                 <p style={{fontSize:14,fontWeight:600,color:"#6a7a8a"}}>Selfie com o BI</p>
                 <p style={{fontSize:12,color:"#3a4a5a"}}>Rosto visível + documento legível</p>
               </div>
               <div style={{background:"#0b2a2a",border:"1px solid #1d9e7525",borderRadius:12,padding:14,marginBottom:20}}>
-                {["Aprovação em até 48h","Dados tratados com confidencialidade","Só para verificação — não partilhamos"].map((t,i)=>(
+                {["Aprovação em até 48h","Dados tratados com confidencialidade","Só para verificação"].map((t,i)=>(
                   <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<2?8:0}}>
                     <CheckCircle size={13} style={{color:"#1D9E75",flexShrink:0}}/>
                     <span style={{fontSize:12,color:"#4a8a6a"}}>{t}</span>
                   </div>
                 ))}
               </div>
-              <button className="step-btn" onClick={()=>router.push("/home")}>Submeter documentos →</button>
+              <button className="step-btn" onClick={handleSubmit}>Submeter documentos →</button>
             </>
           )}
         </div>
