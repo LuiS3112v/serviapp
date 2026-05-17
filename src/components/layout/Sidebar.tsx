@@ -1,111 +1,114 @@
 "use client";
 import { useState } from "react";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
-import { Search, Filter, Briefcase } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  Home, Search, MapPin, Briefcase, MessageCircle,
+  Bell, Wallet, Receipt, User, Settings, LogOut, Zap, X, Menu
+} from "lucide-react";
 
-const cats = ["Todos","Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Segurança"];
-const distances = ["5km","10km","20km","50km"];
-const sorts = ["Mais próximo","Melhor avaliação","Menor preço"];
+const navItems = [
+  { section:"Principal", items:[
+    { label:"Início", icon:Home, href:"/home" },
+    { label:"Pesquisar", icon:Search, href:"/search" },
+    { label:"Mapa", icon:MapPin, href:"/map" },
+    { label:"Serviços", icon:Briefcase, href:"/services" },
+  ]},
+  { section:"Comunicação", items:[
+    { label:"Chat", icon:MessageCircle, href:"/chat" },
+    { label:"Notificações", icon:Bell, href:"/notifications" },
+  ]},
+  { section:"Financeiro", items:[
+    { label:"Wallet", icon:Wallet, href:"/wallet" },
+    { label:"Transacções", icon:Receipt, href:"/transactions" },
+  ]},
+  { section:"Conta", items:[
+    { label:"Perfil", icon:User, href:"/profile/client" },
+    { label:"Definições", icon:Settings, href:"/settings" },
+  ]},
+];
 
-export default function SearchPage() {
-  const [query, setQuery] = useState("");
-  const [cat, setCat] = useState("Todos");
-  const [dist, setDist] = useState("10km");
-  const [sort, setSort] = useState("Mais próximo");
-  const [showFilters, setShowFilters] = useState(false);
+export default function Sidebar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+
+  const handleLogout = () => {
+    setOpen(false);
+    router.push("/");
+  };
+
+  const Content = () => (
+    <>
+      <div style={{padding:"24px 20px",borderBottom:"1px solid #1a2535",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:36,height:36,borderRadius:10,background:"#1D9E75",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <Zap size={20} color="white"/>
+          </div>
+          <span style={{fontSize:20,fontWeight:700,color:"#e2e8f0"}}>Servi<span style={{color:"#1D9E75"}}>app</span></span>
+        </div>
+        <button onClick={()=>setOpen(false)} className="sb-close" style={{background:"none",border:"none",cursor:"pointer",color:"#4a6a6a",display:"none"}}>
+          <X size={20}/>
+        </button>
+      </div>
+
+      <div style={{flex:1,overflowY:"auto",padding:"12px 0"}}>
+        {navItems.map(group=>(
+          <div key={group.section} style={{marginBottom:8}}>
+            <p style={{padding:"10px 20px 4px",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.1em",color:"#2a3a4a"}}>{group.section}</p>
+            {group.items.map(item=>{
+              const Icon=item.icon;
+              const active=pathname===item.href;
+              return (
+                <Link key={item.href} href={item.href} onClick={()=>setOpen(false)} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 20px",fontSize:14,fontWeight:500,color:active?"#1D9E75":"#6a7a8a",background:active?"#1d9e7512":"transparent",borderLeft:active?"3px solid #1D9E75":"3px solid transparent",textDecoration:"none",transition:"all 0.15s"}}>
+                  <Icon size={18}/>
+                  <span style={{flex:1}}>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      <div style={{padding:"16px 20px",borderTop:"1px solid #1a2535",display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:36,height:36,borderRadius:"50%",background:"#1a3a2a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#1D9E75",flexShrink:0}}>U</div>
+        <div style={{flex:1,minWidth:0}}>
+          <p style={{fontSize:14,fontWeight:600,color:"#c0d0e0",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>O meu perfil</p>
+          <p style={{fontSize:12,color:"#4a5a6a"}}>Cliente</p>
+        </div>
+        <button onClick={handleLogout} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center"}}>
+          <LogOut size={16} style={{color:"#3a4a5a"}}/>
+        </button>
+      </div>
+    </>
+  );
 
   return (
     <>
       <style>{`
-        .search-wrap{display:flex;min-height:100vh;background:#0d1117}
-        .search-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
-        .search-inner{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:20px}
-        .search-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:#131b27;border:1px solid #1a2535}
-        .search-input{flex:1;background:none;border:none;outline:none;font-size:14px;color:#e2e8f0;font-family:inherit;min-width:0}
-        .search-input::placeholder{color:#4a5a6a}
-        .cats-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
-        .cats-scroll::-webkit-scrollbar{display:none}
-        .cat-pill{padding:7px 14px;border-radius:99px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:1px solid #1a2535;background:#131b27;color:#6a7a8a;transition:all 0.15s;flex-shrink:0;font-family:inherit}
-        .cat-pill.active{background:#1D9E75;border-color:#1D9E75;color:white}
-        .filter-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;font-size:12px;cursor:pointer;border:1px solid #1a2535;background:#0d1117;color:#6a7a8a;font-family:inherit;flex-shrink:0;transition:all 0.15s;white-space:nowrap}
-        .filter-btn.on{background:#1d9e7520;border-color:#1D9E75;color:#1D9E75}
-        .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px;text-align:center}
-        .filter-panel{display:flex;gap:20px;flex-wrap:wrap;padding:16px;border-radius:14px;background:#131b27;border:1px solid #1a2535}
-        .filter-group-label{font-size:11px;font-weight:600;color:#4a5a6a;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em}
-        .filter-chip{padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;border:1px solid #1a2535;background:#0d1117;color:#6a7a8a;transition:all 0.15s}
-        .filter-chip.on{background:#1D9E75;border-color:#1D9E75;color:white}
+        .sb-desktop{position:fixed;left:0;top:0;height:100vh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:40}
+        .sb-toggle{display:none;position:fixed;top:14px;left:14px;z-index:50;width:40px;height:40px;border-radius:12px;background:#080e1a;border:1px solid #1a2535;align-items:center;justify-content:center;cursor:pointer}
+        .sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:45;display:none}
+        .sb-drawer{position:fixed;left:0;top:0;height:100vh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:46;transform:translateX(-100%);transition:transform 0.25s ease}
+        .sb-drawer.open{transform:translateX(0)}
         @media(max-width:1024px){
-          .search-main{margin-left:0}
-          .search-inner{padding-top:80px}
-        }
-        @media(max-width:640px){
-          .search-inner{padding:70px 12px 20px;gap:14px}
-          .search-bar{padding:10px 12px}
-          .search-input{font-size:13px}
-          .filter-panel{gap:12px}
+          .sb-desktop{display:none!important}
+          .sb-toggle{display:flex!important}
+          .sb-close{display:flex!important}
         }
       `}</style>
 
-      <div className="search-wrap">
-        <Sidebar/>
-        <div className="search-main">
-          <Navbar/>
-          <div className="search-inner">
+      <aside className="sb-desktop"><Content/></aside>
 
-            <div>
-              <h1 style={{fontSize:22,fontWeight:700,color:"#e2e8f0",marginBottom:4}}>Pesquisar prestadores</h1>
-              <p style={{fontSize:13,color:"#4a6a6a"}}>Encontra o profissional certo perto de ti</p>
-            </div>
+      <button className="sb-toggle" onClick={()=>setOpen(true)}>
+        <Menu size={20} color="#8a9ab0"/>
+      </button>
 
-            <div className="search-bar">
-              <Search size={16} style={{color:"#4a7070",flexShrink:0}}/>
-              <input className="search-input" placeholder="Pesquisa por nome ou serviço..." value={query} onChange={e=>setQuery(e.target.value)}/>
-              <button className={`filter-btn${showFilters?" on":""}`} onClick={()=>setShowFilters(!showFilters)}>
-                <Filter size={13}/> Filtros
-              </button>
-            </div>
+      {open&&<div className="sb-overlay" onClick={()=>setOpen(false)}/>}
 
-            {showFilters&&(
-              <div className="filter-panel">
-                <div>
-                  <p className="filter-group-label">Distância</p>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {distances.map(d=>(
-                      <button key={d} className={`filter-chip${dist===d?" on":""}`} onClick={()=>setDist(d)}>{d}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="filter-group-label">Ordenar</p>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {sorts.map(s=>(
-                      <button key={s} className={`filter-chip${sort===s?" on":""}`} onClick={()=>setSort(s)}>{s}</button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="cats-scroll">
-              {cats.map(c=>(
-                <button key={c} className={`cat-pill${cat===c?" active":""}`} onClick={()=>setCat(c)}>{c}</button>
-              ))}
-            </div>
-
-            <div className="empty-state">
-              <div style={{width:64,height:64,borderRadius:20,background:"#131b27",border:"1px solid #1a2535",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                <Briefcase size={28} style={{color:"#2a3a4a"}}/>
-              </div>
-              <p style={{fontSize:16,fontWeight:700,color:"#c0d0e0"}}>Prestadores em breve</p>
-              <p style={{fontSize:13,color:"#4a6a6a",lineHeight:1.6,maxWidth:320}}>
-                Estamos a integrar prestadores verificados na plataforma.
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </div>
+      <aside className={`sb-drawer${open?" open":""}`}>
+        <Content/>
+      </aside>
     </>
   );
 }

@@ -1,11 +1,22 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Shield, CheckCircle, ArrowLeft } from "lucide-react";
 
-export default function KYCPage() {
+function KYCContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
+  const role = searchParams.get("role") ?? "client";
+
+  const handleBack = () => {
+    if (step > 1) { setStep(s => s - 1); return; }
+    role === "provider" ? router.push("/provider-home") : router.push("/profile/client");
+  };
+
+  const handleSubmit = () => {
+    role === "provider" ? router.push("/provider-home") : router.push("/home");
+  };
 
   return (
     <>
@@ -21,10 +32,7 @@ export default function KYCPage() {
       `}</style>
       <div className="kyc-wrap">
         <div className="kyc-card">
-          <button
-            onClick={() => step === 1 ? router.push("/profile/client") : setStep(s => s - 1)}
-            style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#4a6a6a",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit"}}
-          >
+          <button onClick={handleBack} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#4a6a6a",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit"}}>
             <ArrowLeft size={15}/> Voltar
           </button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
@@ -72,11 +80,20 @@ export default function KYCPage() {
                   </div>
                 ))}
               </div>
-              <button className="step-btn" onClick={()=>router.push("/home")}>Submeter documentos →</button>
+              <button className="step-btn" onClick={handleSubmit}>Submeter documentos →</button>
             </>
           )}
         </div>
       </div>
     </>
+  );
+}
+
+import { Suspense } from "react";
+export default function KYCPage() {
+  return (
+    <Suspense fallback={<div style={{minHeight:"100vh",background:"#0d1117",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#4a6a6a",fontSize:14}}>A carregar...</div></div>}>
+      <KYCContent />
+    </Suspense>
   );
 }

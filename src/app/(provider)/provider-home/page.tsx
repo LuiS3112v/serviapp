@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { Briefcase, Wallet, Star, Clock, Plus, ArrowRight, Shield, Zap, Users, TrendingUp, CheckCircle, AlertCircle } from "lucide-react";
 
 const steps = [
-  { icon:<CheckCircle size={20} style={{color:"#1D9E75"}}/>, bg:"#0b2a2a", title:"Completa o KYC", desc:"Verifica a tua identidade para activar o perfil e receber pedidos.", action:"Verificar agora", href:"/kyc" },
+  { icon:<CheckCircle size={20} style={{color:"#1D9E75"}}/>, bg:"#0b2a2a", title:"Completa o KYC", desc:"Verifica a tua identidade para activar o perfil e receber pedidos.", action:"Verificar agora", href:"/kyc?role=provider" },
   { icon:<Star size={20} style={{color:"#EF9F27"}}/>, bg:"#2a1e08", title:"Cria o teu portfólio", desc:"Adiciona fotos e descrição dos serviços que ofereces.", action:"Editar perfil", href:"/provider/profile" },
   { icon:<Zap size={20} style={{color:"#378ADD"}}/>, bg:"#0a1a2e", title:"Recebe o primeiro pedido", desc:"Quando o perfil estiver activo, os clientes vão encontrar-te.", action:"Ver pedidos", href:"/provider/service" },
 ];
@@ -50,7 +50,6 @@ export default function ProviderHomePage() {
           .stats-grid{grid-template-columns:1fr 1fr}
         }
       `}</style>
-
       <div className="ph-inner">
         <div className="ph-hero">
           <div style={{flex:1}}>
@@ -94,7 +93,7 @@ export default function ProviderHomePage() {
             <p style={{fontSize:14,fontWeight:600,color:"#c0d0e0",marginBottom:3}}>Perfil inactivo — verificação pendente</p>
             <p style={{fontSize:13,color:"#6a5a3a"}}>Completa o KYC para que os clientes possam encontrar-te na plataforma.</p>
           </div>
-          <button className="action-btn" style={{background:"#EF9F27",color:"#0d1117"}} onClick={()=>router.push("/kyc")}>
+          <button className="action-btn" style={{background:"#EF9F27",color:"#0d1117"}} onClick={()=>router.push("/kyc?role=provider")}>
             Verificar agora
           </button>
         </div>
