@@ -98,7 +98,10 @@ export default function ChatPage() {
             ) : (
               filtered.map(room => {
                 const other = user?.id === room.clientId ? room.provider : room.client;
-                const unread = user?.id === room.clientId ? room.clientUnread : room.providerUnread;
+                const unread = (user?.id === room.clientId ? room.clientUnread : room.providerUnread) ?? 0;
+                const lastMessageText = typeof room.lastMessage === "string"
+                  ? room.lastMessage
+                  : room.lastMessage?.content ?? "Conversa iniciada";
                 const initials = other?.fullName?.charAt(0)?.toUpperCase() ?? "?";
                 return (
                   <div
@@ -119,7 +122,7 @@ export default function ChatPage() {
                         <span style={{fontSize:11,color:"#3a4a5a",flexShrink:0,marginLeft:8}}>{room.lastMessageAt ? timeAgo(room.lastMessageAt) : ""}</span>
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                        <p style={{fontSize:13,color:"#4a6a6a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{room.lastMessage ?? "Conversa iniciada"}</p>
+                        <p style={{fontSize:13,color:"#4a6a6a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{lastMessageText}</p>
                         {unread > 0 && (
                           <span style={{marginLeft:8,background:"#1D9E75",color:"white",fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:99,flexShrink:0}}>{unread}</span>
                         )}

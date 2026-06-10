@@ -61,7 +61,7 @@ export default function ServiceDetailPage() {
       const updated = await servicesApi.confirm(service.id,{rating,review:reviewText||undefined});
       setService(updated); setConfirmed(true);
     }
-    catch(e:any){ setError(e.message||"Erro ao confirmar."); }
+    catch(e:unknown){ setError(e instanceof Error ? e.message : "Erro ao confirmar."); }
     finally { setConfirming(false); }
   };
 
@@ -69,7 +69,7 @@ export default function ServiceDetailPage() {
     if (!service) return;
     setAcceptingProp(true); setError("");
     try { setService(await servicesApi.acceptProposal(service.id)); }
-    catch(e:any){ setError(e.message||"Erro ao aceitar proposta."); }
+    catch(e:unknown){ setError(e instanceof Error ? e.message : "Erro ao aceitar proposta."); }
     finally { setAcceptingProp(false); }
   };
 
@@ -77,17 +77,16 @@ export default function ServiceDetailPage() {
     if (!service) return;
     setRejectingProp(true); setError("");
     try { setService(await servicesApi.rejectProposal(service.id)); }
-    catch(e:any){ setError(e.message||"Erro ao recusar proposta."); }
+    catch(e:unknown){ setError(e instanceof Error ? e.message : "Erro ao recusar proposta."); }
     finally { setRejectingProp(false); }
   };
 
-  // Chat com o prestador — cria sala e abre
   const handleChat = async () => {
     if (!service?.providerId) return;
     setChatLoading(true);
     try {
       const { room } = await chatApi.createOrGetRoom({
-        participantId: service.providerId,  // O prestador que aceitou
+        participantId: service.providerId,
         serviceId:     service.id,
       });
       router.push(`/chat/${room.id}`);
@@ -98,10 +97,11 @@ export default function ServiceDetailPage() {
     }
   };
 
-  const currentStep  = service ? (STATUS_STEP[service.status] ?? 0) : 0;
-  const cfg          = service ? (STATUS_CFG[service.status] ?? STATUS_CFG.pending) : STATUS_CFG.pending;
-  const canConfirm   = service?.status==="completed" && !service?.clientConfirmedAt;
-  const hasProposal  = !!service?.proposedByProviderId && !!service?.proposedPrice && service?.status==="pending";
+  const currentStep = service ? (STATUS_STEP[service.status] ?? 0) : 0;
+  const cfg         = service ? (STATUS_CFG[service.status] ?? STATUS_CFG.pending) : STATUS_CFG.pending;
+  // clientConfirmedAt existe agora na interface Service
+  const canConfirm  = service?.status === "completed" && !service?.clientConfirmedAt;
+  const hasProposal = !!service?.proposedByProviderId && !!service?.proposedPrice && service?.status === "pending";
 
   return (
     <>
@@ -275,7 +275,6 @@ export default function ServiceDetailPage() {
                       {confirming?"A confirmar…":"Confirmar conclusão"}
                     </button>
                   )}
-                  {/* Chat com prestador — só aparece quando há provider */}
                   {service.providerId && (
                     <button
                       className="ab"

@@ -12,9 +12,12 @@ export interface ChatRoom {
   providerId?: string;
   client?: ChatParticipant;
   provider?: ChatParticipant;
-  // participants normalizado — computado no frontend a partir de client + provider
   participants: ChatParticipant[];
-  lastMessage?: { content: string; createdAt: string; senderId?: string };
+  lastMessage?: string | { content: string; createdAt: string; senderId?: string };
+  lastMessageAt?: string;
+  // ─── Unread counters — vêm do backend ───────────────────────────────────
+  clientUnread?: number;
+  providerUnread?: number;
   unreadCount?: number;
   serviceId?: string;
   createdAt?: string;

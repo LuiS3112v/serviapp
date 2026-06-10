@@ -52,7 +52,7 @@ export default function ProviderNavbar() {
   useEffect(() => {
     const fetchCounts = () => {
       chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
-      notificationsApi.getUnreadCount().then(setUnreadNotif).catch(() => {});
+      notificationsApi.getUnreadCount().then(d => setUnreadNotif(d.count)).catch(() => {});
     };
     fetchCounts();
     const id = setInterval(fetchCounts, 30_000);
@@ -134,14 +134,14 @@ export default function ProviderNavbar() {
           position: sticky;
           top: 0;
           z-index: 30;
-          flex-wrap: nowrap;   /* default: single row */
+          flex-wrap: nowrap;
         }
 
         /* ── Search wrapper ────────────────────────────────────────────── */
         .pnav-sw {
           position: relative;
           flex: 1;
-          min-width: 0;       /* allows shrinking */
+          min-width: 0;
           max-width: 480px;
         }
         .pnav-s {
@@ -188,7 +188,7 @@ export default function ProviderNavbar() {
           background: rgba(239,159,39,0.06);
           cursor: pointer; transition: all 0.25s ease;
           white-space: nowrap; position: relative; overflow: hidden;
-          flex-shrink: 0; /* never collapse */
+          flex-shrink: 0;
         }
         .pnav-loc-btn:hover:not(:disabled) {
           background: rgba(239,159,39,0.12);
@@ -216,7 +216,6 @@ export default function ProviderNavbar() {
           color: #EF9F27;
         }
 
-        /* ── MapPin pulse — active state (Uber / Bolt style) ───────────── */
         @keyframes pnav-pin-pulse {
           0%   { filter: drop-shadow(0 0 0px #22c55e);   }
           50%  { filter: drop-shadow(0 0 5px #22c55e);   }
@@ -227,7 +226,6 @@ export default function ProviderNavbar() {
           color: #22c55e;
         }
 
-        /* ── Pulse ring (background glow) ──────────────────────────────── */
         @keyframes pnav-pulse {
           0%   { transform: scale(1);   opacity: 0.6; }
           70%  { transform: scale(1.8); opacity: 0;   }
@@ -287,96 +285,41 @@ export default function ProviderNavbar() {
         @keyframes pnav-spin { to { transform: rotate(360deg); } }
         .pnav-spin { animation: pnav-spin 0.7s linear infinite; }
 
-        /* ════════════════════════════════════════════════════════════════
-           RESPONSIVE — ordered from widest to narrowest
-        ════════════════════════════════════════════════════════════════ */
-
-        /* Large tablet / narrow desktop (≤ 1024px)
-           Sidebar collapses → hamburger at left → add left padding         */
         @media (max-width: 1024px) {
           .pnav { padding: 0 16px 0 64px; }
         }
-
-        /* Tablet medium (≤ 860px)
-           Search shrinks; label gets smaller but stays visible             */
         @media (max-width: 860px) {
           .pnav-sw { max-width: 340px; }
           .pnav-loc-label { font-size: 11px; }
           .pnav-loc-btn  { padding: 7px 10px; }
         }
-
-        /* Tablet small (≤ 768px)
-           Label becomes minimal text — still visible, never hidden         */
         @media (max-width: 768px) {
           .pnav-sw { max-width: 260px; }
           .pnav-loc-label { font-size: 10px; }
           .pnav-loc-btn  { padding: 6px 8px; gap: 4px; }
           .pnav-right    { gap: 6px; }
         }
-
-        /* Phone (≤ 640px)
-           — Search expands to fill space
-           — Location TEXT label hidden; icon and button remain visible
-           — NEVER display:none on .pnav-loc-btn                            */
         @media (max-width: 640px) {
           .pnav { padding: 0 12px 0 60px; gap: 8px; }
           .pnav-sw { max-width: none; }
-
-          /* Hide ONLY the text — the button and icon remain */
           .pnav-loc-label { display: none; }
-
-          /* Make button icon-only: square shape */
-          .pnav-loc-btn {
-            padding: 8px;
-            border-radius: 12px;
-            gap: 0;
-          }
+          .pnav-loc-btn { padding: 8px; border-radius: 12px; gap: 0; }
           .pnav-right { gap: 6px; }
         }
-
-        /* Very small phones (≤ 420px) — two-row layout
-           Row 1: full-width search bar
-           Row 2: location icon + chat + bell + avatar                      */
         @media (max-width: 420px) {
           .pnav {
-            height: auto;
-            min-height: 64px;
-            flex-wrap: wrap;
-            align-content: center;
-            padding: 8px 12px 8px 60px;
-            gap: 6px;
-            row-gap: 8px;
+            height: auto; min-height: 64px; flex-wrap: wrap;
+            align-content: center; padding: 8px 12px 8px 60px;
+            gap: 6px; row-gap: 8px;
           }
-
-          /* Row 1 — search occupies full width */
-          .pnav-sw {
-            order: 1;
-            flex: 0 0 100%;
-            width: 100%;
-            max-width: 100%;
-          }
-
-          /* Row 2 — all action buttons aligned right */
-          .pnav-right {
-            order: 2;
-            width: 100%;
-            justify-content: flex-end;
-          }
-
-          /* Slightly smaller icons on very small screens */
-          .pnav-ii, .pnav-bell, .pnav-avatar {
-            width: 36px; height: 36px;
-          }
+          .pnav-sw { order: 1; flex: 0 0 100%; width: 100%; max-width: 100%; }
+          .pnav-right { order: 2; width: 100%; justify-content: flex-end; }
+          .pnav-ii, .pnav-bell, .pnav-avatar { width: 36px; height: 36px; }
         }
-
-        /* Samsung Fold and narrower (≤ 320px) */
         @media (max-width: 320px) {
           .pnav { padding: 8px 8px 8px 52px; }
           .pnav-right { gap: 4px; }
-          .pnav-ii, .pnav-bell, .pnav-avatar {
-            width: 32px; height: 32px;
-            border-radius: 10px;
-          }
+          .pnav-ii, .pnav-bell, .pnav-avatar { width: 32px; height: 32px; border-radius: 10px; }
           .pnav-loc-btn { padding: 6px; }
         }
       `}</style>
@@ -438,7 +381,6 @@ export default function ProviderNavbar() {
         {/* ── Right controls ──────────────────────────────────────────────── */}
         <div className="pnav-right">
 
-          {/* Location button — ALWAYS visible, never display:none */}
           {mounted && (
             <button
               className={[
@@ -456,10 +398,8 @@ export default function ProviderNavbar() {
                                          "Acesso negado"
               }
             >
-              {/* Pulse ring behind icon when active */}
               {locState === "active" && <span className="pnav-pulse-ring" aria-hidden="true"/>}
 
-              {/* Icon — always MapPin, color changes by state (no checkmark) */}
               {locState === "loading" ? (
                 <Loader2
                   size={14}
@@ -479,7 +419,6 @@ export default function ProviderNavbar() {
                 />
               )}
 
-              {/* Label — hidden on phones via CSS, never via JS */}
               <span className="pnav-loc-label">
                 {locState === "idle"    && "Ativar localização"}
                 {locState === "loading" && "A localizar…"}

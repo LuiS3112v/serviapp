@@ -23,6 +23,9 @@ export interface Service {
   updatedAt: string;
   clientRating?: number;
   clientReview?: string;
+  // ─── Confirmation fields — vêm do backend após conclusão ────────────────
+  clientConfirmedAt?: string;
+  providerCompletedAt?: string;
 }
 
 export interface ClientStats {
