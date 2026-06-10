@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Zap, Shield, Star, MapPin, CheckCircle, ArrowRight, Eye, EyeOff } from "lucide-react";
+import {
+  Zap, Shield, Star, MapPin, CheckCircle,
+  ArrowRight, Eye, EyeOff, Loader2,
+} from "lucide-react";
+import { authApi, saveSession } from "@/lib/auth.api";
 
 type Mode = "entry" | "login-client" | "login-provider" | "signup-client" | "signup-provider";
 
@@ -11,17 +15,75 @@ export default function EntryPage() {
   const [mode, setMode] = useState<Mode>("entry");
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ name:"", email:"", phone:"", password:"" });
   const [providerCat, setProviderCat] = useState("");
+  const [form, setForm] = useState({ name:"", email:"", phone:"", password:"" });
 
-  const reset = (m: Mode) => { setMode(m); setError(""); setStep(1); setForm({ name:"", email:"", phone:"", password:"" }); setProviderCat(""); };
+  const reset = (m: Mode) => {
+    setMode(m); setError(""); setStep(1); setLoading(false);
+    setForm({ name:"", email:"", phone:"", password:"" });
+    setProviderCat("");
+  };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!form.email || !form.password) { setError("Preenche todos os campos."); return; }
-    if (form.password.length < 6) { setError("Senha incorrecta. Tenta novamente."); return; }
-    if (mode === "login-provider") { router.push("/provider-home"); return; }
-    router.push("/home");
+    setLoading(true); setError("");
+    try {
+      const data = await authApi.login({ email: form.email, password: form.password });
+      saveSession(data);
+      const role = data.user.role;
+      if (role === "provider" || role === "company") router.push("/provider-home");
+      else router.push("/home");
+    } catch (e: any) {
+      setError(e.message || "Credenciais inválidas.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegisterClient = async () => {
+    if (!form.name || !form.email || !form.password) {
+      setError("Preenche todos os campos."); return;
+    }
+    setLoading(true); setError("");
+    try {
+      const data = await authApi.register({
+        fullName: form.name,
+        email: form.email,
+        password: form.password,
+        phone: form.phone || undefined,
+        role: "client",
+      });
+      saveSession(data);
+      router.push("/home");
+    } catch (e: any) {
+      setError(e.message || "Erro ao criar conta.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegisterProvider = async () => {
+    if (!form.name || !form.email || !form.password) {
+      setError("Preenche todos os campos."); return;
+    }
+    setLoading(true); setError("");
+    try {
+      const data = await authApi.register({
+        fullName: form.name,
+        email: form.email,
+        password: form.password,
+        phone: form.phone || undefined,
+        role: "provider",
+      });
+      saveSession(data);
+      router.push("/provider-home");
+    } catch (e: any) {
+      setError(e.message || "Erro ao criar conta.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const features = [
@@ -43,10 +105,12 @@ export default function EntryPage() {
         .auth-input{width:100%;padding:14px 16px;border-radius:12px;background:#0d1117;border:1px solid #1a2535;color:#e2e8f0;font-size:14px;outline:none;transition:border 0.2s;margin-bottom:14px;font-family:inherit}
         .auth-input:focus{border-color:#1D9E75}
         .auth-input::placeholder{color:#4a5a6a}
-        .auth-btn-green{width:100%;padding:15px;border-radius:12px;border:none;background:#1D9E75;color:white;font-size:15px;font-weight:700;cursor:pointer;transition:opacity 0.2s;font-family:inherit}
-        .auth-btn-green:hover{opacity:0.9}
-        .auth-btn-amber{width:100%;padding:15px;border-radius:12px;border:none;background:#EF9F27;color:#0d1117;font-size:15px;font-weight:700;cursor:pointer;transition:opacity 0.2s;font-family:inherit}
-        .auth-btn-amber:hover{opacity:0.9}
+        .auth-btn-green{width:100%;padding:15px;border-radius:12px;border:none;background:#1D9E75;color:white;font-size:15px;font-weight:700;cursor:pointer;transition:opacity 0.2s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
+        .auth-btn-green:hover:not(:disabled){opacity:0.9}
+        .auth-btn-green:disabled{opacity:0.6;cursor:not-allowed}
+        .auth-btn-amber{width:100%;padding:15px;border-radius:12px;border:none;background:#EF9F27;color:#0d1117;font-size:15px;font-weight:700;cursor:pointer;transition:opacity 0.2s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
+        .auth-btn-amber:hover:not(:disabled){opacity:0.9}
+        .auth-btn-amber:disabled{opacity:0.6;cursor:not-allowed}
         .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
         .role-btn{display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px 14px;border-radius:18px;cursor:pointer;transition:all 0.2s;border:2px solid #1a2535;background:#131b27}
         .role-btn:hover{transform:translateY(-2px)}
@@ -117,6 +181,7 @@ export default function EntryPage() {
         <div className="entry-right">
           <div className="entry-card">
 
+            {/* ─── ENTRY ─────────────────────────────────────────── */}
             {mode==="entry" && (
               <>
                 <div style={{marginBottom:32}}>
@@ -164,6 +229,7 @@ export default function EntryPage() {
               </>
             )}
 
+            {/* ─── LOGIN CLIENTE ──────────────────────────────────── */}
             {mode==="login-client" && (
               <>
                 <button className="back-btn" onClick={()=>reset("entry")}>← Voltar</button>
@@ -178,10 +244,10 @@ export default function EntryPage() {
                 </div>
                 {error && <div className="error-msg">{error}</div>}
                 <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6}}>Email</label>
-                <input className="auth-input" type="email" placeholder="o-teu@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/>
+                <input className="auth-input" type="email" placeholder="o-teu@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
                 <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6}}>Senha</label>
                 <div style={{position:"relative",marginBottom:8}}>
-                  <input className="auth-input" type={show?"text":"password"} placeholder="A tua senha" style={{marginBottom:0,paddingRight:44}} value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/>
+                  <input className="auth-input" type={show?"text":"password"} placeholder="A tua senha" style={{marginBottom:0,paddingRight:44}} value={form.password} onChange={e=>setForm({...form,password:e.target.value})} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
                   <button onClick={()=>setShow(!show)} style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#4a5a6a"}}>
                     {show?<EyeOff size={16}/>:<Eye size={16}/>}
                   </button>
@@ -189,7 +255,9 @@ export default function EntryPage() {
                 <div style={{textAlign:"right",marginBottom:20}}>
                   <button className="link-btn" style={{color:"#1D9E75"}}>Esqueci a senha</button>
                 </div>
-                <button className="auth-btn-green" onClick={handleLogin}>Entrar</button>
+                <button className="auth-btn-green" disabled={loading} onClick={handleLogin}>
+                  {loading?<><Loader2 size={16}/>A entrar...</>:"Entrar"}
+                </button>
                 <p style={{textAlign:"center",fontSize:13,color:"#4a6a6a",marginTop:16}}>
                   Não tens conta?{" "}
                   <button className="link-btn" style={{color:"#1D9E75",fontWeight:600}} onClick={()=>reset("signup-client")}>Criar conta</button>
@@ -197,6 +265,7 @@ export default function EntryPage() {
               </>
             )}
 
+            {/* ─── LOGIN PRESTADOR ────────────────────────────────── */}
             {mode==="login-provider" && (
               <>
                 <button className="back-btn" onClick={()=>reset("entry")}>← Voltar</button>
@@ -211,10 +280,10 @@ export default function EntryPage() {
                 </div>
                 {error && <div className="error-msg">{error}</div>}
                 <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6}}>Email</label>
-                <input className="auth-input" type="email" placeholder="o-teu@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/>
+                <input className="auth-input" type="email" placeholder="o-teu@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
                 <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6}}>Senha</label>
                 <div style={{position:"relative",marginBottom:8}}>
-                  <input className="auth-input" type={show?"text":"password"} placeholder="A tua senha" style={{marginBottom:0,paddingRight:44}} value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/>
+                  <input className="auth-input" type={show?"text":"password"} placeholder="A tua senha" style={{marginBottom:0,paddingRight:44}} value={form.password} onChange={e=>setForm({...form,password:e.target.value})} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
                   <button onClick={()=>setShow(!show)} style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#4a5a6a"}}>
                     {show?<EyeOff size={16}/>:<Eye size={16}/>}
                   </button>
@@ -222,7 +291,9 @@ export default function EntryPage() {
                 <div style={{textAlign:"right",marginBottom:20}}>
                   <button className="link-btn" style={{color:"#EF9F27"}}>Esqueci a senha</button>
                 </div>
-                <button className="auth-btn-amber" onClick={handleLogin}>Entrar</button>
+                <button className="auth-btn-amber" disabled={loading} onClick={handleLogin}>
+                  {loading?<><Loader2 size={16}/>A entrar...</>:"Entrar"}
+                </button>
                 <p style={{textAlign:"center",fontSize:13,color:"#4a6a6a",marginTop:16}}>
                   Não tens conta?{" "}
                   <button className="link-btn" style={{color:"#EF9F27",fontWeight:600}} onClick={()=>reset("signup-provider")}>Criar conta</button>
@@ -230,6 +301,7 @@ export default function EntryPage() {
               </>
             )}
 
+            {/* ─── REGISTO CLIENTE ────────────────────────────────── */}
             {mode==="signup-client" && (
               <>
                 <button className="back-btn" onClick={()=>step===1?reset("entry"):setStep(1)}>← {step===1?"Voltar":"Passo anterior"}</button>
@@ -245,6 +317,7 @@ export default function EntryPage() {
                 <div className="progress-bar" style={{marginTop:16}}>
                   <div className="progress-fill" style={{width:step===1?"50%":"100%",background:"#1D9E75"}}/>
                 </div>
+                {error && <div className="error-msg">{error}</div>}
                 {step===1?(
                   <>
                     <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6}}>Nome completo</label>
@@ -253,7 +326,10 @@ export default function EntryPage() {
                     <input className="auth-input" type="email" placeholder="o-teu@email.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/>
                     <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6}}>Telemóvel</label>
                     <input className="auth-input" placeholder="+244 9XX XXX XXX" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/>
-                    <button className="auth-btn-green" onClick={()=>setStep(2)}>Continuar →</button>
+                    <button className="auth-btn-green" onClick={()=>{
+                      if(!form.name||!form.email){setError("Preenche nome e email.");return;}
+                      setError("");setStep(2);
+                    }}>Continuar →</button>
                   </>
                 ):(
                   <>
@@ -272,7 +348,9 @@ export default function EntryPage() {
                         </div>
                       ))}
                     </div>
-                    <button className="auth-btn-green" onClick={()=>router.push("/home")}>Criar conta →</button>
+                    <button className="auth-btn-green" disabled={loading} onClick={handleRegisterClient}>
+                      {loading?<><Loader2 size={16}/>A criar conta...</>:"Criar conta →"}
+                    </button>
                   </>
                 )}
                 <p style={{textAlign:"center",fontSize:13,color:"#4a6a6a",marginTop:16}}>
@@ -282,6 +360,7 @@ export default function EntryPage() {
               </>
             )}
 
+            {/* ─── REGISTO PRESTADOR ──────────────────────────────── */}
             {mode==="signup-provider" && (
               <>
                 <button className="back-btn" onClick={()=>step===1?reset("entry"):setStep(s=>s-1)}>← {step===1?"Voltar":"Passo anterior"}</button>
@@ -297,6 +376,7 @@ export default function EntryPage() {
                 <div className="progress-bar" style={{marginTop:16}}>
                   <div className="progress-fill" style={{width:`${(step/3)*100}%`,background:"#EF9F27"}}/>
                 </div>
+                {error && <div className="error-msg">{error}</div>}
                 {step===1&&(
                   <>
                     <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6}}>Nome completo</label>
@@ -312,7 +392,10 @@ export default function EntryPage() {
                         {show?<EyeOff size={16}/>:<Eye size={16}/>}
                       </button>
                     </div>
-                    <button className="auth-btn-amber" onClick={()=>setStep(2)}>Continuar →</button>
+                    <button className="auth-btn-amber" onClick={()=>{
+                      if(!form.name||!form.email||!form.password){setError("Preenche todos os campos.");return;}
+                      setError("");setStep(2);
+                    }}>Continuar →</button>
                   </>
                 )}
                 {step===2&&(
@@ -327,32 +410,27 @@ export default function EntryPage() {
                     <textarea className="auth-input" rows={3} placeholder="Descreve o teu serviço e experiência..." style={{resize:"none"}}/>
                     <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6}}>Preço/hora (Kz)</label>
                     <input className="auth-input" type="number" placeholder="Ex: 5000"/>
-                    <button className="auth-btn-amber" onClick={()=>setStep(3)}>Continuar →</button>
+                    <button className="auth-btn-amber" onClick={()=>{
+                      if(!providerCat){setError("Selecciona uma categoria.");return;}
+                      setError("");setStep(3);
+                    }}>Continuar →</button>
                   </>
                 )}
                 {step===3&&(
                   <>
-                    <p style={{fontSize:14,fontWeight:600,color:"#c0d0e0",marginBottom:6}}>Verificação de identidade (KYC)</p>
-                    <p style={{fontSize:13,color:"#4a6a6a",marginBottom:16,lineHeight:1.6}}>Para a segurança dos clientes precisamos verificar a tua identidade.</p>
-                    <div className="upload-area">
-                      <span style={{fontSize:24}}>📄</span>
-                      <p style={{fontSize:13,fontWeight:600,color:"#6a7a8a"}}>Bilhete de identidade</p>
-                      <p style={{fontSize:12,color:"#3a4a5a"}}>Frente e verso — JPG, PNG ou PDF</p>
-                    </div>
-                    <div className="upload-area">
-                      <span style={{fontSize:24}}>🤳</span>
-                      <p style={{fontSize:13,fontWeight:600,color:"#6a7a8a"}}>Selfie com o BI</p>
-                      <p style={{fontSize:12,color:"#3a4a5a"}}>Segura o documento junto ao rosto</p>
-                    </div>
+                    <p style={{fontSize:14,fontWeight:600,color:"#c0d0e0",marginBottom:6}}>Criar conta e verificar identidade</p>
+                    <p style={{fontSize:13,color:"#4a6a6a",marginBottom:16,lineHeight:1.6}}>Ao criar a conta podes completar a verificação KYC depois.</p>
                     <div style={{background:"#2a1e08",border:"1px solid #EF9F2725",borderRadius:12,padding:14,marginBottom:16}}>
-                      {["Perfil visível após aprovação (48h)","Documentos tratados com confidencialidade","Aprovação manual pela equipa"].map((t,i)=>(
+                      {["Perfil visível após aprovação KYC","Documentos tratados com confidencialidade","Aprovação manual pela equipa"].map((t,i)=>(
                         <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<2?8:0}}>
                           <CheckCircle size={13} style={{color:"#EF9F27",flexShrink:0}}/>
                           <span style={{fontSize:12,color:"#8a6a3a"}}>{t}</span>
                         </div>
                       ))}
                     </div>
-                    <button className="auth-btn-amber" onClick={()=>router.push("/provider-home")}>Submeter e aguardar aprovação →</button>
+                    <button className="auth-btn-amber" disabled={loading} onClick={handleRegisterProvider}>
+                      {loading?<><Loader2 size={16}/>A criar conta...</>:"Criar conta →"}
+                    </button>
                   </>
                 )}
                 <p style={{textAlign:"center",fontSize:13,color:"#4a6a6a",marginTop:16}}>

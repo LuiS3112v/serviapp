@@ -1,7 +1,8 @@
 "use client";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
-import { Shield } from "lucide-react";
+import { Shield, ArrowLeft } from "lucide-react";
 
 const sections = [
   {title:"1. Aceitação dos Termos",text:"Ao aceder e utilizar a plataforma Serviapp, concordas com estes Termos de Serviço. Se não concordares, não deves utilizar a plataforma."},
@@ -15,6 +16,7 @@ const sections = [
 ];
 
 export default function TermsPage() {
+  const router = useRouter();
   return (
     <>
       <style>{`
@@ -22,6 +24,8 @@ export default function TermsPage() {
         .terms-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
         .terms-inner{flex:1;padding:28px 32px;max-width:720px;display:flex;flex-direction:column;gap:20px}
         .terms-section{background:#131b27;border:1px solid #1a2535;border-radius:14px;padding:20px}
+        .back-btn{display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;color:#4a7a7a;font-size:13px;padding:0;font-family:inherit}
+        .back-btn:hover{color:#1D9E75}
         @media(max-width:1024px){.terms-main{margin-left:0}}
         @media(max-width:640px){.terms-inner{padding:16px}}
       `}</style>
@@ -30,6 +34,9 @@ export default function TermsPage() {
         <div className="terms-main">
           <Navbar/>
           <div className="terms-inner">
+            <button className="back-btn" onClick={() => router.push("/settings")}>
+              <ArrowLeft size={16}/> Voltar às definições
+            </button>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",borderRadius:14,background:"#0b2a2a",border:"1px solid #1d9e7525"}}>
               <Shield size={20} style={{color:"#1D9E75",flexShrink:0}}/>
               <div>

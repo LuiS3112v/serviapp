@@ -110,7 +110,7 @@ export default function HomePage() {
               <div className="hero-stats">
                 {[
                   { value: "500+", label: "Prestadores", color: "#1D9E75" },
-                  { value: "15+", label: "Categorias", color: "#EF9F27" },
+                  { value: "12", label: "Categorias", color: "#EF9F27" },
                   { value: "4.9★", label: "Avaliação", color: "#378ADD" },
                 ].map((s, i) => (
                   <div className="hero-stat" key={i}>

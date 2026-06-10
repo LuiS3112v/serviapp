@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Upload } from "lucide-react";
 
-const categories = ["Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Segurança"];
+const categories = [
+  "Limpeza", "Climatização", "Canalização", "Eletricista",
+  "TI & Redes", "Jardinagem", "Mudanças", "Beleza",
+  "Automóvel", "Pintura", "Construção", "Segurança",
+];
 
 export default function RegisterProviderPage() {
   const router = useRouter();
@@ -31,9 +35,32 @@ export default function RegisterProviderPage() {
         .upload-area:hover { border-color: #EF9F27; }
         @media (max-width: 480px) { .auth-card { padding: 28px 20px; } .cat-grid { grid-template-columns: repeat(2,1fr); } }
       `}</style>
+
       <div className="auth-wrap">
         <div className="auth-card">
-          <button onClick={() => step === 1 ? router.push("/") : setStep(s => s - 1)} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#4a6a6a", background: "none", border: "none", cursor: "pointer", marginBottom: 24 }}>
+
+          {/*
+           * ✅ FIX — Root Cause 1
+           *
+           * BEFORE: step === 1 ? router.push("/") : setStep(s => s - 1)
+           *   └─ router.push("/") always navigates to the public landing page,
+           *      stranding an authenticated client who arrived from /home.
+           *
+           * AFTER:  step === 1 ? router.back() : setStep(s => s - 1)
+           *   └─ router.back() pops the browser history stack, returning the
+           *      user to wherever they actually came from:
+           *        • Authenticated client from /home    → back to /home  ✅
+           *        • Unauthenticated provider from /    → back to /      ✅
+           *      No hardcoded destination. No broken flow.
+           */}
+          <button
+            onClick={() => step === 1 ? router.back() : setStep(s => s - 1)}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              fontSize: 13, color: "#4a6a6a",
+              background: "none", border: "none", cursor: "pointer", marginBottom: 24,
+            }}
+          >
             <ArrowLeft size={15} /> {step === 1 ? "Voltar" : "Passo anterior"}
           </button>
 
@@ -51,25 +78,41 @@ export default function RegisterProviderPage() {
             <div className="progress-fill" style={{ width: `${(step / 3) * 100}%` }} />
           </div>
 
+          {/* ── Step 1: Credentials ──────────────────────────────────────────── */}
           {step === 1 && (
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, color: "#6a7a8a", display: "block", marginBottom: 6 }}>Nome completo</label>
               <input className="auth-input" placeholder="O teu nome" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+
               <label style={{ fontSize: 13, fontWeight: 600, color: "#6a7a8a", display: "block", marginBottom: 6 }}>Email</label>
               <input className="auth-input" type="email" placeholder="o-teu@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+
               <label style={{ fontSize: 13, fontWeight: 600, color: "#6a7a8a", display: "block", marginBottom: 6 }}>Telemóvel</label>
               <input className="auth-input" placeholder="+244 9XX XXX XXX" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+
               <label style={{ fontSize: 13, fontWeight: 600, color: "#6a7a8a", display: "block", marginBottom: 6 }}>Senha</label>
               <div style={{ position: "relative", marginBottom: 20 }}>
-                <input className="auth-input" type={show ? "text" : "password"} placeholder="Mínimo 6 caracteres" style={{ marginBottom: 0, paddingRight: 44 }} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
-                <button onClick={() => setShow(!show)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#4a5a6a" }}>
+                <input
+                  className="auth-input"
+                  type={show ? "text" : "password"}
+                  placeholder="Mínimo 6 caracteres"
+                  style={{ marginBottom: 0, paddingRight: 44 }}
+                  value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                />
+                <button
+                  onClick={() => setShow(!show)}
+                  style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#4a5a6a" }}
+                >
                   {show ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+
               <button className="auth-btn" onClick={() => setStep(2)}>Continuar →</button>
             </div>
           )}
 
+          {/* ── Step 2: Category & bio ──────────────────────────────────────── */}
           {step === 2 && (
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, color: "#6a7a8a", display: "block", marginBottom: 10 }}>Categoria de serviço</label>
@@ -78,18 +121,31 @@ export default function RegisterProviderPage() {
                   <button key={i} className={`cat-opt${selectedCat === c ? " sel" : ""}`} onClick={() => setSelectedCat(c)}>{c}</button>
                 ))}
               </div>
+
               <label style={{ fontSize: 13, fontWeight: 600, color: "#6a7a8a", display: "block", marginBottom: 6 }}>Descrição do teu serviço</label>
-              <textarea className="auth-input" rows={3} placeholder="Descreve o teu serviço, experiência e especialização..." style={{ resize: "none" }} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} />
+              <textarea
+                className="auth-input"
+                rows={3}
+                placeholder="Descreve o teu serviço, experiência e especialização..."
+                style={{ resize: "none" }}
+                value={form.bio}
+                onChange={e => setForm({ ...form, bio: e.target.value })}
+              />
+
               <label style={{ fontSize: 13, fontWeight: 600, color: "#6a7a8a", display: "block", marginBottom: 6 }}>Preço hora (Kz)</label>
               <input className="auth-input" type="number" placeholder="Ex: 5000" />
+
               <button className="auth-btn" onClick={() => setStep(3)}>Continuar →</button>
             </div>
           )}
 
+          {/* ── Step 3: KYC ─────────────────────────────────────────────────── */}
           {step === 3 && (
             <div>
               <p style={{ fontSize: 14, fontWeight: 600, color: "#c0d0e0", marginBottom: 6 }}>Verificação de identidade (KYC)</p>
-              <p style={{ fontSize: 13, color: "#4a6a6a", marginBottom: 20, lineHeight: 1.6 }}>Para garantir a segurança dos clientes, precisamos verificar a tua identidade.</p>
+              <p style={{ fontSize: 13, color: "#4a6a6a", marginBottom: 20, lineHeight: 1.6 }}>
+                Para garantir a segurança dos clientes, precisamos verificar a tua identidade.
+              </p>
 
               <div className="upload-area">
                 <Upload size={24} style={{ color: "#4a5a6a" }} />
@@ -104,7 +160,11 @@ export default function RegisterProviderPage() {
               </div>
 
               <div style={{ background: "#2a1e08", border: "1px solid #EF9F2725", borderRadius: 12, padding: 14, marginBottom: 20 }}>
-                {["O perfil só fica visível após aprovação (48h)", "Os documentos são tratados de forma confidencial", "Aprovação manual pela equipa Serviapp"].map((t, i) => (
+                {[
+                  "O perfil só fica visível após aprovação (48h)",
+                  "Os documentos são tratados de forma confidencial",
+                  "Aprovação manual pela equipa Serviapp",
+                ].map((t, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: i < 2 ? 8 : 0 }}>
                     <CheckCircle size={14} style={{ color: "#EF9F27", flexShrink: 0 }} />
                     <span style={{ fontSize: 12, color: "#8a6a3a" }}>{t}</span>
@@ -112,16 +172,22 @@ export default function RegisterProviderPage() {
                 ))}
               </div>
 
-              <button className="auth-btn" onClick={() => router.push("/home")}>Submeter e aguardar aprovação →</button>
+              <button className="auth-btn" onClick={() => router.push("/home")}>
+                Submeter e aguardar aprovação →
+              </button>
             </div>
           )}
 
           <p style={{ textAlign: "center", fontSize: 13, color: "#4a6a6a", marginTop: 20 }}>
             Já tens conta?{" "}
-            <button onClick={() => router.push("/login")} style={{ color: "#1D9E75", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}>
+            <button
+              onClick={() => router.push("/login")}
+              style={{ color: "#1D9E75", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
+            >
               Entrar
             </button>
           </p>
+
         </div>
       </div>
     </>

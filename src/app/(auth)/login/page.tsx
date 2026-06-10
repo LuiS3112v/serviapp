@@ -3,18 +3,36 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Zap, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { authApi, saveSession } from "@/lib/auth.api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!form.email || !form.password) { setError("Preenche todos os campos."); return; }
     if (form.password.length < 6) { setError("Senha incorrecta. Tenta novamente."); return; }
     setError("");
-    router.push("/home");
+    setLoading(true);
+    try {
+      const data = await authApi.login({ email: form.email, password: form.password });
+      saveSession(data);
+
+      if (data.user.role === "admin") {
+        router.push("/admin");
+      } else if (data.user.role === "provider" || data.user.role === "company") {
+        router.push("/provider-home");
+      } else {
+        router.push("/home");
+      }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Erro ao entrar. Tenta novamente.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -23,11 +41,12 @@ export default function LoginPage() {
         .auth-wrap { min-height: 100vh; background: #0d1117; display: flex; align-items: center; justify-content: center; padding: 24px; }
         .auth-card { width: 100%; max-width: 420px; background: #131b27; border: 1px solid #1a2535; border-radius: 24px; padding: 40px 36px; }
         .input-wrap { position: relative; margin-bottom: 16px; }
-        .auth-input { width: 100%; padding: 14px 16px; border-radius: 12px; background: #0d1117; border: 1px solid #1a2535; color: #e2e8f0; font-size: 14px; outline: none; transition: border 0.2s; }
+        .auth-input { width: 100%; padding: 14px 16px; border-radius: 12px; background: #0d1117; border: 1px solid #1a2535; color: #e2e8f0; font-size: 14px; outline: none; transition: border 0.2s; box-sizing: border-box; }
         .auth-input:focus { border-color: #1D9E75; }
         .auth-input::placeholder { color: #4a5a6a; }
         .auth-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: #1D9E75; color: white; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; margin-top: 8px; }
         .auth-btn:hover { opacity: 0.9; }
+        .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .error-msg { background: #E24B4A20; border: 1px solid #E24B4A40; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #E24B4A; margin-bottom: 16px; }
         @media (max-width: 480px) { .auth-card { padding: 28px 20px; } }
       `}</style>
@@ -60,7 +79,9 @@ export default function LoginPage() {
             <div className="input-wrap" style={{ marginBottom: 8 }}>
               <input className="auth-input" type={show ? "text" : "password"} placeholder="A tua senha"
                 style={{ paddingRight: 44 }}
-                value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
+                onKeyDown={e => { if (e.key === "Enter") handleLogin(); }}
+              />
               <button onClick={() => setShow(!show)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#4a5a6a" }}>
                 {show ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -72,7 +93,9 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <button className="auth-btn" onClick={handleLogin}>Entrar</button>
+            <button className="auth-btn" onClick={handleLogin} disabled={loading}>
+              {loading ? "A entrar..." : "Entrar"}
+            </button>
 
             <p style={{ textAlign: "center", fontSize: 13, color: "#4a6a6a", marginTop: 20 }}>
               Não tens conta?{" "}
