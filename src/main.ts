@@ -1,32 +1,46 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // ── CORS ─────────────────────────────────────────────────────────────────
+  // Add your Vercel URLs here. Render sets PORT automatically.
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean);
+
+  app.enableCors({
+    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  });
+
+  // ── Global prefix ─────────────────────────────────────────────────────────
+  app.setGlobalPrefix('api');
+
+  // ── Validation ────────────────────────────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       transform: true,
     }),
   );
 
-  // FIX #4: allowedHeaders explícito garante que o browser pode enviar
-  // o header Authorization em pedidos multipart/form-data (preflight OPTIONS).
-  // Sem isto, certos browsers/proxies bloqueavam o header silenciosamente.
-  app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
-  });
+  // ── WebSocket adapter ─────────────────────────────────────────────────────
+  // IoAdapter works on Render's free tier (no sticky sessions needed for
+  // single-instance deployments). If you scale to multiple instances later,
+  // switch to @socket.io/redis-adapter.
+  app.useWebSocketAdapter(new IoAdapter(app));
 
-  app.setGlobalPrefix('api');
-
-  const port = process.env.PORT || 3001;
-  await app.listen(port);
-  console.log(`Serviapp API a correr na porta ${port}`);
+  const port = process.env.PORT ?? 3001;
+  await app.listen(port, '0.0.0.0'); // '0.0.0.0' required on Render
+  console.log(`ServiApp API running on port ${port}`);
 }
+
 bootstrap();

@@ -11,8 +11,16 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../../database/entities/user.entity';
 
+// Render doesn't support sticky sessions on free tier.
+// Setting transports to ['websocket', 'polling'] and allowEIO3: true
+// prevents connection drops.
 @WebSocketGateway({
-  cors: { origin: '*', credentials: true },
+  cors: {
+    origin: (process.env.ALLOWED_ORIGINS ?? '*').split(',').map(o => o.trim()),
+    credentials: true,
+  },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
   namespace: '/chat',
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {

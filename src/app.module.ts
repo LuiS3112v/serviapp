@@ -36,8 +36,11 @@ import { ProviderCatalog } from './database/entities/provider-catalog.entity';
           ChatRoom, ChatMessage,
           ProviderCatalog,
         ],
-        synchronize: true,
-        ssl: { rejectUnauthorized: false },
+        // SSL obrigatório para Supabase em produção
+        ssl: process.env.NODE_ENV === 'production'
+          ? { rejectUnauthorized: false }
+          : false,
+        synchronize: process.env.NODE_ENV !== 'production', // NUNCA true em produção
         logging: false,
       }),
     }),
