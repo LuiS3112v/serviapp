@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -7,6 +7,7 @@ import {
   Wallet, Receipt, User, Settings, LogOut, Zap,
   Star, X, Menu, ShoppingBag, ClipboardList,
 } from "lucide-react";
+import { clearAllSessions } from "@/lib/auth.api";
  
 const NAV = [
   {
@@ -52,12 +53,15 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const router   = useRouter();
  
   function isActive(href: string): boolean {
-    // Rota exacta para o home
     if (href === "/provider-home") return pathname === "/provider-home";
- 
-    // Comparação exacta para todas as rotas — evita que rotas pai activem filhos
     return pathname === href;
   }
+
+  const handleLogout = () => {
+    onClose?.();
+    clearAllSessions(); // limpa localStorage + cookie — middleware deixa passar para "/"
+    router.push("/");
+  };
  
   return (
     <>
@@ -124,7 +128,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         <LogOut
           size={16}
           style={{ color:"#3a4a5a", cursor:"pointer", flexShrink:0 }}
-          onClick={() => { localStorage.clear(); router.push("/"); }}
+          onClick={handleLogout}
         />
       </div>
     </>

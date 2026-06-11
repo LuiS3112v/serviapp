@@ -6,6 +6,7 @@ import {
   Home, Search, MapPin, Briefcase, MessageCircle,
   Bell, Wallet, Receipt, User, Settings, LogOut, Zap, X, Menu
 } from "lucide-react";
+import { clearAllSessions } from "@/lib/auth.api";
 
 const navItems = [
   { section:"Principal", items:[
@@ -35,6 +36,8 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     setOpen(false);
+    // Limpa localStorage + cookie — middleware não vai redirecionar para /home
+    clearAllSessions();
     router.push("/");
   };
 
