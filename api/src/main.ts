@@ -4,10 +4,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log'],
+  });
 
-  // ── CORS ─────────────────────────────────────────────────────────────────
-  // Add your Vercel URLs here. Render sets PORT automatically.
+  // ── CORS ──────────────────────────────────────────────────────────────────
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
     .split(',')
     .map(o => o.trim())
@@ -15,15 +16,15 @@ async function bootstrap() {
 
   app.enableCors({
     origin: allowedOrigins.length > 0 ? allowedOrigins : true,
-    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
   });
 
-  // ── Global prefix ─────────────────────────────────────────────────────────
+  // ── Global prefix ──────────────────────────────────────────────────────────
   app.setGlobalPrefix('api');
 
-  // ── Validation ────────────────────────────────────────────────────────────
+  // ── Validation ─────────────────────────────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -32,15 +33,13 @@ async function bootstrap() {
     }),
   );
 
-  // ── WebSocket adapter ─────────────────────────────────────────────────────
-  // IoAdapter works on Render's free tier (no sticky sessions needed for
-  // single-instance deployments). If you scale to multiple instances later,
-  // switch to @socket.io/redis-adapter.
+  // ── WebSocket ──────────────────────────────────────────────────────────────
   app.useWebSocketAdapter(new IoAdapter(app));
 
+  // ── Listen — 0.0.0.0 obrigatório no Render ────────────────────────────────
   const port = process.env.PORT ?? 3001;
-  await app.listen(port, '0.0.0.0'); // '0.0.0.0' required on Render
-  console.log(`ServiApp API running on port ${port}`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`✅ ServiApp API → http://0.0.0.0:${port}/api`);
 }
 
 bootstrap();
