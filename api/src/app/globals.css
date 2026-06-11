@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================
+   CSS RESET + STABILITY FIX
+========================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--dark);
+  color: var(--text-primary);
+  font-family: var(--font-inter), sans-serif;
+  min-height: 100vh;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================
+   DESIGN TOKENS
+========================= */
+
+:root {
+  --teal: #1D9E75;
+  --teal-dark: #0F6E56;
+  --teal-light: #5DCAA5;
+  --amber: #EF9F27;
+  --amber-dark: #BA7517;
+
+  --dark: #0d1117;
+  --dark-mid: #0a0f1a;
+  --dark-surface: #131b27;
+  --dark-border: #1a2535;
+  --dark-hero: #0b2a2a;
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #8a9ab0;
+  --text-muted: #4a6a6a;
+
+  --red: #E24B4A;
+  --blue: #378ADD;
+}
+
+/* =========================
+   SCROLLBAR
+========================= */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--dark-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--teal-dark);
+}
+
+/* =========================
+   SELECTION
+========================= */
+
+::selection {
+  background: var(--teal);
+  color: white;
+}

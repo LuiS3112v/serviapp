@@ -1,0 +1,78 @@
+import {
+  Controller, Post, Get, Patch, Param, Body,
+  UseGuards, UseInterceptors, UploadedFiles,
+} from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { KycService } from './kyc.service';
+import { SubmitKycDto } from './dto/submit-kyc.dto';
+import { RejectKycDto } from './dto/reject-kyc.dto';
+import { JwtGuard } from '../../common/guards/jwt.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Role } from '../../common/enums/role.enum';
+
+@UseGuards(JwtGuard, RolesGuard)
+@Controller()
+export class KycController {
+  constructor(private readonly kycService: KycService) {}
+
+  @Post('provider/kyc/submit')
+  @Roles(Role.PROVIDER, Role.COMPANY)
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'frontBi', maxCount: 1 },
+        { name: 'backBi', maxCount: 1 },
+        { name: 'selfie', maxCount: 1 },
+      ],
+      { storage: memoryStorage() },
+    ),
+  )
+  async submit(
+    @CurrentUser() user: any,
+    @Body() dto: SubmitKycDto,
+    @UploadedFiles() files: {
+      frontBi: Express.Multer.File[];
+      backBi: Express.Multer.File[];
+      selfie: Express.Multer.File[];
+    },
+  ) {
+    return this.kycService.submit(user.id, dto, files);
+  }
+
+  @Get('provider/kyc/status')
+  @Roles(Role.PROVIDER, Role.COMPANY)
+  async getMyStatus(@CurrentUser() user: any) {
+    return this.kycService.getMyStatus(user.id);
+  }
+
+  @Get('admin/kyc/pending')
+  @Roles(Role.ADMIN)
+  async getPending() {
+    return this.kycService.getPending();
+  }
+
+  @Get('admin/kyc/:id')
+  @Roles(Role.ADMIN)
+  async getById(@Param('id') id: string) {
+    return this.kycService.getById(id);
+  }
+
+  @Patch('admin/kyc/:id/approve')
+  @Roles(Role.ADMIN)
+  async approve(@Param('id') id: string, @CurrentUser() admin: any) {
+    return this.kycService.approve(id, admin.id);
+  }
+
+  @Patch('admin/kyc/:id/reject')
+  @Roles(Role.ADMIN)
+  async reject(
+    @Param('id') id: string,
+    @CurrentUser() admin: any,
+    @Body() dto: RejectKycDto,
+  ) {
+    return this.kycService.reject(id, admin.id, dto);
+  }
+}
