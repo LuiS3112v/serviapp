@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
 import { Shield, Globe, Moon, LogOut, ChevronRight, FileText, Lock } from "lucide-react";
+import { clearAllSessions } from "@/lib/auth.api";
 
 const settingGroups = [
   { title:"Conta", items:[
@@ -20,6 +21,12 @@ const settingGroups = [
 
 export default function SettingsPage() {
   const router = useRouter();
+
+  const handleLogout = () => {
+    clearAllSessions();
+    router.push("/");
+  };
+
   return (
     <>
       <style>{`
@@ -72,7 +79,7 @@ export default function SettingsPage() {
               </div>
             ))}
             <div className="set-group">
-              <button className="set-item clickable" onClick={()=>router.push("/")}>
+              <button className="set-item clickable" onClick={handleLogout}>
                 <div style={{width:40,height:40,borderRadius:12,background:"#E24B4A15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   <LogOut size={18} style={{color:"#E24B4A"}}/>
                 </div>
