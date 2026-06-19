@@ -4,30 +4,34 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
-import { ChevronRight, Loader2 } from "lucide-react";
+import {
+  ChevronRight, Loader2,
+  Sparkles, Wind, Wrench, Zap, Monitor, Leaf,
+  Package, Scissors, Car, Paintbrush, HardHat, Lock,
+} from "lucide-react";
 import { getToken } from "@/lib/auth.api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 const CATEGORIES = [
-  { icon:"🧹", label:"Limpeza",       desc:"Limpeza residencial e comercial",          bg:"#0e2d2d", color:"#1D9E75" },
-  { icon:"❄️", label:"Climatização",  desc:"Instalação e manutenção de AC",             bg:"#0e2020", color:"#378ADD" },
-  { icon:"🔧", label:"Canalização",   desc:"Fugas, instalações e reparações",           bg:"#1a2232", color:"#5a7aDD" },
-  { icon:"⚡", label:"Eletricista",   desc:"Instalações eléctricas e reparações",       bg:"#2a1e08", color:"#EF9F27" },
-  { icon:"💻", label:"TI & Redes",    desc:"Suporte técnico e redes",                   bg:"#1a2232", color:"#8B5CF6" },
-  { icon:"🌿", label:"Jardinagem",    desc:"Poda, manutenção e paisagismo",             bg:"#0e2d0e", color:"#22C55E" },
-  { icon:"📦", label:"Mudanças",      desc:"Transporte e mudanças de casa",             bg:"#2a1808", color:"#F97316" },
-  { icon:"💆", label:"Beleza",        desc:"Cabeleireiro, manicure e estética",         bg:"#1e1a2e", color:"#D4537E" },
-  { icon:"🚗", label:"Automóvel",     desc:"Mecânica e manutenção auto",                bg:"#1a1a2e", color:"#60A5FA" },
-  { icon:"🎨", label:"Pintura",       desc:"Pintura de interiores e exteriores",        bg:"#2a1a1a", color:"#F87171" },
-  { icon:"🏗️", label:"Construção",   desc:"Obras, remodelações e acabamentos",         bg:"#1a2020", color:"#34D399" },
-  { icon:"🔐", label:"Segurança",     desc:"Vigilância e sistemas de segurança",        bg:"#1a1a2a", color:"#A78BFA" },
+  { Icon: Sparkles,   label:"Limpeza",       desc:"Limpeza residencial e comercial",       color:"#1D9E75", bg:"linear-gradient(135deg,#0b3d2e,#0e5038)", border:"rgba(29,158,117,0.4)"  },
+  { Icon: Wind,       label:"Climatização",  desc:"Instalação e manutenção de AC",         color:"#38bdf8", bg:"linear-gradient(135deg,#062038,#083050)", border:"rgba(56,189,248,0.4)"  },
+  { Icon: Wrench,     label:"Canalização",   desc:"Fugas, instalações e reparações",       color:"#a78bfa", bg:"linear-gradient(135deg,#1a0b38,#220d48)", border:"rgba(167,139,250,0.4)"  },
+  { Icon: Zap,        label:"Eletricista",   desc:"Instalações eléctricas e reparações",   color:"#fbbf24", bg:"linear-gradient(135deg,#2d1d05,#3a2408)", border:"rgba(251,191,36,0.4)"   },
+  { Icon: Monitor,    label:"TI & Redes",    desc:"Suporte técnico e redes",               color:"#60a5fa", bg:"linear-gradient(135deg,#071838,#0a1e48)", border:"rgba(96,165,250,0.4)"   },
+  { Icon: Leaf,       label:"Jardinagem",    desc:"Poda, manutenção e paisagismo",         color:"#34d399", bg:"linear-gradient(135deg,#063020,#083a28)", border:"rgba(52,211,153,0.4)"   },
+  { Icon: Package,    label:"Mudanças",      desc:"Transporte e mudanças de casa",         color:"#fb923c", bg:"linear-gradient(135deg,#2d1805,#3a2008)", border:"rgba(251,146,60,0.4)"   },
+  { Icon: Scissors,   label:"Beleza",        desc:"Cabeleireiro, manicure e estética",     color:"#f472b6", bg:"linear-gradient(135deg,#2a0820,#380a28)", border:"rgba(244,114,182,0.4)"  },
+  { Icon: Car,        label:"Automóvel",     desc:"Mecânica e manutenção auto",            color:"#93c5fd", bg:"linear-gradient(135deg,#101c30,#142240)", border:"rgba(147,197,253,0.4)"  },
+  { Icon: Paintbrush, label:"Pintura",       desc:"Pintura de interiores e exteriores",    color:"#e879f9", bg:"linear-gradient(135deg,#220830,#2c0a3c)", border:"rgba(232,121,249,0.4)"  },
+  { Icon: HardHat,    label:"Construção",    desc:"Obras, remodelações e acabamentos",     color:"#fb923c", bg:"linear-gradient(135deg,#2d1205,#3a1808)", border:"rgba(249,115,22,0.4)"   },
+  { Icon: Lock,       label:"Segurança",     desc:"Vigilância e sistemas de segurança",    color:"#818cf8", bg:"linear-gradient(135deg,#0c1038,#101440)", border:"rgba(129,140,248,0.4)"  },
 ];
 
 export default function CategoriesPage() {
   const router = useRouter();
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const [total, setTotal] = useState(0);
+  const [counts, setCounts]   = useState<Record<string, number>>({});
+  const [total, setTotal]     = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,57 +54,136 @@ export default function CategoriesPage() {
   return (
     <>
       <style>{`
-        .cats-wrap{display:flex;min-height:100vh;background:#0d1117}
-        .cats-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
-        .cats-inner{flex:1;padding:28px 32px}
-        .cats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:24px}
-        .cat-card{background:#131b27;border:1px solid #1a2535;border-radius:16px;padding:20px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:16px}
-        .cat-card:hover{border-color:#1D9E75;transform:translateY(-2px)}
-        .cat-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
-        .skeleton{background:#1a2535;border-radius:6px;animation:sk 1.5s infinite;display:inline-block}
+        .cw{display:flex;min-height:100vh;background:#0d1117}
+        .cm{flex:1;margin-left:240px;display:flex;flex-direction:column}
+        .ci{flex:1;padding:28px 32px}
+
+        .cgrid{
+          display:grid;
+          grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+          gap:14px;margin-top:24px;
+        }
+
+        /* Card base */
+        .ccard{
+          position:relative;overflow:hidden;
+          border-radius:18px;padding:22px 20px 20px;
+          cursor:pointer;
+          border:1px solid transparent;
+          transition:all 0.25s ease;
+          display:flex;flex-direction:column;gap:0;
+        }
+        .ccard:hover{
+          transform:translateY(-4px);
+          border-color:var(--cborder);
+        }
+
+        /* Ghost icon watermark */
+        .cghost{
+          position:absolute;right:-10px;bottom:-10px;
+          opacity:0.1;pointer-events:none;
+          transition:opacity 0.25s,transform 0.25s;
+        }
+        .ccard:hover .cghost{opacity:0.18;transform:scale(1.08) rotate(-6deg)}
+
+        /* Icon badge */
+        .cico{
+          width:54px;height:54px;border-radius:16px;
+          display:flex;align-items:center;justify-content:center;
+          margin-bottom:14px;flex-shrink:0;
+          background:rgba(255,255,255,0.1);
+          border:1px solid rgba(255,255,255,0.14);
+          transition:transform 0.2s;
+        }
+        .ccard:hover .cico{transform:scale(1.08)}
+
+        /* Count badge */
+        .cbadge{
+          display:inline-flex;align-items:center;
+          padding:3px 10px;border-radius:99px;
+          font-size:11px;font-weight:700;
+          background:rgba(255,255,255,0.12);
+          margin-top:10px;width:fit-content;
+        }
+
+        /* Skeleton */
+        .sk{background:rgba(255,255,255,0.15);border-radius:6px;animation:sk 1.5s infinite;display:inline-block}
         @keyframes sk{0%,100%{opacity:1}50%{opacity:0.4}}
-        @media(max-width:1024px){.cats-main{margin-left:0}}
-        @media(max-width:640px){.cats-inner{padding:70px 16px 20px}.cats-grid{grid-template-columns:1fr}}
+
+        /* Responsive */
+        @media(max-width:1024px){.cm{margin-left:0}}
+        @media(max-width:768px){.ci{padding:80px 16px 24px}.cgrid{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:480px){.cgrid{grid-template-columns:1fr}.ci{padding:70px 12px 20px}}
       `}</style>
 
-      <div className="cats-wrap">
-        <Sidebar/>
-        <div className="cats-main">
-          <Navbar/>
-          <div className="cats-inner">
-            <div style={{marginBottom:8}}>
-              <h1 style={{fontSize:22,fontWeight:700,color:"#e2e8f0",marginBottom:4}}>Todas as categorias</h1>
-              <p style={{fontSize:13,color:"#4a6a6a"}}>
+      <div className="cw">
+        <Sidebar />
+        <div className="cm">
+          <Navbar />
+          <div className="ci">
+
+            <div style={{ marginBottom:8 }}>
+              <h1 style={{ fontSize:22, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>
+                Todas as categorias
+              </h1>
+              <p style={{ fontSize:13, color:"#4a6a6a" }}>
                 {CATEGORIES.length} categorias ·{" "}
                 {loading
-                  ? <span className="skeleton" style={{width:60,height:12}}/>
-                  : `${total} prestador${total!==1?"es":""} no total`}
+                  ? <span className="sk" style={{ width:60, height:12 }} />
+                  : `${total} prestador${total !== 1 ? "es" : ""} no total`
+                }
               </p>
             </div>
 
-            <div className="cats-grid">
-              {CATEGORIES.map((c,i)=>{
+            <div className="cgrid">
+              {CATEGORIES.map((c, i) => {
+                const Icon  = c.Icon;
                 const count = counts[c.label] ?? 0;
                 return (
                   <div
-                    className="cat-card"
                     key={i}
-                    onClick={()=>router.push(`/search?category=${encodeURIComponent(c.label)}`)}
+                    className="ccard"
+                    style={{
+                      background: c.bg,
+                      ["--cborder" as any]: c.border,
+                    }}
+                    onClick={() => router.push(`/search?category=${encodeURIComponent(c.label)}`)}
                   >
-                    <div className="cat-icon" style={{background:c.bg}}>{c.icon}</div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <p style={{fontSize:15,fontWeight:700,color:"#e2e8f0",marginBottom:3}}>{c.label}</p>
-                      <p style={{fontSize:12,color:"#4a6a6a",marginBottom:6}}>{c.desc}</p>
+                    {/* Ghost watermark */}
+                    <span className="cghost">
+                      <Icon size={96} style={{ color: c.color }} />
+                    </span>
+
+                    {/* Icon badge */}
+                    <div className="cico">
+                      <Icon size={26} style={{ color: c.color }} />
+                    </div>
+
+                    {/* Text */}
+                    <p style={{ fontSize:15, fontWeight:700, color:"#f1f5f9", marginBottom:4, lineHeight:1.2 }}>
+                      {c.label}
+                    </p>
+                    <p style={{ fontSize:12, color:"rgba(200,220,230,0.65)", lineHeight:1.5 }}>
+                      {c.desc}
+                    </p>
+
+                    {/* Count badge */}
+                    <div className="cbadge" style={{ color: c.color }}>
                       {loading
-                        ? <span className="skeleton" style={{width:80,height:10}}/>
-                        : (
-                          <span style={{fontSize:11,fontWeight:600,color:c.color,background:c.bg,padding:"2px 8px",borderRadius:99}}>
-                            {count} prestador{count!==1?"es":""}
-                          </span>
-                        )
+                        ? <span className="sk" style={{ width:50, height:10 }} />
+                        : `${count} prestador${count !== 1 ? "es" : ""}`
                       }
                     </div>
-                    <ChevronRight size={16} style={{color:"#2a3a4a",flexShrink:0}}/>
+
+                    {/* Arrow */}
+                    <div style={{
+                      position:"absolute", top:16, right:16,
+                      width:28, height:28, borderRadius:8,
+                      background:"rgba(255,255,255,0.1)",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                    }}>
+                      <ChevronRight size={15} style={{ color:"rgba(255,255,255,0.6)" }} />
+                    </div>
                   </div>
                 );
               })}

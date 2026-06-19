@@ -5,36 +5,40 @@ import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
 import {
   Shield, ChevronRight, ArrowRight, Zap, MapPin,
-  Star, CheckCircle, MessageCircle, Search
+  Star, CheckCircle, MessageCircle, Search,
+  Sparkles, Wind, Wrench, Monitor, Leaf,
+  Package, Scissors, Car, Paintbrush, HardHat, Lock, Users,
 } from "lucide-react";
 
-const categories = [
-  { icon: "🧹", label: "Limpeza", bg: "#0e2d2d" },
-  { icon: "❄️", label: "Climatização", bg: "#0e2020" },
-  { icon: "🔧", label: "Canalização", bg: "#1a2232" },
-  { icon: "⚡", label: "Eletricista", bg: "#2a1e08" },
-  { icon: "💻", label: "TI & Redes", bg: "#1a2232" },
-  { icon: "🌿", label: "Jardinagem", bg: "#0e2d0e" },
-  { icon: "📦", label: "Mudanças", bg: "#2a1808" },
-  { icon: "💆", label: "Beleza", bg: "#1e1a2e" },
-  { icon: "🚗", label: "Automóvel", bg: "#1a1a2e" },
-  { icon: "🎨", label: "Pintura", bg: "#2a1a1a" },
-  { icon: "🏗️", label: "Construção", bg: "#1a2020" },
-  { icon: "🔐", label: "Segurança", bg: "#1a1a2a" },
+const CATS = [
+  { Icon: Sparkles,   label: "Limpeza",       desc: "Casas, escritórios e mais",    color: "#1D9E75", bg: "linear-gradient(135deg,#0b3d2e,#0e5038)", border: "rgba(29,158,117,0.4)"   },
+  { Icon: Wind,       label: "Climatização",  desc: "Instalação e manutenção",      color: "#38bdf8", bg: "linear-gradient(135deg,#062038,#083050)", border: "rgba(56,189,248,0.4)"   },
+  { Icon: Wrench,     label: "Canalização",   desc: "Reparações e instalações",     color: "#a78bfa", bg: "linear-gradient(135deg,#1a0b38,#220d48)", border: "rgba(167,139,250,0.4)"  },
+  { Icon: Zap,        label: "Eletricista",   desc: "Instalações e reparações",     color: "#fbbf24", bg: "linear-gradient(135deg,#2d1d05,#3a2408)", border: "rgba(251,191,36,0.4)"   },
+  { Icon: Monitor,    label: "TI & Redes",    desc: "Suporte e redes informáticas", color: "#60a5fa", bg: "linear-gradient(135deg,#071838,#0a1e48)", border: "rgba(96,165,250,0.4)"   },
+  { Icon: Leaf,       label: "Jardinagem",    desc: "Manutenção de jardins",        color: "#34d399", bg: "linear-gradient(135deg,#063020,#083a28)", border: "rgba(52,211,153,0.4)"   },
+  { Icon: Package,    label: "Mudanças",      desc: "Transporte e mudanças",        color: "#fb923c", bg: "linear-gradient(135deg,#2d1805,#3a2008)", border: "rgba(251,146,60,0.4)"   },
+  { Icon: Scissors,   label: "Beleza",        desc: "Cabeleireiro e estética",      color: "#f472b6", bg: "linear-gradient(135deg,#2a0820,#380a28)", border: "rgba(244,114,182,0.4)"  },
+  { Icon: Car,        label: "Automóvel",     desc: "Reparação e manutenção",       color: "#93c5fd", bg: "linear-gradient(135deg,#101c30,#142240)", border: "rgba(147,197,253,0.4)"  },
+  { Icon: Paintbrush, label: "Pintura",       desc: "Interior e exterior",          color: "#e879f9", bg: "linear-gradient(135deg,#220830,#2c0a3c)", border: "rgba(232,121,249,0.4)"  },
+  { Icon: HardHat,    label: "Construção",    desc: "Obras e remodelações",         color: "#fb923c", bg: "linear-gradient(135deg,#2d1205,#3a1808)", border: "rgba(249,115,22,0.4)"   },
+  { Icon: Lock,       label: "Segurança",     desc: "Sistemas e monitorização",     color: "#818cf8", bg: "linear-gradient(135deg,#0c1038,#101440)", border: "rgba(129,140,248,0.4)"  },
 ];
 
-const steps = [
-  { icon: <Search size={22} style={{ color: "#1D9E75" }} />, bg: "#0b2a2a", title: "Pesquisa", desc: "Encontra prestadores verificados perto de ti por categoria ou localização." },
-  { icon: <MessageCircle size={22} style={{ color: "#378ADD" }} />, bg: "#0a1a2e", title: "Contacta e paga", desc: "Fala pelo chat, acerta o orçamento e paga com total segurança." },
-  { icon: <CheckCircle size={22} style={{ color: "#EF9F27" }} />, bg: "#2a1e08", title: "Confirma", desc: "Confirma o serviço concluído e o pagamento é libertado ao prestador." },
+const STEPS = [
+  { Icon: Search,        color: "#1D9E75", bg: "#0b2a20", num: "01", title: "Pesquisa",        desc: "Encontra prestadores verificados perto de ti por categoria ou localização." },
+  { Icon: MessageCircle, color: "#378ADD", bg: "#071830", num: "02", title: "Contacta e paga", desc: "Fala pelo chat, acerta o orçamento e paga com total segurança." },
+  { Icon: CheckCircle,   color: "#EF9F27", bg: "#271a05", num: "03", title: "Confirma",        desc: "Confirma o serviço concluído e o pagamento é libertado ao prestador." },
 ];
 
-const features = [
-  { icon: <Shield size={20} style={{ color: "#1D9E75" }} />, bg: "#0b2a2a", border: "#1d9e7525", title: "Pagamento protegido", desc: "Valor retido e só libertado quando confirmas a conclusão." },
-  { icon: <Star size={20} style={{ color: "#EF9F27" }} />, bg: "#2a1e08", border: "#EF9F2725", title: "Prestadores verificados", desc: "Todos passam por verificação de identidade antes de serem aceites." },
-  { icon: <MapPin size={20} style={{ color: "#378ADD" }} />, bg: "#0a1a2e", border: "#378ADD25", title: "Geolocalização", desc: "Prestadores no teu raio com tempo estimado de chegada." },
-  { icon: <Zap size={20} style={{ color: "#D4537E" }} />, bg: "#2a0a1e", border: "#D4537E25", title: "Resposta rápida", desc: "Os melhores prestadores respondem em minutos pelo chat." },
+const FEATS = [
+  { Icon: Shield,   color: "#1D9E75", title: "Pagamento protegido",    desc: "Valor retido e só libertado quando confirmas a conclusão." },
+  { Icon: Star,     color: "#EF9F27", title: "Prestadores verificados", desc: "Todos passam por verificação de identidade antes de serem aceites." },
+  { Icon: MapPin,   color: "#378ADD", title: "Geolocalização",          desc: "Prestadores no teu raio com tempo estimado de chegada." },
+  { Icon: Zap,      color: "#D4537E", title: "Resposta rápida",         desc: "Os melhores prestadores respondem em minutos pelo chat." },
 ];
+
+const HERO = "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=900&auto=format&fit=crop";
 
 export default function HomePage() {
   const router = useRouter();
@@ -42,64 +46,211 @@ export default function HomePage() {
   return (
     <>
       <style>{`
-        .home-wrap { display: flex; min-height: 100vh; background: #0d1117; }
-        .home-main { flex: 1; margin-left: 240px; display: flex; flex-direction: column; }
-        .home-inner { flex: 1; padding: 32px; display: flex; flex-direction: column; gap: 28px; }
-        .hero { border-radius: 20px; padding: 48px; background: #0b2a2a; border: 1px solid #1d9e7530; display: flex; align-items: center; justify-content: space-between; gap: 32px; }
-        .hero-stats { display: flex; gap: 16px; flex-shrink: 0; }
-        .hero-stat { display: flex; flex-direction: column; align-items: center; padding: 20px 24px; border-radius: 16px; background: #091e1e; border: 1px solid #1a3535; min-width: 100px; }
-        .cats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
-        .cat-btn { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 8px; border-radius: 14px; cursor: pointer; background: #0d1117; border: 1px solid #1a2535; transition: all 0.15s; }
-        .cat-btn:hover { border-color: #1D9E75; transform: translateY(-2px); }
-        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .card { border-radius: 20px; padding: 28px; background: #131b27; border: 1px solid #1a2535; }
-        .step { display: flex; align-items: flex-start; gap: 16px; padding: 16px; border-radius: 14px; background: #0d1117; border: 1px solid #1a2535; }
-        .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .feat { padding: 16px; border-radius: 14px; }
-        .btn-primary { display: flex; align-items: center; gap: 8px; padding: 14px 24px; border-radius: 12px; border: none; background: #1D9E75; color: white; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: inherit; }
-        .btn-ghost { display: flex; align-items: center; gap: 8px; padding: 14px 24px; border-radius: 12px; background: transparent; color: #8a9ab0; border: 1px solid #1a2535; font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap; font-family: inherit; }
-        .btn-amber { padding: 10px 18px; border-radius: 10px; background: #EF9F2720; color: #EF9F27; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #EF9F2740; white-space: nowrap; font-family: inherit; }
-        @media (max-width: 1024px) {
-          .home-main { margin-left: 0; }
-          .hero { flex-direction: column; padding: 32px 24px; }
-          .hero-stats { justify-content: center; }
-          .cats-grid { grid-template-columns: repeat(4, 1fr); }
-          .bottom-grid { grid-template-columns: 1fr; }
+        .hw{display:flex;min-height:100vh;background:#0d1117}
+        .hm{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
+        .hi{padding:32px;display:flex;flex-direction:column;gap:28px}
+
+        /* ── Hero ── */
+        .h-hero{
+          position:relative;border-radius:24px;overflow:hidden;
+          min-height:440px;display:flex;align-items:stretch;
+          background:linear-gradient(135deg,#071e1e 0%,#0a2525 100%);
+          border:1px solid rgba(29,158,117,0.18);
         }
-        @media (max-width: 640px) {
-          .home-inner { padding: 16px; gap: 20px; }
-          .hero { padding: 24px 16px; }
-          .hero-stats { gap: 10px; }
-          .hero-stat { min-width: 80px; padding: 14px 16px; }
-          .cats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-          .feat-grid { grid-template-columns: 1fr; }
-          .btn-primary, .btn-ghost { padding: 12px 18px; font-size: 14px; }
+        .h-hero-img{
+          position:absolute;top:0;right:0;width:55%;height:100%;
+          object-fit:cover;object-position:center top;
+        }
+        .h-hero-ov{
+          position:absolute;inset:0;
+          background:linear-gradient(to right,#071e1e 38%,rgba(7,30,30,0.9) 55%,rgba(7,30,30,0.15) 100%);
+        }
+        .h-hero-body{
+          position:relative;z-index:2;
+          padding:52px 56px;
+          display:flex;flex-direction:column;justify-content:center;
+          max-width:580px;
+        }
+        .h-badge{
+          display:inline-flex;align-items:center;gap:8px;
+          padding:6px 14px;border-radius:99px;
+          background:rgba(29,158,117,0.1);border:1px solid rgba(29,158,117,0.28);
+          margin-bottom:24px;width:fit-content;
+        }
+        .h-dot{
+          width:7px;height:7px;border-radius:50%;background:#1D9E75;
+          box-shadow:0 0 8px #1D9E75;
+          animation:hdot 2.2s ease-in-out infinite;
+        }
+        @keyframes hdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+        .h-title{
+          font-size:44px;font-weight:800;color:#f1f5f9;
+          line-height:1.08;margin-bottom:20px;letter-spacing:-0.02em;
+        }
+        .h-title-g{
+          background:linear-gradient(135deg,#1D9E75 0%,#4ade80 100%);
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+        }
+        .h-sub{font-size:16px;color:rgba(148,170,180,0.88);line-height:1.75;margin-bottom:36px;max-width:440px}
+        .h-btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+        .btn-green{
+          display:inline-flex;align-items:center;gap:8px;
+          padding:14px 26px;border-radius:12px;border:none;
+          background:linear-gradient(135deg,#1D9E75,#16876a);
+          color:white;font-size:15px;font-weight:700;
+          cursor:pointer;font-family:inherit;white-space:nowrap;
+          box-shadow:0 4px 20px rgba(29,158,117,0.35);
+          transition:all 0.2s ease;
+        }
+        .btn-green:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(29,158,117,0.5)}
+        .btn-ghost{
+          display:inline-flex;align-items:center;gap:8px;
+          padding:14px 26px;border-radius:12px;
+          background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
+          color:#8a9ab0;font-size:15px;font-weight:500;
+          cursor:pointer;font-family:inherit;white-space:nowrap;
+          transition:all 0.2s ease;
+        }
+        .btn-ghost:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.22);color:#e2e8f0}
+        .h-stats{
+          position:absolute;bottom:28px;right:28px;
+          display:flex;gap:12px;z-index:2;
+        }
+        .h-stat{
+          padding:14px 20px;border-radius:16px;
+          background:rgba(4,14,14,0.88);backdrop-filter:blur(12px);
+          border:1px solid rgba(29,158,117,0.18);
+          text-align:center;min-width:88px;
+        }
+
+        /* ── Section ── */
+        .sec{background:#0f1923;border:1px solid #1a2535;border-radius:20px;padding:28px}
+        .sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+        .sec-link{
+          display:flex;align-items:center;gap:4px;font-size:13px;color:#1D9E75;
+          background:none;border:none;cursor:pointer;font-family:inherit;
+        }
+        .sec-link:hover{opacity:0.7}
+
+        /* ── Categories ── */
+        .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+        .cat{
+          display:flex;align-items:center;gap:14px;
+          padding:16px 18px;border-radius:14px;
+          border:1px solid transparent;
+          cursor:pointer;text-align:left;
+          transition:all 0.22s ease;position:relative;overflow:hidden;
+        }
+        .cat:hover{transform:translateY(-3px)}
+        .cat-ico{
+          width:46px;height:46px;border-radius:12px;
+          display:flex;align-items:center;justify-content:center;
+          flex-shrink:0;transition:transform 0.2s;
+          background:rgba(255,255,255,0.1);
+          border:1px solid rgba(255,255,255,0.14);
+        }
+        .cat:hover .cat-ico{transform:scale(1.1)}
+        .cat-ghost{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.07}
+
+        /* ── Steps ── */
+        .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+        .step{padding:24px;border-radius:16px;background:#0d1117;border:1px solid #1a2535}
+        .step-ico{
+          width:48px;height:48px;border-radius:14px;
+          display:flex;align-items:center;justify-content:center;margin-bottom:14px;
+        }
+
+        /* ── Features ── */
+        .feats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .feat{padding:22px;border-radius:16px;transition:transform 0.2s}
+        .feat:hover{transform:translateY(-2px)}
+        .feat-ico{
+          width:42px;height:42px;border-radius:11px;
+          display:flex;align-items:center;justify-content:center;margin-bottom:14px;
+        }
+
+        /* ── Provider CTA ── */
+        .pcta{
+          border-radius:20px;padding:24px 32px;
+          background:linear-gradient(135deg,rgba(239,159,39,0.08),rgba(239,159,39,0.02));
+          border:1px solid rgba(239,159,39,0.18);
+          display:flex;align-items:center;justify-content:space-between;gap:20px;
+        }
+        .pcta-ico{
+          width:46px;height:46px;border-radius:12px;
+          background:rgba(239,159,39,0.12);border:1px solid rgba(239,159,39,0.25);
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;
+        }
+        .btn-amber{
+          padding:12px 22px;border-radius:10px;
+          background:linear-gradient(135deg,#EF9F27,#d4870a);
+          color:#0d1117;font-size:14px;font-weight:700;
+          cursor:pointer;border:none;font-family:inherit;white-space:nowrap;
+          box-shadow:0 4px 14px rgba(239,159,39,0.3);
+          transition:all 0.2s;flex-shrink:0;
+        }
+        .btn-amber:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(239,159,39,0.48)}
+
+        /* ── Responsive ── */
+        @media(max-width:1200px){.cats{grid-template-columns:repeat(3,1fr)}}
+        @media(max-width:1024px){
+          .hm{margin-left:0}
+          .hi{padding:80px 20px 28px}
+          .h-hero-img{width:44%}
+          .h-hero-body{padding:36px 36px;max-width:68%}
+          .cats{grid-template-columns:repeat(3,1fr)}
+        }
+        @media(max-width:768px){
+          .hi{padding:72px 16px 24px;gap:20px}
+          .h-title{font-size:30px}
+          .h-hero-body{max-width:100%;padding:28px 24px}
+          .h-hero{flex-direction:column;min-height:auto}
+          .h-hero-img{display:block;position:relative;width:100%;height:220px;object-fit:cover;object-position:center top}
+          .h-hero-ov{background:linear-gradient(to bottom,rgba(7,30,30,0.05) 0%,rgba(7,30,30,0.55) 40%,#071e1e 65%)}
+          .h-stats{position:static;flex-wrap:wrap;padding:4px 24px 24px;gap:8px}
+          .cats{grid-template-columns:repeat(2,1fr)}
+          .steps{grid-template-columns:1fr}
+          .feats{grid-template-columns:1fr}
+          .pcta{flex-direction:column;text-align:center}
+          .pcta-ico{margin:0 auto}
+        }
+        @media(max-width:480px){
+          .hi{padding:68px 12px 20px}
+          .h-stat{min-width:72px;padding:12px 14px}
+          .h-stats{gap:6px;padding:4px 16px 20px}
+        }
+        @media(max-width:360px){
+          .cats{grid-template-columns:1fr}
+          .h-title{font-size:26px}
         }
       `}</style>
 
-      <div className="home-wrap">
+      <div className="hw">
         <Sidebar />
-        <div className="home-main">
+        <div className="hm">
           <Navbar />
-          <main className="home-inner">
+          <main className="hi">
 
-            <div className="hero">
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1D9E75" }} />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1D9E75", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            {/* ═══ HERO ═══ */}
+            <section className="h-hero">
+              <img className="h-hero-img" src={HERO} alt="Prestador profissional a trabalhar" loading="lazy" />
+              <div className="h-hero-ov" />
+              <div className="h-hero-body">
+                <div className="h-badge">
+                  <span className="h-dot" />
+                  <span style={{ fontSize:11, fontWeight:700, color:"#1D9E75", letterSpacing:"0.14em", textTransform:"uppercase" }}>
                     Serviapp · Angola
                   </span>
                 </div>
-                <h1 style={{ fontSize: 40, fontWeight: 700, color: "#e2e8f0", lineHeight: 1.15, marginBottom: 16 }}>
+                <h1 className="h-title">
                   Encontra o serviço<br />
-                  <span style={{ color: "#1D9E75" }}>certo, perto de ti.</span>
+                  <span className="h-title-g">certo, perto de ti.</span>
                 </h1>
-                <p style={{ fontSize: 15, color: "#4a7a7a", lineHeight: 1.75, marginBottom: 28, maxWidth: 480 }}>
+                <p className="h-sub">
                   Prestadores verificados com geolocalização, avaliações reais e pagamento 100% protegido.
                 </p>
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <button className="btn-primary" onClick={() => router.push("/search")}>
+                <div className="h-btns">
+                  <button className="btn-green" onClick={() => router.push("/search")}>
                     <Search size={16} /> Encontrar prestador
                   </button>
                   <button className="btn-ghost" onClick={() => router.push("/register/provider")}>
@@ -107,82 +258,124 @@ export default function HomePage() {
                   </button>
                 </div>
               </div>
-              <div className="hero-stats">
+              <div className="h-stats">
                 {[
-                  { value: "500+", label: "Prestadores", color: "#1D9E75" },
-                  { value: "12", label: "Categorias", color: "#EF9F27" },
-                  { value: "4.9★", label: "Avaliação", color: "#378ADD" },
+                  { value:"500+", label:"Prestadores", color:"#1D9E75" },
+                  { value:"12",   label:"Categorias",  color:"#EF9F27" },
+                  { value:"4.9★", label:"Avaliação",   color:"#378ADD" },
                 ].map((s, i) => (
-                  <div className="hero-stat" key={i}>
-                    <span style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</span>
-                    <span style={{ fontSize: 12, color: "#4a6a6a", marginTop: 6 }}>{s.label}</span>
+                  <div className="h-stat" key={i}>
+                    <span style={{ fontSize:22, fontWeight:800, color:s.color, display:"block", lineHeight:1 }}>{s.value}</span>
+                    <span style={{ fontSize:11, color:"#4a6a6a", marginTop:6, display:"block" }}>{s.label}</span>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div className="card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            {/* ═══ CATEGORIES ═══ */}
+            <div className="sec">
+              <div className="sec-hdr">
                 <div>
-                  <h2 style={{ fontSize: 18, fontWeight: 700, color: "#c0d0e0" }}>Categorias de serviço</h2>
-                  <p style={{ fontSize: 13, color: "#4a6a6a", marginTop: 4 }}>Escolhe a categoria que precisas</p>
+                  <h2 style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>Categorias de serviço</h2>
+                  <p style={{ fontSize:13, color:"#4a6a6a" }}>Escolhe a categoria que precisas</p>
                 </div>
-                <button onClick={() => router.push("/categories")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: "#1D9E75", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                <button className="sec-link" onClick={() => router.push("/categories")}>
                   Ver todas <ChevronRight size={15} />
                 </button>
               </div>
-              <div className="cats-grid">
-                {categories.map((c, i) => (
-                  <button className="cat-btn" key={i} onClick={() => router.push(`/search?category=${encodeURIComponent(c.label)}`)}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, background: c.bg }}>{c.icon}</div>
-                    <span style={{ fontSize: 12, color: "#8a9ab0", textAlign: "center" }}>{c.label}</span>
-                  </button>
-                ))}
+              <div className="cats">
+                {CATS.map((cat, i) => {
+                  const Icon = cat.Icon;
+                  return (
+                    <button
+                      key={i}
+                      className="cat"
+                      style={{ background: cat.bg }}
+                      onClick={() => router.push(`/search?category=${encodeURIComponent(cat.label)}`)}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.borderColor = cat.border;
+                        e.currentTarget.style.boxShadow = `0 4px 20px ${cat.color}12`;
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = "transparent";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
+                      <div className="cat-ico">
+                        <Icon size={22} style={{ color:cat.color }} />
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ fontSize:13, fontWeight:700, color:"#e2e8f0", marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{cat.label}</p>
+                        <p style={{ fontSize:11, color:"#4a6a6a", lineHeight:1.4 }}>{cat.desc}</p>
+                      </div>
+                      <span className="cat-ghost">
+                        <Icon size={38} style={{ color:cat.color }} />
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="bottom-grid">
-              <div className="card">
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: "#c0d0e0", marginBottom: 6 }}>Como funciona</h2>
-                <p style={{ fontSize: 13, color: "#4a6a6a", marginBottom: 20 }}>3 passos simples para contratar</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {steps.map((s, i) => (
+            {/* ═══ COMO FUNCIONA ═══ */}
+            <div className="sec">
+              <div style={{ marginBottom:22 }}>
+                <h2 style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>Como funciona</h2>
+                <p style={{ fontSize:13, color:"#4a6a6a" }}>3 passos simples para contratar</p>
+              </div>
+              <div className="steps">
+                {STEPS.map((s, i) => {
+                  const Icon = s.Icon;
+                  return (
                     <div className="step" key={i}>
-                      <div style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>{s.icon}</div>
-                      <div>
-                        <p style={{ fontSize: 11, fontWeight: 600, color: "#1D9E75", marginBottom: 4 }}>Passo {i + 1}</p>
-                        <p style={{ fontSize: 14, fontWeight: 600, color: "#c0d0e0", marginBottom: 4 }}>{s.title}</p>
-                        <p style={{ fontSize: 12, color: "#4a6a6a", lineHeight: 1.6 }}>{s.desc}</p>
+                      <p style={{ fontSize:11, fontWeight:800, color:s.color, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14 }}>
+                        Passo {s.num}
+                      </p>
+                      <div className="step-ico" style={{ background:s.bg, border:`1px solid ${s.color}28` }}>
+                        <Icon size={24} style={{ color:s.color }} />
                       </div>
+                      <h3 style={{ fontSize:15, fontWeight:700, color:"#e2e8f0", marginBottom:8 }}>{s.title}</h3>
+                      <p style={{ fontSize:13, color:"#4a6a6a", lineHeight:1.65 }}>{s.desc}</p>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
+            </div>
 
-              <div className="card">
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: "#c0d0e0", marginBottom: 6 }}>Porquê a Serviapp?</h2>
-                <p style={{ fontSize: 13, color: "#4a6a6a", marginBottom: 20 }}>A plataforma mais segura de Angola</p>
-                <div className="feat-grid">
-                  {features.map((f, i) => (
-                    <div className="feat" key={i} style={{ background: f.bg, border: `1px solid ${f.border}` }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, marginBottom: 12, background: "#00000020", display: "flex", alignItems: "center", justifyContent: "center" }}>{f.icon}</div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "#c0d0e0", marginBottom: 6 }}>{f.title}</p>
-                      <p style={{ fontSize: 12, color: "#4a6a6a", lineHeight: 1.6 }}>{f.desc}</p>
+            {/* ═══ VANTAGENS ═══ */}
+            <div className="sec">
+              <div style={{ marginBottom:22 }}>
+                <h2 style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>Porquê a Serviapp?</h2>
+                <p style={{ fontSize:13, color:"#4a6a6a" }}>A plataforma mais segura de Angola</p>
+              </div>
+              <div className="feats">
+                {FEATS.map((f, i) => {
+                  const Icon = f.Icon;
+                  return (
+                    <div key={i} className="feat" style={{ background:`${f.color}08`, border:`1px solid ${f.color}1e` }}>
+                      <div className="feat-ico" style={{ background:`${f.color}14` }}>
+                        <Icon size={20} style={{ color:f.color }} />
+                      </div>
+                      <h3 style={{ fontSize:14, fontWeight:700, color:"#e2e8f0", marginBottom:6 }}>{f.title}</h3>
+                      <p style={{ fontSize:12, color:"#4a6a6a", lineHeight:1.6 }}>{f.desc}</p>
                     </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: 16, padding: 16, borderRadius: 14, background: "#0d1117", border: "1px solid #1a2535", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: "#c0d0e0", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                      <Zap size={14} style={{ color: "#EF9F27" }} /> És prestador?
-                    </p>
-                    <p style={{ fontSize: 12, color: "#4a6a6a" }}>Regista-te e começa a receber clientes hoje.</p>
-                  </div>
-                  <button className="btn-amber" onClick={() => router.push("/register/provider")}>
-                    Criar perfil
-                  </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ═══ PROVIDER CTA ═══ */}
+            <div className="pcta">
+              <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                <div className="pcta-ico"><Zap size={22} style={{ color:"#EF9F27" }} /></div>
+                <div>
+                  <p style={{ fontSize:15, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>És prestador?</p>
+                  <p style={{ fontSize:13, color:"#6a5a3a" }}>Regista-te e começa a receber clientes hoje.</p>
                 </div>
               </div>
+              <button className="btn-amber" onClick={() => router.push("/register/provider")}>
+                Criar perfil
+              </button>
             </div>
 
           </main>
