@@ -3,25 +3,29 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from '../../database/entities/notification.entity';
 import { DeviceToken } from '../../database/entities/device-token.entity';
+import { User } from '../../database/entities/user.entity';
 import { FirebaseService } from './firebase.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { RegisterTokenDto } from './dto/register-token.dto';
 import {
   NotificationType, NotificationStatus, NotificationPriority,
 } from '../../common/enums/notification.enum';
- 
+import { Role } from '../../common/enums/role.enum';
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
- 
+
   constructor(
     @InjectRepository(Notification)
     private notificationRepo: Repository<Notification>,
     @InjectRepository(DeviceToken)
     private deviceTokenRepo: Repository<DeviceToken>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
     private firebaseService: FirebaseService,
   ) {}
- 
+
   async create(dto: CreateNotificationDto): Promise<Notification> {
     const notification = this.notificationRepo.create({
       userId: dto.userId,
@@ -36,7 +40,7 @@ export class NotificationsService {
     await this.sendPush(dto.userId, dto.title, dto.body, { actionUrl: dto.actionUrl ?? '' });
     return saved;
   }
- 
+
   async findByUser(userId: string, page = 1, limit = 20) {
     const [notifications, total] = await this.notificationRepo.findAndCount({
       where: { userId },
@@ -49,31 +53,31 @@ export class NotificationsService {
     });
     return { notifications, total, unread };
   }
- 
+
   async getUnreadCount(userId: string): Promise<number> {
     return this.notificationRepo.count({
       where: { userId, status: NotificationStatus.UNREAD },
     });
   }
- 
+
   async markAsRead(id: string, userId: string): Promise<void> {
     await this.notificationRepo.update(
       { id, userId },
       { status: NotificationStatus.READ, readAt: new Date() },
     );
   }
- 
+
   async markAllAsRead(userId: string): Promise<void> {
     await this.notificationRepo.update(
       { userId, status: NotificationStatus.UNREAD },
       { status: NotificationStatus.READ, readAt: new Date() },
     );
   }
- 
+
   async delete(id: string, userId: string): Promise<void> {
     await this.notificationRepo.delete({ id, userId });
   }
- 
+
   async registerToken(userId: string, dto: RegisterTokenDto): Promise<void> {
     const existing = await this.deviceTokenRepo.findOne({ where: { token: dto.token } });
     if (existing) {
@@ -93,7 +97,7 @@ export class NotificationsService {
       );
     }
   }
- 
+
   private async sendPush(userId: string, title: string, body: string, data?: Record<string, string>) {
     const tokens = await this.deviceTokenRepo.find({
       where: { userId, isActive: true },
@@ -102,65 +106,104 @@ export class NotificationsService {
     if (tokens.length === 0) return;
     await this.firebaseService.sendToMultiple(tokens.map(t => t.token), title, body, data);
   }
- 
-  // ─── Domain events ─────────────────────────────────────────────────────────
- 
+
+  // ─── KYC individual ───────────────────────────────────────────────────────
+
   async notifyKycApproved(userId: string) {
-    await this.create({ userId, type: NotificationType.KYC_APPROVED, title: '✅ Verificação aprovada!', body: 'O teu perfil está activo e visível para clientes.', priority: NotificationPriority.HIGH, actionUrl: '/provider-home' });
+    await this.create({
+      userId, type: NotificationType.KYC_APPROVED,
+      title: '✅ Verificação aprovada!',
+      body: 'O teu perfil está activo e visível para clientes.',
+      priority: NotificationPriority.HIGH,
+      actionUrl: '/provider-home',
+    });
   }
- 
+
   async notifyKycRejected(userId: string, reason: string) {
-    await this.create({ userId, type: NotificationType.KYC_REJECTED, title: '❌ Verificação rejeitada', body: `Motivo: ${reason}. Podes submeter novamente.`, priority: NotificationPriority.HIGH, metadata: { reason }, actionUrl: '/kyc?role=provider' });
+    await this.create({
+      userId, type: NotificationType.KYC_REJECTED,
+      title: '❌ Verificação rejeitada',
+      body: `Motivo: ${reason}. Podes submeter novamente.`,
+      priority: NotificationPriority.HIGH,
+      metadata: { reason },
+      actionUrl: '/kyc?role=provider',
+    });
   }
- 
+
   async notifyServiceAccepted(clientId: string, providerId: string) {
-    await this.create({ userId: clientId, type: NotificationType.SERVICE_ACCEPTED, title: '🎉 Pedido aceite!', body: 'Um prestador aceitou o teu pedido de serviço.', priority: NotificationPriority.HIGH, actionUrl: '/services' });
+    await this.create({
+      userId: clientId, type: NotificationType.SERVICE_ACCEPTED,
+      title: '🎉 Pedido aceite!',
+      body: 'Um prestador aceitou o teu pedido de serviço.',
+      priority: NotificationPriority.HIGH,
+      actionUrl: '/services',
+    });
   }
- 
+
   async notifyServiceStarted(clientId: string, providerId: string) {
-    await this.create({ userId: clientId, type: NotificationType.SERVICE_STARTED, title: '🚀 Serviço iniciado', body: 'O prestador começou a trabalhar no teu pedido.', priority: NotificationPriority.MEDIUM, actionUrl: '/services' });
+    await this.create({
+      userId: clientId, type: NotificationType.SERVICE_STARTED,
+      title: '🚀 Serviço iniciado',
+      body: 'O prestador começou a trabalhar no teu pedido.',
+      priority: NotificationPriority.MEDIUM,
+      actionUrl: '/services',
+    });
   }
- 
+
   async notifyServiceCompleted(clientId: string, providerId: string) {
-    await this.create({ userId: clientId, type: NotificationType.SERVICE_COMPLETED, title: '✅ Serviço concluído', body: 'O serviço foi marcado como concluído. Confirma para avaliar.', priority: NotificationPriority.CRITICAL, actionUrl: '/services' });
+    await this.create({
+      userId: clientId, type: NotificationType.SERVICE_COMPLETED,
+      title: '✅ Serviço concluído',
+      body: 'O serviço foi marcado como concluído. Confirma para avaliar.',
+      priority: NotificationPriority.CRITICAL,
+      actionUrl: '/services',
+    });
   }
- 
+
   async notifyPayment(userId: string, amount: number, description: string) {
-    await this.create({ userId, type: NotificationType.PAYMENT, title: '💳 Pagamento processado', body: `${amount.toLocaleString('pt-PT')} Kz — ${description}`, priority: NotificationPriority.HIGH, metadata: { amount }, actionUrl: '/wallet' });
+    await this.create({
+      userId, type: NotificationType.PAYMENT,
+      title: '💳 Pagamento processado',
+      body: `${amount.toLocaleString('pt-PT')} Kz — ${description}`,
+      priority: NotificationPriority.HIGH,
+      metadata: { amount },
+      actionUrl: '/wallet',
+    });
   }
- 
+
   async notifyWallet(userId: string, amount: number, type: 'credit' | 'debit') {
-    await this.create({ userId, type: NotificationType.WALLET, title: type === 'credit' ? '💰 Saldo recebido' : '💸 Saldo debitado', body: `${type === 'credit' ? '+' : '-'}${amount.toLocaleString('pt-PT')} Kz na tua wallet.`, priority: NotificationPriority.MEDIUM, actionUrl: '/wallet' });
+    await this.create({
+      userId, type: NotificationType.WALLET,
+      title: type === 'credit' ? '💰 Saldo recebido' : '💸 Saldo debitado',
+      body: `${type === 'credit' ? '+' : '-'}${amount.toLocaleString('pt-PT')} Kz na tua wallet.`,
+      priority: NotificationPriority.MEDIUM,
+      actionUrl: '/wallet',
+    });
   }
- 
-  // ─── Negociação ────────────────────────────────────────────────────────────
- 
+
   async notifyServiceProposed(clientId: string, providerName: string, proposedPrice: number) {
     await this.create({
-      userId: clientId,
-      type: NotificationType.SERVICE_ACCEPTED,
+      userId: clientId, type: NotificationType.SERVICE_ACCEPTED,
       title: '💬 Nova proposta de preço',
       body: `${providerName} propôs ${proposedPrice.toLocaleString('pt-PT')} Kz para o teu pedido.`,
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
     });
   }
- 
+
   async notifyProposalAccepted(providerId: string, agreedPrice: number) {
     await this.create({
-      userId: providerId,
-      type: NotificationType.SERVICE_ACCEPTED,
+      userId: providerId, type: NotificationType.SERVICE_ACCEPTED,
       title: '✅ Proposta aceite!',
       body: `O cliente aceitou a tua proposta de ${agreedPrice.toLocaleString('pt-PT')} Kz.`,
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider/services',
     });
   }
- 
+
   async notifyProposalRejected(providerId: string) {
     await this.create({
-      userId: providerId,
-      type: NotificationType.SYSTEM,
+      userId: providerId, type: NotificationType.SYSTEM,
       title: '❌ Proposta recusada',
       body: 'O cliente recusou a tua proposta. O pedido voltou a estar disponível.',
       priority: NotificationPriority.MEDIUM,
@@ -170,12 +213,104 @@ export class NotificationsService {
 
   async notifyServiceRequested(providerId: string, clientName: string, serviceTitle: string) {
     await this.create({
-      userId:    providerId,
-      type:      NotificationType.SYSTEM,
-      title:     '🔔 Nova solicitação de serviço',
-      body:      `${clientName} solicitou o teu serviço "${serviceTitle}". Verifica os pedidos disponíveis.`,
-      priority:  NotificationPriority.HIGH,
+      userId: providerId, type: NotificationType.SYSTEM,
+      title: '🔔 Nova solicitação de serviço',
+      body: `${clientName} solicitou o teu serviço "${serviceTitle}".`,
+      priority: NotificationPriority.HIGH,
       actionUrl: '/provider/services',
+    });
+  }
+
+  // ─── Sistema de empresa ───────────────────────────────────────────────────
+
+  // Convite só para providers — verifica o role antes de criar a notificação
+  async notifyCompanyInvitation(inviteeUserId: string, companyName: string) {
+    // Verifica se o utilizador é provider — só providers recebem convites
+    const user = await this.userRepo.findOne({
+      where: { id: inviteeUserId },
+      select: { id: true, role: true },
+    });
+
+    if (!user || user.role !== Role.PROVIDER) {
+      this.logger.warn(
+        `Convite para empresa ignorado — utilizador ${inviteeUserId} tem role "${user?.role ?? 'desconhecido'}" (só providers recebem convites)`,
+      );
+      return;
+    }
+
+    await this.create({
+      userId: inviteeUserId,
+      type: NotificationType.SYSTEM,
+      title: '🏢 Convite para equipa',
+      body: `${companyName} convidou-te para fazeres parte da equipa.`,
+      priority: NotificationPriority.HIGH,
+      // metadata inclui companyName para o frontend poder mostrar os botões
+      metadata: { companyName, isCompanyInvite: true },
+      actionUrl: '/provider/notifications',
+    });
+  }
+
+  // Versão com invitationId para resposta directa nas notificações
+  async notifyCompanyInvitationWithId(
+    inviteeUserId: string,
+    companyName: string,
+    invitationId: string,
+  ) {
+    const user = await this.userRepo.findOne({
+      where: { id: inviteeUserId },
+      select: { id: true, role: true },
+    });
+
+    if (!user || user.role !== Role.PROVIDER) {
+      this.logger.warn(
+        `Convite ignorado — utilizador ${inviteeUserId} tem role "${user?.role ?? 'desconhecido'}"`,
+      );
+      return;
+    }
+
+    await this.create({
+      userId: inviteeUserId,
+      type: NotificationType.SYSTEM,
+      title: '🏢 Convite para equipa',
+      body: `${companyName} convidou-te para fazeres parte da equipa.`,
+      priority: NotificationPriority.HIGH,
+      metadata: {
+        companyName,
+        isCompanyInvite: true,
+        invitationId, // ← chave para os botões funcionarem
+      },
+      actionUrl: '/provider/notifications',
+    });
+  }
+
+  async notifyInvitationAccepted(ownerId: string, newEmployeeUserId: string) {
+    await this.create({
+      userId: ownerId, type: NotificationType.SYSTEM,
+      title: '✅ Convite aceite',
+      body: 'Um novo membro juntou-se à tua equipa.',
+      priority: NotificationPriority.MEDIUM,
+      actionUrl: '/provider/company',
+    });
+  }
+
+  async notifyCompanyKycApproved(ownerId: string) {
+    await this.create({
+      userId: ownerId, type: NotificationType.KYC_APPROVED,
+      title: '✅ Empresa verificada!',
+      body: 'A tua empresa está verificada e visível para clientes.',
+      priority: NotificationPriority.HIGH,
+      actionUrl: '/provider/company',
+    });
+  }
+
+  async notifyCompanyKycRejected(ownerId: string, reason: string) {
+    await this.create({
+      userId: ownerId, type: NotificationType.KYC_REJECTED,
+      title: '❌ Verificação de empresa rejeitada',
+      body: `Motivo: ${reason}. Podes submeter novamente.`,
+      priority: NotificationPriority.HIGH,
+      metadata: { reason },
+      actionUrl: '/provider/company',
     });
   }
 }

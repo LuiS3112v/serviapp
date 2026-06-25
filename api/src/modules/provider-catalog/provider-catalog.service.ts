@@ -4,14 +4,14 @@ import { Repository } from 'typeorm';
 import { ProviderCatalog } from '../../database/entities/provider-catalog.entity';
 import { CreateCatalogDto } from './dto/create-catalog.dto';
 import { UpdateCatalogDto } from './dto/update-catalog.dto';
- 
+
 @Injectable()
 export class ProviderCatalogService {
   constructor(
     @InjectRepository(ProviderCatalog)
     private catalogRepo: Repository<ProviderCatalog>,
   ) {}
- 
+
   async create(providerId: string, dto: CreateCatalogDto): Promise<ProviderCatalog> {
     const entry = this.catalogRepo.create({
       providerId,
@@ -23,30 +23,40 @@ export class ProviderCatalogService {
     });
     return this.catalogRepo.save(entry);
   }
- 
+
   async findByProvider(providerId: string): Promise<ProviderCatalog[]> {
     return this.catalogRepo.find({
       where: { providerId },
       order: { createdAt: 'DESC' },
     });
   }
- 
+
+  // ═══════════════════════════════════════════════════════════════════
+  // findAll — devolve APENAS serviços individuais de providers.
+  // NUNCA mistura com empresas — as empresas têm o seu próprio card
+  // separado devolvido por GET /users/providers com cardType:'company'.
+  // ═══════════════════════════════════════════════════════════════════
   async findAll(category?: string): Promise<ProviderCatalog[]> {
     const qb = this.catalogRepo
       .createQueryBuilder('c')
       .leftJoinAndSelect('c.provider', 'provider')
       .where('c.isActive = :active', { active: true })
       .andWhere('provider.isVerified = :verified', { verified: true });
+
     if (category) qb.andWhere('c.category = :category', { category });
+
     return qb.orderBy('c.createdAt', 'DESC').getMany();
   }
- 
+
   async findOne(id: string): Promise<ProviderCatalog> {
-    const entry = await this.catalogRepo.findOne({ where: { id }, relations: { provider: true } });
+    const entry = await this.catalogRepo.findOne({
+      where: { id },
+      relations: { provider: true },
+    });
     if (!entry) throw new NotFoundException('Serviço não encontrado.');
     return entry;
   }
- 
+
   async update(id: string, providerId: string, dto: UpdateCatalogDto): Promise<ProviderCatalog> {
     const entry = await this.catalogRepo.findOne({ where: { id } });
     if (!entry) throw new NotFoundException('Serviço não encontrado.');
@@ -54,7 +64,7 @@ export class ProviderCatalogService {
     Object.assign(entry, dto);
     return this.catalogRepo.save(entry);
   }
- 
+
   async remove(id: string, providerId: string): Promise<void> {
     const entry = await this.catalogRepo.findOne({ where: { id } });
     if (!entry) throw new NotFoundException('Serviço não encontrado.');

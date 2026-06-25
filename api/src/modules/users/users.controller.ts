@@ -29,4 +29,13 @@ export class UsersController {
   getProviders(@Query('category') category?: string) {
     return this.usersService.findProviders(category);
   }
+
+  // ── Pesquisa de utilizadores para o modal de convite de empresa ──────────
+  // GET /users/search?q=nome_ou_email_ou_telefone
+  // Requer autenticação — só providers/company owners devem convidar
+  @Get('search')
+  @UseGuards(JwtGuard)
+  searchUsers(@Query('q') q: string) {
+    return this.usersService.searchUsers(q ?? '');
+  }
 }

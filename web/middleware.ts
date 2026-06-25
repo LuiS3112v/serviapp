@@ -2,71 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-/**
- * src/middleware.ts
- *
- * ─── What changed from the previous version ──────────────────────────────────
- *
- *  1. PROTECTED_ROUTES added ("/home")
- *     Unauthenticated requests to /home → redirect to "/?auth=required&redirect=/home"
- *     Previously /home had zero server-side protection.
- *
- *  2. GUEST_ONLY_ROUTES added ("/", "/login")
- *     Authenticated requests to these routes → server-side redirect to "/home"
- *     Server-side redirects (NextResponse.redirect) do NOT add a browser history
- *     entry, which means the back button can never return to the landing page.
- *     This is the infrastructure fix for Root Cause 2 of the back-button bug.
- *
- *  3. verifyToken() extracted as a standalone helper (reduces nesting, reusable).
- *
- *  4. Matcher extended to include "/home", "/home/:path*", "/", "/login".
- *
- * ─── What is intentionally NOT in GUEST_ONLY_ROUTES ─────────────────────────
- *
- *  "/register/provider" and "/criar-perfil" serve dual duty:
- *    • Unauthenticated new-provider signup
- *    • Authenticated client upgrading to provider ("Sou prestador / Criar perfil")
- *  Blocking authenticated users there would break the client-home → provider flow.
- *
- * ─── What is preserved unchanged from the previous version ───────────────────
- *
- *  • JWT signature verification (not just cookie presence check)
- *  • Super-admin bypass via SUPER_ADMIN_EMAILS env var
- *  • Expired/tampered token: cookie cleared + redirect to "/?auth=session_expired"
- *  • Admin forbidden: redirect to "/?auth=forbidden"
- *  • Fail-closed when JWT_SECRET is missing
- *
- * ─── Security model (unchanged) ──────────────────────────────────────────────
- *
- *  Middleware = first line of defence (UX gate, Edge runtime, fast).
- *  Backend JwtGuard + RolesGuard = authoritative second line.
- *  Both must pass. A compromised frontend cannot bypass backend guards.
- */
-
-// ── Route tables ──────────────────────────────────────────────────────────────
-
-/**
- * Routes that require a valid authenticated session.
- * Add new authenticated sections here as the app grows
- * (e.g., "/bookings", "/profile", "/chat", "/services").
- */
-const PROTECTED_ROUTES = [
-  "/home",
-];
-
-/**
- * Routes that should NEVER be rendered for an authenticated user.
- * Any valid-token request here gets a server-side redirect to "/home".
- *
- * Server-side redirect = no browser history entry added = back button
- * can never bounce the user back to the landing / login page.
- */
-const GUEST_ONLY_ROUTES = [
-  "/",
-  "/login",
-];
-
-// ── Token verification helper ─────────────────────────────────────────────────
+const PROTECTED_ROUTES = ["/home"];
+const GUEST_ONLY_ROUTES = ["/", "/login"];
 
 type TokenPayload = { email: string; role: string };
 
@@ -83,12 +20,9 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
       role:  (payload.role  as string) ?? "",
     };
   } catch {
-    // Expired or tampered — treated as unauthenticated
     return null;
   }
 }
-
-// ── Middleware ─────────────────────────────────────────────────────────────────
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -99,34 +33,31 @@ export async function middleware(request: NextRequest) {
   );
   const isGuestOnly = GUEST_ONLY_ROUTES.includes(pathname);
 
-  // Not a route we manage → pass straight through, no overhead
   if (!isAdminRoute && !isProtectedRoute && !isGuestOnly) {
     return NextResponse.next();
   }
 
   const token = request.cookies.get("serviapp_token")?.value;
 
-  // ── No token ──────────────────────────────────────────────────────────────
+  // ── Sem token ──────────────────────────────────────────────────────────
   if (!token) {
     if (isAdminRoute || isProtectedRoute) {
-      // Redirect to landing with intent preserved so the login UI can redirect
-      // the user back to their intended destination after a successful login.
       const url = new URL("/", request.url);
       url.searchParams.set("auth", "required");
       url.searchParams.set("redirect", pathname);
       return NextResponse.redirect(url);
     }
-    // Guest-only route without a token → correct state, let them through
+    // guest-only sem token → página pública, deixa passar
     return NextResponse.next();
   }
 
-  // ── Verify token ──────────────────────────────────────────────────────────
+  // ── Verifica token ─────────────────────────────────────────────────────
   const payload = await verifyToken(token);
 
   if (!payload) {
-    // Invalid or expired token — clear the stale cookie
+    // Token inválido/expirado — limpa o cookie
     const destination = isGuestOnly
-      ? NextResponse.next()   // let them stay on public page with cleared cookie
+      ? NextResponse.next()
       : NextResponse.redirect(new URL("/?auth=session_expired", request.url));
 
     destination.cookies.set("serviapp_token", "", {
@@ -139,10 +70,8 @@ export async function middleware(request: NextRequest) {
 
   const { email, role } = payload;
 
-  // ── Admin routes: role check ──────────────────────────────────────────────
+  // ── Admin ──────────────────────────────────────────────────────────────
   if (isAdminRoute) {
-    // Super-admin bypass: owner is never locked out by a stale token role.
-    // Format: SUPER_ADMIN_EMAILS=owner@example.com,backup@example.com
     const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS ?? "")
       .split(",")
       .map(e => e.trim().toLowerCase())
@@ -154,47 +83,42 @@ export async function middleware(request: NextRequest) {
     if (role !== "admin" && !isSuperAdmin) {
       return NextResponse.redirect(new URL("/?auth=forbidden", request.url));
     }
-
     return NextResponse.next();
   }
 
-  // ── Guest-only + valid token → redirect to /home ──────────────────────────
-  //
-  // This is the core fix for the browser back-button bug (Root Cause 2).
-  //
-  // Scenario: authenticated user presses browser back and lands on "/" because
-  // it was somewhere in the history stack (e.g., from the initial page load).
-  // Without this guard, the landing page renders for an authenticated user.
-  // With it, the browser follows the server redirect to /home — no new history
-  // entry is created, so the back button cannot loop back here.
+  // ── Guest-only + token válido ──────────────────────────────────────────
+  // FIX: já não redireciona para /home automaticamente — deixa o JS do cliente
+  // tratar o redirect após logout (o cookie já foi limpo pelo clearAllSessions).
+  // O problema anterior era: clearAllSessions() limpava o cookie no browser,
+  // mas router.push("/") fazia um novo request onde o middleware ainda via
+  // o cookie antigo no header (porque o browser ainda não tinha processado
+  // a limpeza do cookie antes do fetch do middleware).
+  // Solução: o middleware só redireciona para /home se o pathname for "/"
+  // e o token for válido E a query não tiver "logout=1".
   if (isGuestOnly) {
+    const isLogout = request.nextUrl.searchParams.get("logout") === "1";
+    if (isLogout) {
+      // Logout explícito — deixa passar para a landing page
+      // e limpa o cookie para garantir
+      const res = NextResponse.next();
+      res.cookies.set("serviapp_token", "", {
+        path: "/", maxAge: 0, sameSite: "lax",
+      });
+      return res;
+    }
+    // Token válido em página pública → redireciona para /home
     return NextResponse.redirect(new URL("/home", request.url));
   }
 
-  // ── Protected route + valid token → allow ────────────────────────────────
+  // ── Rota protegida + token válido → deixa passar ──────────────────────
   return NextResponse.next();
 }
 
-// ── Matcher ────────────────────────────────────────────────────────────────────
-//
-// Must stay in sync with the route tables above.
-// Rules:
-//   "/foo"        matches exactly /foo
-//   "/foo/:path*" matches /foo/anything (zero or more segments)
-//
-// Do NOT add /api, /_next, or /favicon — those bypass middleware automatically
-// via Next.js internals but adding them here causes unnecessary Edge invocations.
-
 export const config = {
   matcher: [
-    // Admin (unchanged)
     "/admin/:path*",
-
-    // Protected: authenticated client routes
     "/home",
     "/home/:path*",
-
-    // Guest-only: public-only routes (back-button guard)
     "/",
     "/login",
   ],
