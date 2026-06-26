@@ -53,28 +53,10 @@ export class UsersService {
     return results.map(r => ({ category: r.category, count: Number(r.count) }));
   }
 
-  // ══════════════════════════════════════════════════════════════════════
-  // findProviders — devolve 2 tipos COMPLETAMENTE SEPARADOS:
-  //
-  //  cardType: 'provider'
-  //    → perfil individual do prestador
-  //    → só aparece se não tiver serviços no catálogo
-  //    → nunca tem info de empresa
-  //
-  //  cardType: 'company'
-  //    → card da empresa verificada (nome e logo da empresa)
-  //    → aparece sempre que a empresa estiver verificada
-  //    → nunca mostra serviços — só "Ver empresa"
-  //    → completamente independente do provider individual
-  //
-  // Um provider que criou empresa aparece como:
-  //   1. Os seus serviços individuais (via /catalog, NÃO aqui)
-  //   2. A empresa (cardType:'company', aqui)
-  // NUNCA se misturam. NUNCA.
-  // ══════════════════════════════════════════════════════════════════════
   async findProviders(category?: string): Promise<any[]> {
 
-    // ── PARTE 1: Providers individuais ────────────────────────────────────
+    // ── PARTE 1: Providers individuais ─────────────────────────────────────
+    // Filtrados por categoria exacta no backend
     const providerQuery = this.userRepo
       .createQueryBuilder('user')
       .where('user.role IN (:...roles)', { roles: [Role.PROVIDER, Role.COMPANY] })
@@ -90,11 +72,8 @@ export class UsersService {
       providerQuery.andWhere('user.category = :category', { category });
     }
 
-    const users = await providerQuery
-      .orderBy('user.isOnline', 'DESC')
-      .getMany();
+    const users = await providerQuery.orderBy('user.isOnline', 'DESC').getMany();
 
-    // Provider cards — sem qualquer info de empresa
     const providerCards = users.map(u => ({
       ...u,
       cardType: 'provider',
@@ -103,20 +82,11 @@ export class UsersService {
     }));
 
     // ── PARTE 2: Empresas verificadas ─────────────────────────────────────
-    // Query completamente separada — usa string literal 'verified' para
-    // evitar qualquer problema de mapeamento de enum no TypeORM
-    let companyQb = this.companyRepo
+    // SEM filtro de categoria aqui — o frontend faz matching por keywords
+    // para cobrir diferenças linguísticas (ex: "Technology" → "TI & Redes")
+    const companies = await this.companyRepo
       .createQueryBuilder('company')
-      .where("company.verificationStatus = 'verified'");
-
-    if (category && category !== 'Todos') {
-      companyQb = companyQb.andWhere(
-        'company.mainCategory = :cat',
-        { cat: category },
-      );
-    }
-
-    const companies = await companyQb
+      .where("company.verificationStatus = 'verified'")
       .select([
         'company.id',
         'company.ownerId',
@@ -128,29 +98,27 @@ export class UsersService {
       ])
       .getMany();
 
-    // Company cards — nome e logo DA EMPRESA, nunca do provider dono
     const companyCards = companies.map(c => ({
-      id: c.ownerId,           // userId do dono (para chat/convite)
-      fullName: c.name,        // nome DA EMPRESA
-      avatarUrl: c.logoUrl ?? null,
-      category: c.mainCategory,
-      bio: c.about ?? null,
-      isOnline: false,
-      role: 'company',
-      province: null,
-      email: null,
-      phone: null,
-      latitude: null,
-      longitude: null,
-      cardType: 'company',     // distinção clara
-      isCompany: true,         // flag redundante para segurança no frontend
-      companyId: c.id,         // UUID real da empresa → /company/[id]
+      id:          c.ownerId,
+      fullName:    c.name,
+      avatarUrl:   c.logoUrl ?? null,
+      category:    c.mainCategory,
+      bio:         c.about ?? null,
+      isOnline:    false,
+      role:        'company',
+      province:    null,
+      email:       null,
+      phone:       null,
+      latitude:    null,
+      longitude:   null,
+      cardType:    'company',
+      isCompany:   true,
+      companyId:   c.id,
     }));
 
     return [...providerCards, ...companyCards];
   }
 
-  // ── Pesquisa para modal de convite ────────────────────────────────────────
   async searchUsers(q: string): Promise<Partial<User>[]> {
     if (!q || q.trim().length < 2) return [];
     const term = `%${q.trim().toLowerCase()}%`;

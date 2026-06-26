@@ -22,30 +22,44 @@ const CAT_EMOJI: Record<string,string> = {
   "Automóvel":"🚗","Pintura":"🎨","Construção":"🏗️","Segurança":"🔐",
 };
 
-// ─── Tipos ───────────────────────────────────────────────────────────────────
+// ── Keywords por categoria para matching amplo de empresas ────────────────────
+// Permite que uma empresa com mainCategory "Technology" apareça em "TI & Redes"
+const COMPANY_CATEGORY_KEYWORDS: Record<string, string[]> = {
+  "TI & Redes":   ["ti", "tecnologia", "technology", "tech", "redes", "software", "informatica", "digital", "it", "sistemas", "tic"],
+  "Construção":   ["constru", "obra", "engenharia", "civil", "arquitetura", "imobil"],
+  "Limpeza":      ["limpeza", "cleaning", "higiene", "clean", "desinfe"],
+  "Climatização": ["climati", "avac", "ar condicion", "refriger", "hvac", "cooling"],
+  "Canalização":  ["canaliz", "plumb", "encanament", "hidraul", "agua"],
+  "Eletricista":  ["eletric", "electri", "energia", "electrical", "eletro"],
+  "Jardinagem":   ["jardim", "garden", "paisag", "verde", "plant"],
+  "Mudanças":     ["mudan", "transport", "logistic", "cargo", "frete"],
+  "Beleza":       ["beleza", "estetica", "cabelei", "beauty", "spa", "saude", "cosmet"],
+  "Automóvel":    ["automovel", "auto", "mecanica", "carro", "vehicle", "motor"],
+  "Pintura":      ["pintura", "decorac", "paint", "tinta", "artist"],
+  "Segurança":    ["seguran", "security", "vigilan", "protec", "guard"],
+};
+
 interface SearchResult {
-  key:                string;
-  providerId:         string;
-  providerName:       string;
-  providerAvatar?:    string;
-  isOnline?:          boolean;
-  category?:          string;
-  bio?:               string;
-  catalogItemId?:     string;
-  catalogTitle?:      string;
+  key:                 string;
+  providerId:          string;
+  providerName:        string;
+  providerAvatar?:     string;
+  isOnline?:           boolean;
+  category?:           string;
+  bio?:                string;
+  catalogItemId?:      string;
+  catalogTitle?:       string;
   catalogDescription?: string;
-  pricePerHour?:      number;
-  address?:           string;
-  source:             "provider" | "catalog";
-  // ── Separação clara: empresa vs provider individual ──
-  cardType:           "provider" | "company";
-  isCompany:          boolean;
-  companyId?:         string | null;
+  pricePerHour?:       number;
+  address?:            string;
+  source:              "provider" | "catalog";
+  cardType:            "provider" | "company";
+  isCompany:           boolean;
+  companyId?:          string | null;
 }
 
 type SolicitState = "idle" | "loading" | "done" | "error";
 
-// ─── Helper para detectar card de empresa (2 checks por segurança) ──────────
 function isCompanyCard(item: SearchResult): boolean {
   return item.cardType === "company" || item.isCompany === true;
 }
@@ -54,17 +68,16 @@ function SearchInner() {
   const router = useRouter();
   const sp     = useSearchParams();
 
-  const [query, setQuery]             = useState(sp.get("q") ?? "");
-  const [cat, setCat]                 = useState(sp.get("category") ?? "Todos");
-  const [sort, setSort]               = useState("Mais próximo");
-  const [showFilters, setShowFilters] = useState(false);
-  const [results, setResults]         = useState<SearchResult[]>([]);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState("");
+  const [query, setQuery]               = useState(sp.get("q") ?? "");
+  const [cat, setCat]                   = useState(sp.get("category") ?? "Todos");
+  const [sort, setSort]                 = useState("Mais próximo");
+  const [showFilters, setShowFilters]   = useState(false);
+  const [results, setResults]           = useState<SearchResult[]>([]);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState("");
   const [solicitStates, setSolicitStates] = useState<Record<string, SolicitState>>({});
   const [quoteLoadingId, setQuoteLoadingId] = useState<string | null>(null);
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
     setLoading(true); setError("");
     try {
@@ -83,16 +96,13 @@ function SearchInner() {
         ? await cRes.value.json() : [];
 
       const merged: SearchResult[] = [];
-
-      // ── 1. Serviços individuais do catálogo ──────────────────────────────
-      // NUNCA têm badge de empresa — são sempre do provider individual
       const providerIdsWithCatalog = new Set<string>();
 
+      // ── 1. Serviços individuais do catálogo ──────────────────────────────
       rawCatalog.forEach((item, idx) => {
         const pid = item.providerId ?? item.provider?.id;
         if (!pid) return;
         providerIdsWithCatalog.add(pid);
-
         merged.push({
           key:                `catalog_${item.id ?? `${pid}_${idx}`}`,
           providerId:         pid,
@@ -106,22 +116,20 @@ function SearchInner() {
           pricePerHour:       item.pricePerHour ? Number(item.pricePerHour) : undefined,
           address:            item.address,
           source:             "catalog",
-          cardType:           "provider",  // serviços individuais → provider
-          isCompany:          false,        // NUNCA empresa
+          cardType:           "provider",
+          isCompany:          false,
           companyId:          null,
         });
       });
 
-      // ── 2. Cards do backend (providers individuais + empresas) ───────────
+      // ── 2. Providers individuais (sem catálogo) + Empresas ───────────────
       for (const p of rawProviders) {
-
-        // ── 2a. Card de EMPRESA ─────────────────────────────────────────────
-        // Detecta tanto pelo cardType como pelo isCompany (dupla segurança)
         if (p.cardType === "company" || p.isCompany === true) {
+          // Card de empresa — sempre incluído, categoria filtrada no frontend
           merged.push({
             key:           `company_${p.companyId ?? p.id}`,
-            providerId:    p.id,          // userId do dono (para chat)
-            providerName:  p.fullName,    // nome DA EMPRESA
+            providerId:    p.id,
+            providerName:  p.fullName,
             providerAvatar: p.avatarUrl,
             isOnline:      false,
             category:      p.category,
@@ -129,15 +137,10 @@ function SearchInner() {
             source:        "provider",
             cardType:      "company",
             isCompany:     true,
-            companyId:     p.companyId,   // UUID da empresa → /company/[id]
+            companyId:     p.companyId,
           });
-          continue; // passa para o próximo — empresa nunca suprimida
-        }
-
-        // ── 2b. Provider individual SEM serviços publicados ─────────────────
-        // Se já tem serviços no catálogo, é suprimido aqui
-        // (os serviços aparecem via o loop acima)
-        if (!providerIdsWithCatalog.has(p.id)) {
+        } else if (!providerIdsWithCatalog.has(p.id)) {
+          // Provider individual sem serviços publicados
           merged.push({
             key:           `provider_${p.id}`,
             providerId:    p.id,
@@ -167,6 +170,19 @@ function SearchInner() {
 
   // ── Filter + sort ──────────────────────────────────────────────────────────
   const filtered = results.filter(r => {
+    const isComp = isCompanyCard(r);
+
+    // Empresas: categoria filtrada aqui com keyword matching amplo
+    // (backend devolve TODAS as empresas verificadas, nós filtramos aqui)
+    if (isComp && cat !== "Todos") {
+      const cardCat  = (r.category ?? "").toLowerCase();
+      const keywords = COMPANY_CATEGORY_KEYWORDS[cat] ?? [cat.toLowerCase()];
+      const matches  = cardCat === cat.toLowerCase() ||
+                       keywords.some(kw => cardCat.includes(kw));
+      if (!matches) return false;
+    }
+
+    // Pesquisa de texto
     if (!query.trim()) return true;
     const q = query.toLowerCase();
     return (
@@ -178,7 +194,6 @@ function SearchInner() {
     );
   }).sort((a, b) => {
     if (sort === "Mais próximo") {
-      // Empresas primeiro, depois online, depois offline
       const aScore = isCompanyCard(a) ? 2 : (a.isOnline ? 1 : 0);
       const bScore = isCompanyCard(b) ? 2 : (b.isOnline ? 1 : 0);
       return bScore - aScore;
@@ -187,7 +202,6 @@ function SearchInner() {
     return 0;
   });
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleSolicitar = async (item: SearchResult) => {
     if (!item.catalogItemId || solicitStates[item.key] === "done") return;
     setSolicitStates(p => ({ ...p, [item.key]: "loading" }));
@@ -220,7 +234,6 @@ function SearchInner() {
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -231,8 +244,18 @@ function SearchInner() {
         .sbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:#131b27;border:1px solid #1a2535;width:100%}
         .sinput{flex:1;background:none;border:none;outline:none;font-size:14px;color:#e2e8f0;font-family:inherit;min-width:0}
         .sinput::placeholder{color:#4a5a6a}
+
+        /* Scroll de categorias — oculto em mobile, visível em desktop */
         .cscroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
         .cscroll::-webkit-scrollbar{display:none}
+        @media(min-width:1025px){
+          .cscroll{scrollbar-width:thin;scrollbar-color:#1a2535 transparent;padding-bottom:8px}
+          .cscroll::-webkit-scrollbar{display:block;height:4px}
+          .cscroll::-webkit-scrollbar-track{background:transparent}
+          .cscroll::-webkit-scrollbar-thumb{background:#1a2535;border-radius:99px}
+          .cscroll::-webkit-scrollbar-thumb:hover{background:#2a3a4a}
+        }
+
         .cpill{padding:7px 14px;border-radius:99px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:1px solid #1a2535;background:#131b27;color:#6a7a8a;transition:all 0.15s;flex-shrink:0;font-family:inherit}
         .cpill.on{background:#1D9E75;border-color:#1D9E75;color:white}
         .fbtn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;font-size:12px;cursor:pointer;border:1px solid #1a2535;background:#0d1117;color:#6a7a8a;font-family:inherit;flex-shrink:0;transition:all 0.15s}
@@ -242,7 +265,7 @@ function SearchInner() {
         .fchip.on{background:#1D9E75;border-color:#1D9E75;color:white}
         .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
 
-        /* Cards — NÃO clicáveis, só animação hover */
+        /* Cards — NÃO clicáveis, animação hover apenas */
         .pcard{background:#131b27;border:1px solid #1a2535;border-radius:16px;padding:20px;transition:transform 0.18s ease,box-shadow 0.18s ease,border-color 0.18s ease;cursor:default}
         .pcard:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.2)}
         .pcard.company-card{border-color:#378ADD18}
@@ -278,21 +301,20 @@ function SearchInner() {
             <div>
               <h1 style={{fontSize:22,fontWeight:700,color:"#e2e8f0",marginBottom:4}}>Pesquisar prestadores</h1>
               <p style={{fontSize:13,color:"#4a6a6a"}}>
-                {loading ? "A carregar..." : error ? "" :
-                  filtered.length > 0 ? `${filtered.length} resultado${filtered.length!==1?"s":""}` : "Encontra o profissional certo"}
+                {loading?"A carregar...":error?"":filtered.length>0?`${filtered.length} resultado${filtered.length!==1?"s":""}` :"Encontra o profissional certo"}
               </p>
             </div>
 
             <div className="sbar">
               <Search size={16} style={{color:"#4a7070",flexShrink:0}}/>
-              <input className="sinput" placeholder="Pesquisa por nome, empresa, serviço ou categoria..." value={query} onChange={e => setQuery(e.target.value)}/>
-              {query && <button onClick={() => setQuery("")} style={{background:"none",border:"none",cursor:"pointer",color:"#4a5a6a",display:"flex"}}><X size={14}/></button>}
-              <button className={`fbtn${showFilters?" on":""}`} onClick={() => setShowFilters(f => !f)}>
+              <input className="sinput" placeholder="Pesquisa por nome, empresa, serviço ou categoria..." value={query} onChange={e=>setQuery(e.target.value)}/>
+              {query&&<button onClick={()=>setQuery("")} style={{background:"none",border:"none",cursor:"pointer",color:"#4a5a6a",display:"flex"}}><X size={14}/></button>}
+              <button className={`fbtn${showFilters?" on":""}`} onClick={()=>setShowFilters(f=>!f)}>
                 <Filter size={13}/> Filtros
               </button>
             </div>
 
-            {showFilters && (
+            {showFilters&&(
               <div className="fpanel">
                 <div>
                   <p style={{fontSize:11,fontWeight:600,color:"#4a5a6a",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.06em"}}>Ordenar</p>
@@ -306,11 +328,12 @@ function SearchInner() {
               </div>
             )}
 
+            {/* Categorias — scroll visível no desktop */}
             <div className="cscroll">
               {CATS.map(c=><button key={c} className={`cpill${cat===c?" on":""}`} onClick={()=>setCat(c)}>{c}</button>)}
             </div>
 
-            {loading ? (
+            {loading?(
               <div className="pgrid">
                 {[1,2,3,4,5,6].map(i=>(
                   <div key={i} style={{background:"#131b27",border:"1px solid #1a2535",borderRadius:16,padding:20}}>
@@ -323,12 +346,12 @@ function SearchInner() {
                   </div>
                 ))}
               </div>
-            ) : error ? (
+            ):error?(
               <div style={{background:"#E24B4A15",border:"1px solid #E24B4A30",borderRadius:12,padding:16,display:"flex",alignItems:"center",gap:12}}>
                 <p style={{fontSize:13,color:"#E24B4A",flex:1}}>{error}</p>
                 <button onClick={fetchAll} style={{fontSize:12,color:"#E24B4A",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>Tentar novamente</button>
               </div>
-            ) : filtered.length === 0 ? (
+            ):filtered.length===0?(
               <div className="empty-s">
                 <div style={{width:64,height:64,borderRadius:20,background:"#131b27",border:"1px solid #1a2535",display:"flex",alignItems:"center",justifyContent:"center"}}>
                   <Briefcase size={28} style={{color:"#2a3a4a"}}/>
@@ -339,37 +362,31 @@ function SearchInner() {
                 </p>
                 {(query||cat!=="Todos")&&<button onClick={()=>{setQuery("");setCat("Todos");}} style={{fontSize:13,color:"#1D9E75",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>Limpar filtros</button>}
               </div>
-            ) : (
+            ):(
               <div className="pgrid">
-                {filtered.map(item => {
-                  const isEmpresa  = isCompanyCard(item);
-                  const isCatalog  = item.source === "catalog";
-                  const sol        = solicitStates[item.key] ?? "idle";
+                {filtered.map(item=>{
+                  const isEmpresa = isCompanyCard(item);
+                  const isCatalog = item.source==="catalog";
+                  const sol       = solicitStates[item.key]??"idle";
 
-                  return (
-                    // ══ Card NÃO navega — hover só tem animação visual ══
-                    <div
-                      className={`pcard${isEmpresa?" company-card":""}`}
-                      key={item.key}
-                    >
+                  return(
+                    <div className={`pcard${isEmpresa?" company-card":""}`} key={item.key}>
+
                       {/* ── Avatar + Info ── */}
                       <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:14}}>
                         <div style={{
-                          width:52, height:52, flexShrink:0, position:"relative",
-                          borderRadius: isEmpresa ? 12 : "50%",
-                          background: isEmpresa ? "#071830" : (item.isOnline ? "#0b2a2a" : "#1a2535"),
-                          border: isEmpresa ? "1px solid #378ADD30" : "none",
-                          display:"flex", alignItems:"center", justifyContent:"center",
-                          fontSize:22, overflow:"hidden",
+                          width:52,height:52,flexShrink:0,position:"relative",
+                          borderRadius:isEmpresa?12:"50%",
+                          background:isEmpresa?"#071830":(item.isOnline?"#0b2a2a":"#1a2535"),
+                          border:isEmpresa?"1px solid #378ADD30":"none",
+                          display:"flex",alignItems:"center",justifyContent:"center",
+                          fontSize:22,overflow:"hidden",
                         }}>
                           {item.providerAvatar
-                            ? <img src={item.providerAvatar} alt={item.providerName} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                            : isEmpresa
-                              ? <Building2 size={22} style={{color:"#378ADD"}}/>
-                              : (CAT_EMOJI[item.category ?? ""] ?? "🔧")
+                            ?<img src={item.providerAvatar} alt={item.providerName} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                            :isEmpresa?<Building2 size={22} style={{color:"#378ADD"}}/>:(CAT_EMOJI[item.category??""]??"🔧")
                           }
-                          {/* Indicador online — só providers individuais */}
-                          {!isEmpresa && (
+                          {!isEmpresa&&(
                             <div style={{position:"absolute",bottom:1,right:1,width:13,height:13,borderRadius:"50%",background:item.isOnline?"#1D9E75":"#4a5a6a",border:"2px solid #131b27"}}/>
                           )}
                         </div>
@@ -377,14 +394,12 @@ function SearchInner() {
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:6,marginBottom:3}}>
                             <p style={{fontSize:15,fontWeight:700,color:"#e2e8f0",margin:0}}>{item.providerName}</p>
-                            {/* Badge Empresa — SÓ para cards de empresa */}
-                            {isEmpresa && (
+                            {isEmpresa&&(
                               <span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:99,background:"#378ADD15",color:"#378ADD",border:"1px solid #378ADD30",display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
                                 <Building2 size={9}/> Empresa
                               </span>
                             )}
-                            {/* Badge Catálogo — SÓ para serviços individuais */}
-                            {!isEmpresa && isCatalog && (
+                            {!isEmpresa&&isCatalog&&(
                               <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:99,background:"#8B5CF620",color:"#8B5CF6",border:"1px solid #8B5CF640",display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
                                 <Package size={9}/> Catálogo
                               </span>
@@ -392,64 +407,48 @@ function SearchInner() {
                           </div>
 
                           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
-                            {item.category && (
-                              <span style={{fontSize:12,padding:"2px 8px",borderRadius:99,background:"#1a2535",color:"#6a7a8a"}}>{item.category}</span>
-                            )}
-                            {/* Online — só providers individuais */}
-                            {!isEmpresa && (
+                            {item.category&&<span style={{fontSize:12,padding:"2px 8px",borderRadius:99,background:"#1a2535",color:"#6a7a8a"}}>{item.category}</span>}
+                            {!isEmpresa&&(
                               <span style={{fontSize:11,display:"flex",alignItems:"center",gap:3,color:item.isOnline?"#1D9E75":"#4a5a6a"}}>
-                                {item.isOnline ? <Wifi size={11}/> : <WifiOff size={11}/>}
+                                {item.isOnline?<Wifi size={11}/>:<WifiOff size={11}/>}
                                 {item.isOnline?"Online":"Offline"}
                               </span>
                             )}
-                            {/* Preço — só serviços individuais */}
-                            {!isEmpresa && item.pricePerHour && (
+                            {!isEmpresa&&item.pricePerHour&&(
                               <span style={{fontSize:11,color:"#EF9F27",fontWeight:600}}>
                                 {Number(item.pricePerHour).toLocaleString("pt-PT")} Kz/h
                               </span>
                             )}
                           </div>
 
-                          {/* Descrição — só serviços individuais */}
-                          {!isEmpresa && (item.catalogTitle || item.bio) && (
+                          {!isEmpresa&&(item.catalogTitle||item.bio)&&(
                             <p style={{fontSize:12,color:"#4a6a6a",lineHeight:1.5,margin:0,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
-                              {item.catalogTitle ?? item.bio}
+                              {item.catalogTitle??item.bio}
                             </p>
                           )}
                         </div>
                       </div>
 
-                      {/* ── Botões de acção ── */}
+                      {/* ── Botões ── */}
                       <div style={{display:"flex",gap:8}}>
-
-                        {isEmpresa ? (
-                          // ════ EMPRESA → apenas "Ver empresa" ════
-                          <button
-                            className="ver-btn"
-                            onClick={() => {
-                              if (item.companyId) router.push(`/company/${item.companyId}`);
-                            }}
-                          >
+                        {isEmpresa?(
+                          <button className="ver-btn" onClick={()=>item.companyId&&router.push(`/company/${item.companyId}`)}>
                             <Building2 size={13}/> Ver empresa
                           </button>
-
-                        ) : isCatalog ? (
-                          // ════ SERVIÇO INDIVIDUAL → "Solicitar" + "Orçamento" ════
+                        ):isCatalog?(
                           <>
-                            {sol === "idle"    && <button className="sol-idle" onClick={() => handleSolicitar(item)}><Package size={14}/> Solicitar</button>}
-                            {sol === "loading" && <div className="sol-load"><Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>A solicitar...</div>}
-                            {sol === "done"    && <div className="sol-done"><CheckCircle size={14}/> Solicitado</div>}
-                            {sol === "error"   && <div className="sol-err">Erro — tenta novamente</div>}
-                            <button className="orc-btn" disabled={quoteLoadingId===item.key} onClick={() => handleOrcamento(item.key,item.providerId)}>
-                              {quoteLoadingId===item.key ? <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/> : <FileText size={14}/>}
+                            {sol==="idle"   &&<button className="sol-idle" onClick={()=>handleSolicitar(item)}><Package size={14}/> Solicitar</button>}
+                            {sol==="loading"&&<div className="sol-load"><Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>A solicitar...</div>}
+                            {sol==="done"   &&<div className="sol-done"><CheckCircle size={14}/> Solicitado</div>}
+                            {sol==="error"  &&<div className="sol-err">Erro — tenta novamente</div>}
+                            <button className="orc-btn" disabled={quoteLoadingId===item.key} onClick={()=>handleOrcamento(item.key,item.providerId)}>
+                              {quoteLoadingId===item.key?<Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>:<FileText size={14}/>}
                               {quoteLoadingId===item.key?"A abrir...":"Orçamento"}
                             </button>
                           </>
-
-                        ) : (
-                          // ════ PERFIL INDIVIDUAL sem serviços → só "Orçamento" ════
-                          <button className="orc-btn orc-full" disabled={quoteLoadingId===item.key} onClick={() => handleOrcamento(item.key,item.providerId)}>
-                            {quoteLoadingId===item.key ? <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/> : <FileText size={14}/>}
+                        ):(
+                          <button className="orc-btn orc-full" disabled={quoteLoadingId===item.key} onClick={()=>handleOrcamento(item.key,item.providerId)}>
+                            {quoteLoadingId===item.key?<Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>:<FileText size={14}/>}
                             {quoteLoadingId===item.key?"A abrir...":"Orçamento"}
                           </button>
                         )}
@@ -467,7 +466,7 @@ function SearchInner() {
 }
 
 export default function SearchPage() {
-  return (
+  return(
     <Suspense fallback={
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#0d1117"}}>
         <Loader2 size={24} style={{color:"#1D9E75",animation:"spin 1s linear infinite"}}/>
