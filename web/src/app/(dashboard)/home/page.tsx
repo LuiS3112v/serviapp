@@ -10,19 +10,24 @@ import {
   Package, Scissors, Car, Paintbrush, HardHat, Lock, Users,
 } from "lucide-react";
 
+// ── CATEGORIAS ──────────────────────────────────────────────────────────────
+// ÚNICA mudança neste ficheiro: trocado "bg" (gradiente saturado) por um
+// fundo escuro neutro fixo (#0f1825) igual para todos os cards. A cor de
+// cada categoria entra só como acento — no ícone, no halo suave por trás
+// dele, e na borda fina — em vez de pintar o card inteiro.
 const CATS = [
-  { Icon: Sparkles,   label: "Limpeza",       desc: "Casas, escritórios e mais",    color: "#1D9E75", bg: "linear-gradient(135deg,#0b3d2e,#0e5038)", border: "rgba(29,158,117,0.4)"   },
-  { Icon: Wind,       label: "Climatização",  desc: "Instalação e manutenção",      color: "#38bdf8", bg: "linear-gradient(135deg,#062038,#083050)", border: "rgba(56,189,248,0.4)"   },
-  { Icon: Wrench,     label: "Canalização",   desc: "Reparações e instalações",     color: "#a78bfa", bg: "linear-gradient(135deg,#1a0b38,#220d48)", border: "rgba(167,139,250,0.4)"  },
-  { Icon: Zap,        label: "Eletricista",   desc: "Instalações e reparações",     color: "#fbbf24", bg: "linear-gradient(135deg,#2d1d05,#3a2408)", border: "rgba(251,191,36,0.4)"   },
-  { Icon: Monitor,    label: "TI & Redes",    desc: "Suporte e redes informáticas", color: "#60a5fa", bg: "linear-gradient(135deg,#071838,#0a1e48)", border: "rgba(96,165,250,0.4)"   },
-  { Icon: Leaf,       label: "Jardinagem",    desc: "Manutenção de jardins",        color: "#34d399", bg: "linear-gradient(135deg,#063020,#083a28)", border: "rgba(52,211,153,0.4)"   },
-  { Icon: Package,    label: "Mudanças",      desc: "Transporte e mudanças",        color: "#fb923c", bg: "linear-gradient(135deg,#2d1805,#3a2008)", border: "rgba(251,146,60,0.4)"   },
-  { Icon: Scissors,   label: "Beleza",        desc: "Cabeleireiro e estética",      color: "#f472b6", bg: "linear-gradient(135deg,#2a0820,#380a28)", border: "rgba(244,114,182,0.4)"  },
-  { Icon: Car,        label: "Automóvel",     desc: "Reparação e manutenção",       color: "#93c5fd", bg: "linear-gradient(135deg,#101c30,#142240)", border: "rgba(147,197,253,0.4)"  },
-  { Icon: Paintbrush, label: "Pintura",       desc: "Interior e exterior",          color: "#e879f9", bg: "linear-gradient(135deg,#220830,#2c0a3c)", border: "rgba(232,121,249,0.4)"  },
-  { Icon: HardHat,    label: "Construção",    desc: "Obras e remodelações",         color: "#fb923c", bg: "linear-gradient(135deg,#2d1205,#3a1808)", border: "rgba(249,115,22,0.4)"   },
-  { Icon: Lock,       label: "Segurança",     desc: "Sistemas e monitorização",     color: "#818cf8", bg: "linear-gradient(135deg,#0c1038,#101440)", border: "rgba(129,140,248,0.4)"  },
+  { Icon: Sparkles,   label: "Limpeza",       desc: "Casas, escritórios e mais",    color: "#1D9E75" },
+  { Icon: Wind,       label: "Climatização",  desc: "Instalação e manutenção",      color: "#38bdf8" },
+  { Icon: Wrench,     label: "Canalização",   desc: "Reparações e instalações",     color: "#a78bfa" },
+  { Icon: Zap,        label: "Eletricista",   desc: "Instalações e reparações",     color: "#fbbf24" },
+  { Icon: Monitor,    label: "TI & Redes",    desc: "Suporte e redes informáticas", color: "#60a5fa" },
+  { Icon: Leaf,       label: "Jardinagem",    desc: "Manutenção de jardins",        color: "#34d399" },
+  { Icon: Package,    label: "Mudanças",      desc: "Transporte e mudanças",        color: "#fb923c" },
+  { Icon: Scissors,   label: "Beleza",        desc: "Cabeleireiro e estética",      color: "#f472b6" },
+  { Icon: Car,        label: "Automóvel",     desc: "Reparação e manutenção",       color: "#93c5fd" },
+  { Icon: Paintbrush, label: "Pintura",       desc: "Interior e exterior",          color: "#e879f9" },
+  { Icon: HardHat,    label: "Construção",    desc: "Obras e remodelações",         color: "#fb923c" },
+  { Icon: Lock,       label: "Segurança",     desc: "Sistemas e monitorização",     color: "#818cf8" },
 ];
 
 const STEPS = [
@@ -133,24 +138,36 @@ export default function HomePage() {
         .sec-link:hover{opacity:0.7}
 
         /* ── Categories ── */
+        /* ÚNICA MUDANÇA: .cat já não recebe "background" inline saturado.
+           Agora o fundo é escuro neutro fixo (#0f1825), e a cor de cada
+           categoria entra via "--cat-color" (custom property), usada no
+           halo (::before) e no ícone. Tamanho/posição do .cat-ghost
+           mantidos exactamente como estavam — só a cor de fundo mudou. */
         .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
         .cat{
           display:flex;align-items:center;gap:14px;
           padding:16px 18px;border-radius:14px;
-          border:1px solid transparent;
+          background:#0f1825;
+          border:1px solid #1a2535;
           cursor:pointer;text-align:left;
           transition:all 0.22s ease;position:relative;overflow:hidden;
         }
+        .cat::before{
+          content:"";position:absolute;inset:0;
+          background:linear-gradient(135deg, var(--cat-color) 0%, transparent 60%);
+          opacity:0.1;pointer-events:none;
+        }
         .cat:hover{transform:translateY(-3px)}
         .cat-ico{
+          position:relative;z-index:1;
           width:46px;height:46px;border-radius:12px;
           display:flex;align-items:center;justify-content:center;
           flex-shrink:0;transition:transform 0.2s;
-          background:rgba(255,255,255,0.1);
-          border:1px solid rgba(255,255,255,0.14);
+          background:color-mix(in srgb, var(--cat-color) 16%, transparent);
+          border:1px solid color-mix(in srgb, var(--cat-color) 30%, transparent);
         }
         .cat:hover .cat-ico{transform:scale(1.1)}
-        .cat-ghost{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.07}
+        .cat-ghost{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.07;z-index:0}
 
         /* ── Steps ── */
         .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
@@ -290,21 +307,21 @@ export default function HomePage() {
                     <button
                       key={i}
                       className="cat"
-                      style={{ background: cat.bg }}
+                      style={{ "--cat-color": cat.color } as React.CSSProperties}
                       onClick={() => router.push(`/search?category=${encodeURIComponent(cat.label)}`)}
                       onMouseEnter={e => {
-                        e.currentTarget.style.borderColor = cat.border;
+                        e.currentTarget.style.borderColor = `${cat.color}52`;
                         e.currentTarget.style.boxShadow = `0 4px 20px ${cat.color}12`;
                       }}
                       onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = "transparent";
+                        e.currentTarget.style.borderColor = "#1a2535";
                         e.currentTarget.style.boxShadow = "none";
                       }}
                     >
                       <div className="cat-ico">
                         <Icon size={22} style={{ color:cat.color }} />
                       </div>
-                      <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ flex:1, minWidth:0, position:"relative", zIndex:1 }}>
                         <p style={{ fontSize:13, fontWeight:700, color:"#e2e8f0", marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{cat.label}</p>
                         <p style={{ fontSize:11, color:"#4a6a6a", lineHeight:1.4 }}>{cat.desc}</p>
                       </div>
