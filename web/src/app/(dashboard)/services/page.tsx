@@ -10,27 +10,49 @@ import {
 import { servicesApi, Service } from "@/lib/services.api";
 import { getToken, getSession } from "@/lib/auth.api";
 
+// FIX: tabs e status alinhados com o ServiceStatus real do backend.
+// "pending" e "paid" nunca existiram como valores reais — por isso os
+// serviços desapareciam depois de aceites e pagos: nenhuma tab ou
+// STATUS_CONFIG reconhecia "accepted" nem "payment_held".
 const TABS = [
-  { label:"Todos", value:"" },
-  { label:"Pendente", value:"pending" },
-  { label:"Em execução", value:"in_progress" },
-  { label:"Concluído", value:"completed" },
-  { label:"Cancelado", value:"cancelled" },
+  { label:"Todos",       value:"" },
+  { label:"Pendente",    value:"pending" },      // agrupa requested + accepted + payment_held
+  { label:"Em execução", value:"in_progress" },  // agrupa in_progress + provider_completed
+  { label:"Concluído",   value:"completed" },
+  { label:"Cancelado",   value:"cancelled" },    // agrupa cancelled + refunded + rejected
 ];
 
-const STATUS_CONFIG: Record<string, { label:string; color:string; bg:string; icon:any }> = {
-  pending:     { label:"Pendente",    color:"#6a7a8a", bg:"#1a2535",   icon:Clock },
-  accepted:    { label:"Aceite",      color:"#378ADD", bg:"#378ADD20", icon:CheckCircle },
-  paid:        { label:"Pago",        color:"#8B5CF6", bg:"#8B5CF620", icon:CheckCircle },
-  in_progress: { label:"Em execução", color:"#EF9F27", bg:"#EF9F2720", icon:Clock },
-  completed:   { label:"Concluído",   color:"#1D9E75", bg:"#1d9e7520", icon:CheckCircle },
-  cancelled:   { label:"Cancelado",   color:"#E24B4A", bg:"#E24B4A20", icon:AlertCircle },
-  disputed:    { label:"Disputado",   color:"#D4537E", bg:"#D4537E20", icon:AlertCircle },
+// Cada tab do frontend mapeia para um conjunto de status reais do backend
+const TAB_STATUSES: Record<string, string[]> = {
+  "":            [], // Todos — sem filtro
+  pending:       ["requested", "accepted", "payment_held"],
+  in_progress:   ["in_progress", "provider_completed"],
+  completed:     ["completed"],
+  cancelled:     ["cancelled", "refunded", "rejected"],
 };
 
-const TIMELINE_STEPS = ["Solicitado","Aceite","Pago","Em execução","Concluído"];
+const STATUS_CONFIG: Record<string, { label:string; color:string; bg:string; icon:any }> = {
+  requested:          { label:"Solicitado",          color:"#6a7a8a", bg:"#1a2535",   icon:Clock },
+  accepted:           { label:"Aceite",              color:"#378ADD", bg:"#378ADD20", icon:CheckCircle },
+  payment_held:       { label:"Pago — protegido",    color:"#8B5CF6", bg:"#8B5CF620", icon:CheckCircle },
+  in_progress:        { label:"Em execução",         color:"#EF9F27", bg:"#EF9F2720", icon:Clock },
+  provider_completed: { label:"Aguarda confirmação", color:"#EF9F27", bg:"#EF9F2720", icon:Clock },
+  completed:          { label:"Concluído",           color:"#1D9E75", bg:"#1d9e7520", icon:CheckCircle },
+  cancelled:          { label:"Cancelado",           color:"#E24B4A", bg:"#E24B4A20", icon:AlertCircle },
+  refunded:           { label:"Reembolsado",         color:"#E24B4A", bg:"#E24B4A20", icon:AlertCircle },
+  disputed:           { label:"Em disputa",          color:"#D4537E", bg:"#D4537E20", icon:AlertCircle },
+  rejected:           { label:"Recusado",            color:"#E24B4A", bg:"#E24B4A20", icon:AlertCircle },
+};
+
+// Timeline de 6 passos, alinhada com o fluxo real de escrow
+const TIMELINE_STEPS = ["Solicitado","Aceite","Pago","Em execução","Concluído","Confirmado"];
 const STATUS_STEP: Record<string, number> = {
-  pending:1, accepted:2, paid:3, in_progress:4, completed:5,
+  requested:          1,
+  accepted:           2,
+  payment_held:       3,
+  in_progress:        4,
+  provider_completed: 5,
+  completed:          6,
 };
 
 type PageStatus = "initial-loading" | "refreshing" | "idle";
@@ -38,13 +60,12 @@ type PageStatus = "initial-loading" | "refreshing" | "idle";
 export default function ServicesPage() {
   const router = useRouter();
   const [tab, setTab] = useState("");
-  const [services, setServices] = useState<Service[]>([]);
+  const [allServices, setAllServices] = useState<Service[]>([]);
   const [pageStatus, setPageStatus] = useState<PageStatus>("initial-loading");
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const isRefreshRef = useRef(false);
 
-  // Derive both flags from a single source of truth — can never be out of sync
   const loading = pageStatus !== "idle";
   const refreshing = pageStatus === "refreshing";
 
@@ -56,20 +77,22 @@ export default function ServicesPage() {
     }
   }, []);
 
+  // FIX: busca SEMPRE todos os serviços do cliente sem filtro no backend,
+  // e filtra no frontend pelos status agrupados desta tab. Isto evita
+  // depender do backend saber mapear "pending" para vários status reais.
   const load = useCallback(async () => {
     const token = getToken();
     const user = getSession();
     if (!token || user?.role !== "client") { setPageStatus("idle"); return; }
 
-    // Single state update sets both loading and refreshing correctly
     setPageStatus(isRefreshRef.current ? "refreshing" : "initial-loading");
     setError("");
     try {
       const [data] = await Promise.all([
-        servicesApi.getMyServices(tab || undefined),
+        servicesApi.getMyServices(),
         new Promise(res => setTimeout(res, 2000)),
       ]);
-      setServices(data);
+      setAllServices(data);
     } catch (e: any) {
       setError(
         e.message?.includes("Forbidden")
@@ -77,19 +100,23 @@ export default function ServicesPage() {
           : e.message || "Erro ao carregar serviços."
       );
     } finally {
-      // Single call clears both loading and refreshing at the exact same time
       setPageStatus("idle");
       isRefreshRef.current = false;
     }
-  }, [tab, refreshKey]);
+  }, [refreshKey]);
 
   useEffect(() => { load(); }, [load]);
 
   const handleRefresh = () => {
     isRefreshRef.current = true;
-    setPageStatus("refreshing"); // immediate feedback before load() fires
+    setPageStatus("refreshing");
     setRefreshKey(k => k + 1);
   };
+
+  // Filtro aplicado no frontend — cada tab pode cobrir vários status reais
+  const services = tab === ""
+    ? allServices
+    : allServices.filter(s => (TAB_STATUSES[tab] ?? [tab]).includes(s.status));
 
   return (
     <>
@@ -216,7 +243,7 @@ export default function ServicesPage() {
             ) : (
               <div>
                 {services.map(s => {
-                  const cfg = STATUS_CONFIG[s.status] ?? STATUS_CONFIG.pending;
+                  const cfg = STATUS_CONFIG[s.status] ?? STATUS_CONFIG.requested;
                   const Icon = cfg.icon;
                   const step = STATUS_STEP[s.status] ?? 1;
                   return (

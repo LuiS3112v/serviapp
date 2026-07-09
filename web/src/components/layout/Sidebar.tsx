@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home, Search, MapPin, Briefcase, MessageCircle,
-  Bell, Wallet, Receipt, User, Settings, LogOut, Zap, X, Menu,
+  Bell, Wallet, User, Settings, LogOut, Zap, X, Menu,
 } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
 
@@ -20,8 +20,11 @@ const navItems = [
     { label: "Notificações",  icon: Bell,          href: "/notifications" },
   ]},
   { section: "Financeiro", items: [
-    { label: "Wallet",       icon: Wallet,  href: "/wallet"       },
-    { label: "Transacções",  icon: Receipt, href: "/transactions" },
+    // FIX: "Transacções" removida — o histórico de pagamentos passou a
+    // viver dentro de /wallet (renomeada para histórico de pagamentos),
+    // que já mostra tudo o que essa página mostraria, e essa página
+    // nunca teve backend ligado.
+    { label: "Pagamentos",   icon: Wallet,  href: "/wallet" },
   ]},
   { section: "Conta", items: [
     { label: "Perfil",      icon: User,     href: "/profile/client" },
@@ -35,16 +38,12 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
   const handleLogout = () => {
     onClose?.();
-    // 1. Limpa TUDO — localStorage + cookie serviapp_token
     clearAllSessions();
-    // 2. Navega para /?logout=1 — o middleware vê o flag e não redireciona
-    //    para /home mesmo que o cookie ainda esteja em trânsito
     router.push("/?logout=1");
   };
 
   return (
     <>
-      {/* Logo */}
       <div style={{ padding:"24px 20px 20px", borderBottom:"1px solid #1a2535", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <div style={{ width:36, height:36, borderRadius:10, background:"#1D9E75", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -61,7 +60,6 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      {/* Nav */}
       <div style={{ flex:1, overflowY:"auto", padding:"12px 0" }}>
         {navItems.map(group => (
           <div key={group.section} style={{ marginBottom:8 }}>
@@ -94,7 +92,6 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         ))}
       </div>
 
-      {/* Footer */}
       <div style={{ padding:"16px 20px", borderTop:"1px solid #1a2535", display:"flex", alignItems:"center", gap:12 }}>
         <div style={{ width:36, height:36, borderRadius:"50%", background:"#1a3a2a", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#1D9E75", flexShrink:0 }}>U</div>
         <div style={{ flex:1, minWidth:0 }}>

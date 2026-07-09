@@ -8,7 +8,7 @@ import { useAdminStats } from "@/hooks/useAdminStats";
 import { AdminKyc } from "@/lib/api/admin";
 import {
   Users, Briefcase, Wallet, Shield, TrendingUp,
-  AlertCircle, RefreshCw, Check, X, Building2,
+  AlertCircle, RefreshCw, Check, X, Building2, ArrowRight,
 } from "lucide-react";
 
 function formatKz(value: number) {
@@ -65,8 +65,20 @@ export default function AdminPage() {
         .empty-list{display:flex;flex-direction:column;align-items:center;padding:32px;gap:8px;text-align:center}
         .role-badge{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600}
         .type-badge{padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;flex-shrink:0}
+        .payments-cta{
+          display:flex;align-items:center;justify-content:space-between;gap:16px;
+          background:linear-gradient(135deg,#378ADD15,#378ADD05);border:1px solid #378ADD30;
+          border-radius:16px;padding:20px 24px;flex-wrap:wrap;
+        }
+        .payments-cta-btn{
+          display:flex;align-items:center;gap:8px;padding:12px 22px;border-radius:12px;
+          border:none;background:linear-gradient(135deg,#378ADD,#2668b0);color:white;
+          font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;
+          box-shadow:0 4px 14px rgba(55,138,221,0.3);transition:all 0.2s;
+        }
+        .payments-cta-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(55,138,221,0.45)}
         @media(max-width:1024px){.adm-main{margin-left:0}.stats-grid{grid-template-columns:repeat(2,1fr)}.adm-grid{grid-template-columns:1fr}}
-        @media(max-width:640px){.adm-inner{padding:16px}.stats-grid{grid-template-columns:1fr 1fr}}
+        @media(max-width:640px){.adm-inner{padding:16px}.stats-grid{grid-template-columns:1fr 1fr}.payments-cta{flex-direction:column;align-items:flex-start}}
       `}</style>
 
       <div className="adm-wrap">
@@ -83,6 +95,23 @@ export default function AdminPage() {
               </div>
               <button onClick={refresh} style={{ display:"flex", alignItems:"center", gap:8, background:"#131b27", border:"1px solid #1a2535", borderRadius:10, padding:"8px 16px", cursor:"pointer", color:"#8a9ab0", fontSize:13 }}>
                 <RefreshCw size={14}/> Atualizar
+              </button>
+            </div>
+
+            {/* ── CTA: Ir para Pagamentos ── */}
+            <div className="payments-cta">
+              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                <div style={{ width:44, height:44, borderRadius:12, background:"#378ADD20",
+                  display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <Wallet size={20} style={{ color:"#378ADD" }} />
+                </div>
+                <div>
+                  <p style={{ fontSize:15, fontWeight:700, color:"#e2e8f0", marginBottom:2 }}>Gestão de pagamentos</p>
+                  <p style={{ fontSize:12, color:"#6a7a8a" }}>Comprovativos pendentes, pagamentos protegidos e transferências a prestadores</p>
+                </div>
+              </div>
+              <button className="payments-cta-btn" onClick={() => router.push("/admin/payments")}>
+                Ver pagamentos <ArrowRight size={15} />
               </button>
             </div>
 
@@ -192,7 +221,6 @@ export default function AdminPage() {
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
                           <p style={{ fontSize:13, fontWeight:600, color:"#c0d0e0", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", margin:0 }}>{k.userName}</p>
-                          {/* Badge visível para distinguir empresa de individual */}
                           <span
                             className="type-badge"
                             style={{

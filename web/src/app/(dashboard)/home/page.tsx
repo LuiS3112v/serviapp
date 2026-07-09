@@ -1,5 +1,4 @@
 "use client";
-
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
@@ -11,10 +10,10 @@ import {
 } from "lucide-react";
 
 // ── CATEGORIAS ──────────────────────────────────────────────────────────────
-// ÚNICA mudança neste ficheiro: trocado "bg" (gradiente saturado) por um
-// fundo escuro neutro fixo (#0f1825) igual para todos os cards. A cor de
-// cada categoria entra só como acento — no ícone, no halo suave por trás
-// dele, e na borda fina — em vez de pintar o card inteiro.
+// ÚNICA mudança neste ficheiro: card neutro (fundo/borda/texto sem cor), com
+// a cor da categoria confinada ao chip do ícone pequeno (fundo + borda a
+// baixa opacidade, ícone em cor cheia) e ao ícone gigante de fundo tipo
+// marca de água (opacity bem baixa). Tamanho do card mantido.
 const CATS = [
   { Icon: Sparkles,   label: "Limpeza",       desc: "Casas, escritórios e mais",    color: "#1D9E75" },
   { Icon: Wind,       label: "Climatização",  desc: "Instalação e manutenção",      color: "#38bdf8" },
@@ -138,36 +137,53 @@ export default function HomePage() {
         .sec-link:hover{opacity:0.7}
 
         /* ── Categories ── */
-        /* ÚNICA MUDANÇA: .cat já não recebe "background" inline saturado.
-           Agora o fundo é escuro neutro fixo (#0f1825), e a cor de cada
-           categoria entra via "--cat-color" (custom property), usada no
-           halo (::before) e no ícone. Tamanho/posição do .cat-ghost
-           mantidos exactamente como estavam — só a cor de fundo mudou. */
+        /* Card neutro (fundo/borda/texto sem cor) — a cor da categoria só
+           aparece em dois sítios discretos: (1) o chip do ícone pequeno,
+           com fundo e borda na cor da categoria a baixa opacidade e o
+           ícone em si na cor cheia; (2) o ícone gigante atrás, estilo
+           marca de água, quase invisível. Sem gradiente colorido a cobrir
+           o card e sem texto colorido — evita o efeito "arco-íris" quando
+           várias categorias aparecem lado a lado. Tamanho do card
+           inalterado. Grid responsiva (4→3→2→1 colunas nos media queries
+           abaixo) inalterada. */
         .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
         .cat{
           display:flex;align-items:center;gap:14px;
-          padding:16px 18px;border-radius:14px;
-          background:#0f1825;
+          padding:20px;border-radius:14px;
+          background:#0d1117;
           border:1px solid #1a2535;
           cursor:pointer;text-align:left;
           transition:all 0.22s ease;position:relative;overflow:hidden;
         }
-        .cat::before{
-          content:"";position:absolute;inset:0;
-          background:linear-gradient(135deg, var(--cat-color) 0%, transparent 60%);
-          opacity:0.1;pointer-events:none;
-        }
-        .cat:hover{transform:translateY(-3px)}
+        .cat:hover{transform:translateY(-3px);box-shadow:0 6px 22px rgba(0,0,0,0.35)}
         .cat-ico{
-          position:relative;z-index:1;
+          position:relative;z-index:2;
           width:46px;height:46px;border-radius:12px;
           display:flex;align-items:center;justify-content:center;
           flex-shrink:0;transition:transform 0.2s;
-          background:color-mix(in srgb, var(--cat-color) 16%, transparent);
-          border:1px solid color-mix(in srgb, var(--cat-color) 30%, transparent);
+          background:rgba(255,255,255,0.04);
+          background:color-mix(in srgb, var(--cat-color) 14%, transparent);
+          border:1px solid rgba(255,255,255,0.12);
+          border:1px solid color-mix(in srgb, var(--cat-color) 35%, transparent);
         }
-        .cat:hover .cat-ico{transform:scale(1.1)}
-        .cat-ghost{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.07;z-index:0}
+        .cat:hover .cat-ico{transform:scale(1.08)}
+        .cat-body{position:relative;z-index:2;flex:1;min-width:0}
+        .cat-label{
+          font-size:14px;font-weight:700;color:#e2e8f0;
+          margin:0 0 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        }
+        .cat-desc{
+          font-size:11px;color:#5a6a7a;line-height:1.4;margin:0;
+        }
+        /* Ícone gigante de fundo, estilo marca de água — atrás do texto
+           (z-index 1, abaixo do cat-body que está em z-index 2), cortado
+           pela borda do card via overflow:hidden no .cat. Opacidade bem
+           baixa para não competir com o chip nem com o texto. */
+        .cat-ghost{
+          position:absolute;right:-14px;bottom:-18px;z-index:1;
+          pointer-events:none;color:var(--cat-color);opacity:0.06;
+          transform:rotate(-12deg);
+        }
 
         /* ── Steps ── */
         .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
@@ -309,25 +325,15 @@ export default function HomePage() {
                       className="cat"
                       style={{ "--cat-color": cat.color } as React.CSSProperties}
                       onClick={() => router.push(`/search?category=${encodeURIComponent(cat.label)}`)}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.borderColor = `${cat.color}52`;
-                        e.currentTarget.style.boxShadow = `0 4px 20px ${cat.color}12`;
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = "#1a2535";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
                     >
+                      <Icon className="cat-ghost" size={88} />
                       <div className="cat-ico">
                         <Icon size={22} style={{ color:cat.color }} />
                       </div>
-                      <div style={{ flex:1, minWidth:0, position:"relative", zIndex:1 }}>
-                        <p style={{ fontSize:13, fontWeight:700, color:"#e2e8f0", marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{cat.label}</p>
-                        <p style={{ fontSize:11, color:"#4a6a6a", lineHeight:1.4 }}>{cat.desc}</p>
+                      <div className="cat-body">
+                        <p className="cat-label">{cat.label}</p>
+                        <p className="cat-desc">{cat.desc}</p>
                       </div>
-                      <span className="cat-ghost">
-                        <Icon size={38} style={{ color:cat.color }} />
-                      </span>
                     </button>
                   );
                 })}

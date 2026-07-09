@@ -32,9 +32,10 @@ export class ProviderCatalogService {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // findAll — devolve APENAS serviços individuais de providers.
-  // NUNCA mistura com empresas — as empresas têm o seu próprio card
-  // separado devolvido por GET /users/providers com cardType:'company'.
+  // findAll — devolve APENAS serviços individuais de providers ACTIVOS.
+  // Este isActive é exactamente o mecanismo que faz um serviço
+  // "desaparecer" da pesquisa — ver deactivateByServiceId abaixo, chamado
+  // quando o ciclo completo de um serviço termina.
   // ═══════════════════════════════════════════════════════════════════
   async findAll(category?: string): Promise<ProviderCatalog[]> {
     const qb = this.catalogRepo
@@ -70,5 +71,25 @@ export class ProviderCatalogService {
     if (!entry) throw new NotFoundException('Serviço não encontrado.');
     if (entry.providerId !== providerId) throw new ForbiddenException('Sem permissão.');
     await this.catalogRepo.delete(id);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Desactiva a entrada de catálogo ligada a um serviço, quando o ciclo
+  // completo termina: prestador concluiu → cliente confirmou → admin
+  // transferiu o dinheiro real ao prestador. É neste momento exacto —
+  // e só neste — que o serviço deixa de aparecer na pesquisa para
+  // novos clientes, cumprindo a regra: "postado → concluído e pago →
+  // desaparece" (estilo 4chan, como pediste).
+  //
+  // Não apaga o registo — só isActive:false — para o prestador poder
+  // reactivar manualmente se quiser voltar a oferecer o mesmo serviço.
+  //
+  // Se o serviço não veio de uma entrada de catálogo (catalogItemId é
+  // null — ex: pedido directo, fluxo antigo), este método não faz nada,
+  // em silêncio, sem lançar erro.
+  // ═══════════════════════════════════════════════════════════════════
+  async deactivateByServiceId(catalogItemId: string | null): Promise<void> {
+    if (!catalogItemId) return;
+    await this.catalogRepo.update({ id: catalogItemId }, { isActive: false });
   }
 }

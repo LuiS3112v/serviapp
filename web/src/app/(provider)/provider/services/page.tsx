@@ -12,12 +12,21 @@ import { getToken } from "@/lib/auth.api";
 const CATEGORIES = ["","Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Segurança"];
 const PROVINCES  = ["","Luanda","Benguela","Huambo","Huíla","Malanje","Namibe","Kwanza Sul","Kwanza Norte","Bié","Moxico","Lunda Norte","Lunda Sul","Cunene","Cabinda","Zaire","Uíge","Bengo","Cuando Cubango"];
 
+// FIX: nomes alinhados com o ServiceStatus real do backend. "pending" e
+// "paid" nunca existiram como valores reais — o status correcto depois
+// de aceite é "accepted", depois do pagamento é "payment_held", e por
+// isso os serviços desapareciam: nenhuma tab reconhecia esses valores.
 const STATUS_CFG: Record<string,{label:string;color:string;bg:string}> = {
-  pending:     {label:"Disponível",  color:"#1D9E75",bg:"#1d9e7520"},
-  accepted:    {label:"Aceite",      color:"#378ADD",bg:"#378ADD20"},
-  in_progress: {label:"Em execução", color:"#EF9F27",bg:"#EF9F2720"},
-  completed:   {label:"Concluído",   color:"#1D9E75",bg:"#1d9e7520"},
-  cancelled:   {label:"Cancelado",   color:"#E24B4A",bg:"#E24B4A20"},
+  requested:          { label:"Disponível",             color:"#1D9E75", bg:"#1d9e7520" },
+  accepted:           { label:"Aceite",                 color:"#378ADD", bg:"#378ADD20" },
+  payment_held:       { label:"Pago — protegido",       color:"#8B5CF6", bg:"#8B5CF620" },
+  in_progress:        { label:"Em execução",            color:"#EF9F27", bg:"#EF9F2720" },
+  provider_completed: { label:"Aguarda confirmação",    color:"#EF9F27", bg:"#EF9F2720" },
+  completed:          { label:"Concluído",              color:"#1D9E75", bg:"#1d9e7520" },
+  cancelled:          { label:"Cancelado",              color:"#E24B4A", bg:"#E24B4A20" },
+  refunded:           { label:"Reembolsado",            color:"#E24B4A", bg:"#E24B4A20" },
+  disputed:           { label:"Em disputa",             color:"#D4537E", bg:"#D4537E20" },
+  rejected:           { label:"Recusado",               color:"#E24B4A", bg:"#E24B4A20" },
 };
 
 const TABS = [
@@ -28,6 +37,18 @@ const TABS = [
   {label:"Concluídos",  value:"completed",   desc:"Trabalhos terminados"},
   {label:"Cancelados",  value:"cancelled",   desc:"Cancelados"},
 ];
+
+// FIX: mapeia cada tab para TODOS os status reais que devem aparecer nela.
+// "Aceites" agora inclui accepted + payment_held (aceite E já pago, ambos
+// ainda não iniciados). "Em execução" inclui in_progress + provider_completed
+// (a decorrer e à espera de confirmação do cliente). "Cancelados" inclui
+// cancelled + refunded + rejected.
+const TAB_STATUSES: Record<string, string[]> = {
+  accepted:    ["accepted", "payment_held"],
+  in_progress: ["in_progress", "provider_completed"],
+  completed:   ["completed"],
+  cancelled:   ["cancelled", "refunded", "rejected"],
+};
 
 const fmt = (d:string) =>
   new Date(d).toLocaleDateString("pt-PT",{day:"2-digit",month:"short",year:"numeric"});
@@ -66,9 +87,19 @@ function ProviderServicesInner() {
     setLoading(true); setError("");
     try {
       let data: Service[];
-      if      (tab === "available") data = await servicesApi.getAvailable(JSON.parse(filterKey));
-      else if (tab === "proposals") data = await servicesApi.getMyProposals();
-      else                          data = await servicesApi.getProviderServices(tab);
+      if (tab === "available") {
+        data = await servicesApi.getAvailable(JSON.parse(filterKey));
+      } else if (tab === "proposals") {
+        data = await servicesApi.getMyProposals();
+      } else {
+        // FIX: busca TODOS os trabalhos do prestador sem filtro no
+        // backend, e filtra no frontend pelos status desta tab. O
+        // backend antigo só sabia filtrar por um único status; agora
+        // cada tab pode cobrir vários status ao mesmo tempo.
+        const all = await servicesApi.getProviderServices();
+        const wanted = TAB_STATUSES[tab] ?? [tab];
+        data = all.filter(s => wanted.includes(s.status));
+      }
       setServices(data);
     } catch (e:any) {
       setError(e.message || "Erro ao carregar.");
@@ -246,8 +277,8 @@ function ProviderServicesInner() {
         ) : (
           <div className="feed">
             {services.map(s=>{
-              const cfg          = STATUS_CFG[s.status] ?? STATUS_CFG.pending;
-              const isAvailable  = s.status==="pending" && !s.providerId;
+              const cfg          = STATUS_CFG[s.status] ?? STATUS_CFG.requested;
+              const isAvailable  = s.status==="requested" && !s.providerId;
               const hasOtherProp = !!s.proposedByProviderId && !s.providerId;
               return (
                 <div className="ocard" key={s.id}>

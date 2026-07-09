@@ -1,163 +1,268 @@
 import {
-  Controller, Get, Post, Patch, Body,
-  Param, Query, UseGuards, NotFoundException,
+  Controller, Get, Post, Patch, Body, Param, Query, UseGuards, ParseUUIDPipe,
 } from '@nestjs/common';
 import { ServicesService } from './services.service';
-import { CreateServiceDto } from './dto/create-service.dto';
-import { UpdateServiceDto } from './dto/update-service.dto';
-import { AcceptServiceDto } from './dto/accept-service.dto';
-import { CancelServiceDto } from './dto/cancel-service.dto';
-import { ReviewServiceDto } from './dto/review-service.dto';
-import { FilterServicesDto } from './dto/filter-services.dto';
-import { ProposePriceDto } from './dto/propose-price.dto';
 import { JwtGuard } from '../../common/guards/jwt.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CreateServiceDto } from './dto/create-service.dto';
 import { Role } from '../../common/enums/role.enum';
- 
-@UseGuards(JwtGuard, RolesGuard)
+
 @Controller('services')
+@UseGuards(JwtGuard)
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
- 
-  // ─── CLIENT ───────────────────────────────────────────────────────────────
- 
+
+  // ── Criar pedido ──────────────────────────────────────────────────────────
   @Post()
-  @Roles(Role.CLIENT)
   create(@CurrentUser() user: any, @Body() dto: CreateServiceDto) {
-    // Passa o fullName para poder notificar o provider com o nome real do cliente
-    return this.servicesService.create(user.id, dto, user.fullName);
+    return this.servicesService.create(user.id, dto);
   }
- 
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ROTAS ESTÁTICAS — todas ANTES de :id, sem excepção. Ver nota no topo
+  // do ficheiro sobre porque isto é obrigatório (Nest resolve por ordem).
+  // ══════════════════════════════════════════════════════════════════════
+
   @Get('my')
-  @Roles(Role.CLIENT)
-  findMine(@CurrentUser() user: any, @Query() filter: FilterServicesDto) {
-    return this.servicesService.findByClient(user.id, filter);
+  myServices(@CurrentUser() user: any, @Query('status') status?: string) {
+    if (user.role === Role.PROVIDER || user.role === Role.COMPANY) {
+      return this.servicesService.findByProvider(user.id, status);
+    }
+    return this.servicesService.findByClient(user.id, status);
   }
- 
+
+  @Get('my-requests')
+  myRequests(@CurrentUser() user: any, @Query('status') status?: string) {
+    return this.servicesService.findByClient(user.id, status);
+  }
+
+  @Get('my-jobs')
+  myJobs(@CurrentUser() user: any, @Query('status') status?: string) {
+    return this.servicesService.findByProvider(user.id, status);
+  }
+
+  @Get('available')
+  availableForProvider(
+    @CurrentUser() user: any,
+    @Query('category') category?: string,
+    @Query('province') province?: string,
+    @Query('minBudget') minBudget?: string,
+    @Query('maxBudget') maxBudget?: string,
+  ) {
+    return this.servicesService.findAvailableForProvider(user.id, {
+      category,
+      province,
+      minBudget: minBudget ? Number(minBudget) : undefined,
+      maxBudget: maxBudget ? Number(maxBudget) : undefined,
+    });
+  }
+
+  // ── Estatísticas cliente (fluxo antigo) ────────────────────────────────────
   @Get('client/stats')
-  @Roles(Role.CLIENT)
   getClientStats(@CurrentUser() user: any) {
     return this.servicesService.getClientStats(user.id);
   }
- 
-  @Patch('client/:id/update')
-  @Roles(Role.CLIENT)
-  update(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: UpdateServiceDto) {
-    return this.servicesService.update(id, user.id, dto);
-  }
- 
-  @Patch('client/:id/confirm')
-  @Roles(Role.CLIENT)
-  confirm(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: ReviewServiceDto) {
-    return this.servicesService.confirm(id, user.id, dto);
-  }
- 
-  @Patch('client/:id/accept-proposal')
-  @Roles(Role.CLIENT)
-  acceptProposal(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.servicesService.acceptProposal(id, user.id);
-  }
- 
-  @Patch('client/:id/reject-proposal')
-  @Roles(Role.CLIENT)
-  rejectProposal(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.servicesService.rejectProposal(id, user.id);
-  }
- 
-  @Patch('client/:id/cancel')
-  @Roles(Role.CLIENT)
-  cancelClient(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: CancelServiceDto) {
-    return this.servicesService.cancel(id, user.id, dto);
-  }
- 
-  // ─── PROVIDER ─────────────────────────────────────────────────────────────
- 
-  @Get('available')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  findAvailable(@CurrentUser() user: any, @Query() filter: FilterServicesDto) {
-    return this.servicesService.findAvailable(user.id, filter);
-  }
- 
+
+  // ── Rotas de prestador com prefixo /provider/ (fluxo antigo) ──────────────
   @Get('provider/my')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  findProviderServices(@CurrentUser() user: any, @Query() filter: FilterServicesDto) {
-    return this.servicesService.findByProvider(user.id, filter);
+  providerMy(@CurrentUser() user: any, @Query('status') status?: string) {
+    return this.servicesService.findByProvider(user.id, status);
   }
- 
+
   @Get('provider/proposals')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  findMyProposals(@CurrentUser() user: any) {
+  providerProposals(@CurrentUser() user: any) {
     return this.servicesService.findMyProposals(user.id);
   }
- 
+
   @Get('provider/stats')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  getProviderStats(@CurrentUser() user: any) {
+  providerStats(@CurrentUser() user: any) {
     return this.servicesService.getProviderStats(user.id);
   }
- 
+
   @Get('provider/stats/period')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  getProviderStatsByPeriod(@CurrentUser() user: any, @Query('period') period: string) {
+  providerStatsByPeriod(@CurrentUser() user: any, @Query('period') period: string) {
     return this.servicesService.getProviderStatsByPeriod(user.id, period ?? 'Este mês');
   }
- 
+
   @Get('provider/reviews')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  getProviderReviews(@CurrentUser() user: any) {
+  providerReviews(@CurrentUser() user: any) {
     return this.servicesService.getProviderReviews(user.id);
   }
- 
-  @Patch('provider/:id/accept')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  accept(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: AcceptServiceDto) {
-    return this.servicesService.accept(id, user.id, dto);
-  }
- 
-  @Patch('provider/:id/propose')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  proposePrice(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: ProposePriceDto) {
-    return this.servicesService.proposePrice(id, user.id, dto);
-  }
- 
-  @Patch('provider/:id/start')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  start(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.servicesService.start(id, user.id);
-  }
- 
-  @Patch('provider/:id/complete')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  complete(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.servicesService.complete(id, user.id);
-  }
- 
-  @Patch('provider/:id/cancel')
-  @Roles(Role.PROVIDER, Role.COMPANY)
-  cancelProvider(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: CancelServiceDto) {
-    return this.servicesService.cancel(id, user.id, dto);
-  }
- 
-  // ─── PARTILHADO ───────────────────────────────────────────────────────────
- 
+
+  // ══════════════════════════════════════════════════════════════════════
+  // DETALHE — :id fica sempre por último entre as rotas GET
+  // ══════════════════════════════════════════════════════════════════════
+
   @Get(':id')
-  @Roles(Role.CLIENT, Role.PROVIDER, Role.COMPANY, Role.ADMIN)
-  findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    // Protege contra strings inválidas como "new" chegarem à BD
-    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!UUID_REGEX.test(id)) {
-      throw new NotFoundException('Recurso não encontrado.');
-    }
-    return this.servicesService.findOne(id, user.id, user.role);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    return this.servicesService.findByIdForUser(id, user.id, user.role);
   }
- 
-  // ─── ADMIN ────────────────────────────────────────────────────────────────
- 
-  @Get('admin/all')
-  @Roles(Role.ADMIN)
-  findAll(@Query() filter: FilterServicesDto) {
-    return this.servicesService.findAll(filter);
+
+  @Get(':id/timeline')
+  getTimeline(@Param('id', ParseUUIDPipe) id: string) {
+    return this.servicesService.getTimeline(id);
+  }
+
+  @Get(':id/payment')
+  getPayment(@Param('id', ParseUUIDPipe) id: string) {
+    return this.servicesService.getPaymentForService(id);
+  }
+
+  // ── Aceitação / rejeição (rota nova, sem prefixo) ──────────────────────────
+  @Patch(':id/accept')
+  accept(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body('agreedPrice') agreedPrice?: number,
+  ) {
+    return this.servicesService.accept(id, user.id, agreedPrice);
+  }
+
+  @Patch(':id/reject')
+  reject(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body('reason') reason?: string,
+  ) {
+    return this.servicesService.reject(id, user.id, reason);
+  }
+
+  // ── Aceitação / rejeição / proposta com prefixo /provider/ (fluxo antigo) ─
+  @Patch('provider/:id/accept')
+  providerAccept(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body('agreedPrice') agreedPrice: number,
+  ) {
+    return this.servicesService.accept(id, user.id, agreedPrice);
+  }
+
+  @Patch('provider/:id/propose')
+  providerPropose(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body('proposedPrice') proposedPrice: number,
+  ) {
+    return this.servicesService.proposePrice(id, user.id, proposedPrice);
+  }
+
+  @Patch('provider/:id/start')
+  providerStart(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    // Fluxo antigo não tem PIN — mas o produto actual exige-o sempre.
+    // Se o cliente não gerou PIN ainda, esta chamada vai falhar com uma
+    // mensagem clara em vez de rebentar silenciosamente.
+    return this.servicesService.startService(id, user.id, '');
+  }
+
+  @Patch('provider/:id/complete')
+  providerComplete2(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    return this.servicesService.markProviderCompleted(id, user.id);
+  }
+
+  @Patch('provider/:id/cancel')
+  providerCancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body('reason') reason?: string,
+  ) {
+    return this.servicesService.cancel(id, user.id, reason);
+  }
+
+  // ── Cliente: update / confirmar / proposta com prefixo /client/ (antigo) ──
+  @Patch('client/:id/update')
+  clientUpdate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body() dto: Partial<CreateServiceDto>,
+  ) {
+    return this.servicesService.updateByClient(id, user.id, dto);
+  }
+
+  @Patch('client/:id/confirm')
+  clientConfirm(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body() body: { rating?: number; review?: string },
+  ) {
+    return this.servicesService.confirmCompletion(id, user.id, body);
+  }
+
+  @Patch('client/:id/accept-proposal')
+  clientAcceptProposal(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    return this.servicesService.acceptProposal(id, user.id);
+  }
+
+  @Patch('client/:id/reject-proposal')
+  clientRejectProposal(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    return this.servicesService.rejectProposal(id, user.id);
+  }
+
+  @Patch('client/:id/cancel')
+  clientCancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body('reason') reason: string,
+  ) {
+    return this.servicesService.cancel(id, user.id, reason);
+  }
+
+  // ── Pagamento (escrow) ────────────────────────────────────────────────────
+  @Post(':id/pay')
+  pay(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    return this.servicesService.initiatePayment(id, user.id);
+  }
+
+  // ── PIN ───────────────────────────────────────────────────────────────────
+  @Post(':id/generate-pin')
+  generatePin(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    return this.servicesService.generatePin(id, user.id);
+  }
+
+  @Patch(':id/start')
+  startService(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body('pin') pin: string,
+  ) {
+    return this.servicesService.startService(id, user.id, pin);
+  }
+
+  // ── Conclusão (rota nova, sem prefixo) ─────────────────────────────────────
+  @Patch(':id/provider-complete')
+  providerCompleteNew(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body('warrantyDays') warrantyDays?: number,
+  ) {
+    return this.servicesService.markProviderCompleted(id, user.id, warrantyDays);
+  }
+
+  @Patch(':id/confirm')
+  confirmCompletion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body() body: { rating?: number; review?: string },
+  ) {
+    return this.servicesService.confirmCompletion(id, user.id, body);
+  }
+
+  // ── Cancelamento (rota nova, sem prefixo) ──────────────────────────────────
+  @Patch(':id/cancel')
+  cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body('reason') reason?: string,
+  ) {
+    return this.servicesService.cancel(id, user.id, reason);
+  }
+
+  // ── Disputa ───────────────────────────────────────────────────────────────
+  @Post(':id/dispute')
+  openDispute(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+    @Body('reason') reason: string,
+  ) {
+    return this.servicesService.openDispute(id, user.id, reason);
   }
 }

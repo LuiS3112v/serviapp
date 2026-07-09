@@ -1,84 +1,164 @@
 "use client";
-
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
-import { Wallet, ArrowUpRight, ArrowDownLeft, Plus, Shield } from "lucide-react";
+import { servicesApi } from "@/lib/services.api";
+import {
+  Landmark, RefreshCw, Loader2, CheckCircle,
+  Clock, X, ChevronRight, Wallet as WalletIcon,
+} from "lucide-react";
 
-export default function WalletPage() {
+const PAYMENT_STATUS_CFG: Record<string, { label: string; color: string }> = {
+  pending:          { label: "Aguarda transferência",     color: "#EF9F27" },
+  proof_submitted:  { label: "Comprovativo em validação",  color: "#378ADD" },
+  confirmed:        { label: "Protegido",                  color: "#1D9E75" },
+  pending_payout:   { label: "A transferir ao prestador",  color: "#8B5CF6" },
+  completed:        { label: "Concluído",                  color: "#1D9E75" },
+  refunded:         { label: "Reembolsado",                color: "#E24B4A" },
+};
+
+function fKz(v: number) { return new Intl.NumberFormat("pt-PT").format(v) + " Kz"; }
+function fDate(d: string) {
+  return new Date(d).toLocaleDateString("pt-PT") + " · " +
+    new Date(d).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
+}
+
+// ── Nota de arquitectura ─────────────────────────────────────────────────
+// Esta página deixou de ser uma "Wallet" com saldo/depósito — nesse
+// modelo o dinheiro nunca fica guardado numa carteira do cliente, cada
+// serviço tem a sua própria transferência bancária directa para a conta
+// da ServiApp. Esta página passa a mostrar o HISTÓRICO de pagamentos que
+// o cliente já fez, ligados a cada serviço, sem nenhum saldo fictício.
+export default function ClientPaymentsHistoryPage() {
+  const router = useRouter();
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const all = await servicesApi.getMyServices();
+      // Só mostra serviços que já têm (ou já tiveram) algum pagamento
+      // associado — ou seja, chegaram pelo menos a "accepted"
+      const withPaymentRelevance = all.filter((s: any) =>
+        !["requested", "rejected"].includes(s.status)
+      );
+      setServices(withPaymentRelevance);
+    } catch (e: any) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    load();
+  };
+
+  const totalPaid = services
+    .filter(s => ["completed"].includes(s.status))
+    .reduce((sum, s) => sum + Number(s.agreedPrice ?? s.budget ?? 0), 0);
+
   return (
     <>
       <style>{`
-        .w-wrap { display: flex; min-height: 100vh; background: #0d1117; }
-        .w-main { flex: 1; margin-left: 240px; display: flex; flex-direction: column; }
-        .w-inner { flex: 1; padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; max-width: 800px; }
-        .w-card { border-radius: 20px; padding: 28px; background: #0b2a2a; border: 1px solid #1d9e7530; }
-        .w-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .w-stat { background: #131b27; border: 1px solid #1a2535; border-radius: 14px; padding: 16px; }
-        .w-btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
-        .w-btn { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; }
-        .empty-tx { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; gap: 12px; text-align: center; }
-        @media (max-width: 1024px) { .w-main { margin-left: 0; } }
-        @media (max-width: 640px) { .w-inner { padding: 16px; } .w-grid { grid-template-columns: 1fr; } .w-btn-row { flex-direction: column; } .w-btn { justify-content: center; } }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .wl-wrap  { display: flex; min-height: 100vh; background: #0d1117; }
+        .wl-main  { flex: 1; margin-left: 240px; display: flex; flex-direction: column; min-width: 0; }
+        .wl-body  { flex: 1; padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; max-width: 820px; width: 100%; }
+        .wl-hero  { background: linear-gradient(135deg, #071e1e 0%, #0a2a20 100%);
+                    border: 1px solid rgba(29,158,117,0.22); border-radius: 20px; padding: 28px 32px; }
+        .wl-card  { background: #131b27; border: 1px solid #1a2535; border-radius: 18px; padding: 20px; cursor: pointer; transition: border-color .15s; }
+        .wl-card:hover { border-color: #1D9E7550; }
+        @media(max-width:1024px) { .wl-main { margin-left: 0; } .wl-body { padding: 80px 20px 24px; } }
+        @media(max-width:640px)  { .wl-body { padding: 70px 12px 20px; gap: 14px; } .wl-hero { padding: 20px; } }
       `}</style>
-      <div className="w-wrap">
+
+      <div className="wl-wrap">
         <Sidebar />
-        <div className="w-main">
+        <div className="wl-main">
           <Navbar />
-          <div className="w-inner">
-            <div>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: "#e2e8f0", marginBottom: 4 }}>Wallet</h1>
-              <p style={{ fontSize: 13, color: "#4a6a6a" }}>Gere os teus pagamentos e levantamentos</p>
-            </div>
+          <div className="wl-body">
 
-            <div className="w-card">
-              <p style={{ fontSize: 12, fontWeight: 600, color: "#5DCAA5", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.08em" }}>Saldo disponível</p>
-              <p style={{ fontSize: 36, fontWeight: 700, color: "#e2e8f0", marginBottom: 4 }}>0 Kz</p>
-              <p style={{ fontSize: 13, color: "#4a7a7a", marginBottom: 20 }}>O teu saldo vai aparecer aqui após o primeiro serviço</p>
-              <div className="w-btn-row">
-                <button className="w-btn" style={{ background: "#1D9E75", color: "white" }}>
-                  <ArrowUpRight size={16} /> Levantar
-                </button>
-                <button className="w-btn" style={{ background: "#131b27", color: "#8a9ab0", border: "1px solid #1a2535" }}>
-                  <Plus size={16} /> Adicionar saldo
-                </button>
-              </div>
-            </div>
-
-            <div className="w-grid">
-              <div className="w-stat">
-                <p style={{ fontSize: 12, color: "#4a6a6a", marginBottom: 6 }}>Saldo retido</p>
-                <p style={{ fontSize: 22, fontWeight: 700, color: "#EF9F27" }}>0 Kz</p>
-                <p style={{ fontSize: 11, color: "#4a5a6a", marginTop: 4 }}>Aguarda confirmação de serviço</p>
-              </div>
-              <div className="w-stat">
-                <p style={{ fontSize: 12, color: "#4a6a6a", marginBottom: 6 }}>Total recebido</p>
-                <p style={{ fontSize: 22, fontWeight: 700, color: "#1D9E75" }}>0 Kz</p>
-                <p style={{ fontSize: 11, color: "#4a5a6a", marginTop: 4 }}>Este mês</p>
-              </div>
-            </div>
-
-            <div style={{ borderRadius: 16, padding: "20px 24px", background: "#131b27", border: "1px solid #1a2535" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h2 style={{ fontSize: 16, fontWeight: 700, color: "#c0d0e0" }}>Transacções recentes</h2>
-              </div>
-              <div className="empty-tx">
-                <div style={{ width: 52, height: 52, borderRadius: 16, background: "#0d1117", border: "1px solid #1a2535", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Wallet size={24} style={{ color: "#2a3a4a" }} />
-                </div>
-                <p style={{ fontSize: 15, fontWeight: 600, color: "#c0d0e0" }}>Sem transacções</p>
-                <p style={{ fontSize: 13, color: "#4a6a6a", lineHeight: 1.6, maxWidth: 280 }}>
-                  As tuas transacções vão aparecer aqui após o primeiro pagamento.
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 14, background: "#0b2424", border: "1px solid #1d9e7525" }}>
-              <Shield size={18} style={{ color: "#1D9E75", flexShrink: 0 }} />
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
               <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#c0d0e0", marginBottom: 2 }}>Pagamentos protegidos</p>
-                <p style={{ fontSize: 12, color: "#4a7a7a" }}>Todos os pagamentos usam o sistema de escrow — o valor só é libertado após confirmação.</p>
+                <h1 style={{ fontSize:22, fontWeight:700, color:"#e2e8f0", marginBottom:3 }}>Pagamentos</h1>
+                <p style={{ fontSize:13, color:"#4a6a6a" }}>Histórico de transferências para serviços contratados</p>
               </div>
+              <button onClick={handleRefresh} disabled={loading}
+                style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px",
+                         borderRadius:12, border:"1px solid #1a2535", background:"#131b27",
+                         color:"#6a7a8a", fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+                <RefreshCw size={13} style={{ animation: loading||refreshing ? "spin 1s linear infinite" : "none" }} />
+                Actualizar
+              </button>
             </div>
+
+            <div className="wl-hero">
+              <p style={{ fontSize:11, fontWeight:700, color:"#4a9a7a", textTransform:"uppercase",
+                letterSpacing:".1em", marginBottom:8 }}>
+                Total pago em serviços concluídos
+              </p>
+              {loading
+                ? <div style={{ width:200, height:38, borderRadius:8, background:"#1a2535" }} />
+                : <p style={{ fontSize:36, fontWeight:800, color:"#1D9E75" }}>{fKz(totalPaid)}</p>
+              }
+              <p style={{ fontSize:12, color:"#4a6a6a", marginTop:12 }}>
+                Todos os pagamentos são feitos por transferência bancária directa e ficam protegidos até confirmares a conclusão do serviço.
+              </p>
+            </div>
+
+            {loading ? (
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"60px 20px" }}>
+                <Loader2 size={26} style={{ color:"#1D9E75", animation:"spin 1s linear infinite" }} />
+              </div>
+            ) : services.length === 0 ? (
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                padding:"60px 20px", gap:14, textAlign:"center", background:"#131b27",
+                border:"1px solid #1a2535", borderRadius:16 }}>
+                <WalletIcon size={30} style={{ color:"#2a3a4a" }} />
+                <p style={{ fontSize:15, fontWeight:700, color:"#c0d0e0" }}>Sem pagamentos ainda</p>
+                <p style={{ fontSize:13, color:"#4a6a6a" }}>Assim que um prestador aceitar um pedido teu, o pagamento aparece aqui.</p>
+              </div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                {services.map(s => {
+                  const cfg = PAYMENT_STATUS_CFG[s.paymentStatus] ?? { label: "—", color: "#6a7a8a" };
+                  return (
+                    <div className="wl-card" key={s.id} onClick={() => router.push(`/services/${s.id}`)}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, flexWrap:"wrap" }}>
+                            <p style={{ fontSize:14, fontWeight:700, color:"#e2e8f0" }}>{s.title}</p>
+                            <span style={{ fontSize:11, fontWeight:700, padding:"2px 9px", borderRadius:99,
+                              background:`${cfg.color}20`, color:cfg.color }}>
+                              {cfg.label}
+                            </span>
+                          </div>
+                          <p style={{ fontSize:12, color:"#6a7a8a" }}>
+                            {s.provider?.fullName ?? "—"} · {s.category}
+                          </p>
+                          <p style={{ fontSize:11, color:"#3a4a5a", marginTop:4 }}>{fDate(s.createdAt)}</p>
+                        </div>
+                        <div style={{ textAlign:"right", flexShrink:0 }}>
+                          <p style={{ fontSize:16, fontWeight:700, color:"#1D9E75" }}>
+                            {fKz(Number(s.agreedPrice ?? s.budget))}
+                          </p>
+                          <ChevronRight size={16} style={{ color:"#2a3a4a", marginTop:8 }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
           </div>
         </div>
       </div>

@@ -1,7 +1,6 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
-  ManyToOne, JoinColumn, Index,
+  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn,
+  UpdateDateColumn, ManyToOne, JoinColumn, Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { ServiceStatus } from '../../common/enums/service-status.enum';
@@ -9,6 +8,7 @@ import { ServiceStatus } from '../../common/enums/service-status.enum';
 @Entity('services')
 @Index(['clientId'])
 @Index(['providerId'])
+@Index(['targetProviderId'])
 @Index(['status'])
 export class Service {
   @PrimaryGeneratedColumn('uuid')
@@ -33,9 +33,9 @@ export class Service {
   budget: number;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
-  agreedPrice: number;
+  agreedPrice: number | null;
 
-  // ─── Negociação ───────────────────────────────────────────────────────────
+  // ── Proposta de preço (fluxo antigo) ──────────────────────────────────────
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   proposedPrice: number | null;
 
@@ -46,14 +46,9 @@ export class Service {
   @JoinColumn({ name: 'proposedByProviderId' })
   proposedByProvider: User;
 
-  // ─── Pedido dirigido a um provider específico ─────────────────────────────
-  @Column({ nullable: true })
-  targetProviderId: string;
-
   @Column({
-    type: 'enum',
-    enum: ServiceStatus,
-    default: ServiceStatus.PENDING,
+    type: 'varchar',
+    default: ServiceStatus.REQUESTED,
   })
   status: ServiceStatus;
 
@@ -65,45 +60,75 @@ export class Service {
   client: User;
 
   @Column({ nullable: true })
-  providerId: string;
+  providerId: string | null;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'providerId' })
   provider: User;
 
-  // ─── Empresa (se o provider pertence a uma empresa) ───────────────────────
-  @Column({ nullable: true, type: 'uuid' })
-  companyId: string | null;
+  @Column({ nullable: true })
+  targetProviderId: string | null;
+
+  // Liga este pedido à entrada de catálogo (ProviderCatalog) que o
+  // originou, quando o cliente clicou "Solicitar" na página de
+  // pesquisa. É este campo que permite ao admin, ao concluir o
+  // pagamento ao prestador, desactivar automaticamente essa entrada de
+  // catálogo — fazendo o serviço desaparecer da pesquisa para novos
+  // clientes, sem apagar o registo (o prestador pode reactivar
+  // manualmente se quiser voltar a oferecer o mesmo serviço).
+  @Column({ nullable: true })
+  catalogItemId: string | null;
+
+  // ── PIN de início ─────────────────────────────────────────────────────────
+  @Column({ nullable: true, length: 6 })
+  servicePin: string | null;
 
   @Column({ nullable: true })
-  scheduledAt: Date;
-
-  @Column({ nullable: true })
-  acceptedAt: Date;
-
-  @Column({ nullable: true })
-  startedAt: Date;
-
-  @Column({ nullable: true })
-  completedAt: Date;
-
-  @Column({ nullable: true })
-  cancelledAt: Date;
-
-  @Column({ nullable: true })
-  cancellationReason: string;
-
-  @Column({ nullable: true })
-  clientConfirmedAt: Date;
+  pinExpiresAt: Date | null;
 
   @Column({ default: false })
-  paymentReleased: boolean;
+  pinUsed: boolean;
 
+  // ── Garantia ──────────────────────────────────────────────────────────────
+  @Column({ type: 'int', nullable: true })
+  warrantyDays: number | null;
+
+  @Column({ nullable: true })
+  warrantyExpiresAt: Date | null;
+
+  // ── Cancelamento / disputa ────────────────────────────────────────────────
+  @Column({ nullable: true })
+  cancelReason: string | null;
+
+  @Column({ nullable: true })
+  disputeReason: string | null;
+
+  // ── Avaliação (fluxo antigo) ──────────────────────────────────────────────
   @Column({ nullable: true })
   clientRating: number;
 
   @Column({ nullable: true, type: 'text' })
   clientReview: string | null;
+
+  // ── Agendamento (fluxo antigo) ────────────────────────────────────────────
+  @Column({ nullable: true })
+  scheduledAt: Date | null;
+
+  // ── Datas de estado ───────────────────────────────────────────────────────
+  @Column({ nullable: true })
+  acceptedAt: Date | null;
+
+  @Column({ nullable: true })
+  paymentHeldAt: Date | null;
+
+  @Column({ nullable: true })
+  startedAt: Date | null;
+
+  @Column({ nullable: true })
+  providerCompletedAt: Date | null;
+
+  @Column({ nullable: true })
+  completedAt: Date | null;
 
   @CreateDateColumn()
   createdAt: Date;

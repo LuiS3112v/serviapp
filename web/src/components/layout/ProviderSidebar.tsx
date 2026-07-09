@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home, BarChart3, MessageCircle, Bell,
-  Wallet, Receipt, User, Settings, LogOut, Zap,
+  Wallet, User, Settings, LogOut, Zap,
   Star, X, Menu, ShoppingBag, ClipboardList,
 } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
@@ -34,8 +34,10 @@ const NAV = [
   {
     section: "Financeiro",
     items: [
-      { label: "Wallet",      icon: Wallet,  href: "/provider/wallet" },
-      { label: "Transacções", icon: Receipt, href: "/provider/transactions" },
+      // FIX: "Transacções" removida — o histórico de ganhos já vive
+      // dentro de /provider/wallet, que mostra tudo o que essa página
+      // mostraria, e essa página nunca teve backend ligado.
+      { label: "Wallet", icon: Wallet, href: "/provider/wallet" },
     ],
   },
   {
@@ -59,13 +61,12 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
   const handleLogout = () => {
     onClose?.();
-    clearAllSessions(); // limpa localStorage + cookie — middleware deixa passar para "/"
+    clearAllSessions();
     router.push("/");
   };
  
   return (
     <>
-      {/* Logo */}
       <div style={{ padding:"24px 20px 20px", borderBottom:"1px solid #1a2535", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <div style={{ width:36, height:36, borderRadius:10, background:"#EF9F27", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -85,7 +86,6 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         )}
       </div>
  
-      {/* Nav */}
       <div style={{ flex:1, overflowY:"auto", padding:"8px 0" }}>
         {NAV.map(group => (
           <div key={group.section} style={{ marginBottom:4 }}>
@@ -118,7 +118,6 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         ))}
       </div>
  
-      {/* Footer */}
       <div style={{ padding:"16px 20px", borderTop:"1px solid #1a2535", display:"flex", alignItems:"center", gap:12 }}>
         <div style={{ width:36, height:36, borderRadius:"50%", background:"#2a1e08", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#EF9F27", flexShrink:0 }}>P</div>
         <div style={{ flex:1, minWidth:0 }}>

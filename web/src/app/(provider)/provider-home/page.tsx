@@ -1,5 +1,4 @@
 "use client";
-
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -9,6 +8,7 @@ import {
 import { servicesApi, ProviderStats } from "@/lib/services.api";
 import { chatApi } from "@/lib/chat.api";
 import { getSession } from "@/lib/auth.api";
+import { kycApi } from "@/lib/api/kyc.api";
 
 // ── Static data ─────────────────────────────────────────────────────────────
 const STEPS = [
@@ -38,18 +38,26 @@ export default function ProviderHomePage() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
 
-  // ── Effects (preservados na íntegra) ────────────────────────────────────
+  // NOVO: estado real de verificação do prestador — null enquanto não
+  // há confirmação (a carregar, ou o prestador nunca submeteu KYC), ou
+  // os valores do KycStatus do backend ('pending' | 'approved' |
+  // 'rejected'). Só 'approved' activa o banner "Perfil activo".
+  const [kycStatus, setKycStatus] = useState<string | null>(null);
+
+  // ── Effects (preservados na íntegra, só acrescentei a chamada ao KYC) ───
   useEffect(() => {
     let cancelled = false;
     const fetchStats = async () => {
       try {
-        const [providerStats, chatUnread] = await Promise.allSettled([
+        const [providerStats, chatUnread, kyc] = await Promise.allSettled([
           servicesApi.getProviderStats(),
           chatApi.getUnread(),
+          kycApi.getMyStatus(),
         ]);
         if (cancelled) return;
         if (providerStats.status === "fulfilled") setStats(providerStats.value);
         if (chatUnread.status  === "fulfilled") setUnreadMessages(chatUnread.value.count);
+        if (kyc.status === "fulfilled") setKycStatus(kyc.value?.status ?? null);
       } finally {
         if (!cancelled) setLoadingStats(false);
       }
@@ -92,6 +100,11 @@ export default function ProviderHomePage() {
       color:"#D4537E", Icon:Clock, href:"/provider/chat",
     },
   ];
+
+  // NOVO: deriva o estado "verificado" a partir do kycStatus real. Antes
+  // de confirmar "approved" — a carregar, pending, rejected, ou sem
+  // qualquer submissão — o banner mantém-se exactamente como estava.
+  const isVerified = kycStatus === "approved";
 
   return (
     <>
@@ -190,6 +203,15 @@ export default function ProviderHomePage() {
           transition:all 0.2s;margin-left:auto;flex-shrink:0;
         }
         .btn-kyc:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(239,159,39,0.48)}
+
+        /* NOVO — variantes verificadas do banner, aditivo, não altera nada acima */
+        .kyc.verified{
+          background:linear-gradient(135deg,rgba(29,158,117,0.07),rgba(29,158,117,0.02));
+          border:1px solid rgba(29,158,117,0.2);
+        }
+        .kyc-ico.verified{
+          background:rgba(29,158,117,0.12);border:1px solid rgba(29,158,117,0.24);
+        }
 
         /* ── Stats grid ── */
         .stats4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
@@ -330,17 +352,32 @@ export default function ProviderHomePage() {
         </section>
 
         {/* ═══ KYC BANNER ═══ */}
-        <div className="kyc">
-          <div className="kyc-ico">
-            <AlertCircle size={20} style={{ color:"#EF9F27" }} />
+        {/* NOVO: alterna consoante o kycStatus real vindo de
+            GET /provider/kyc/status. Enquanto não houver confirmação de
+            "approved" — a carregar, pending, rejected, ou sem qualquer
+            submissão — mantém-se exactamente como estava antes. */}
+        <div className={`kyc${isVerified ? " verified" : ""}`}>
+          <div className={`kyc-ico${isVerified ? " verified" : ""}`}>
+            {isVerified
+              ? <CheckCircle size={20} style={{ color:"#1D9E75" }} />
+              : <AlertCircle size={20} style={{ color:"#EF9F27" }} />
+            }
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            <p style={{ fontSize:14, fontWeight:700, color:"#e2e8f0", marginBottom:3 }}>Perfil inactivo — verificação pendente</p>
-            <p style={{ fontSize:13, color:"#6a5a3a" }}>Completa o KYC para que os clientes possam encontrar-te na plataforma.</p>
+            <p style={{ fontSize:14, fontWeight:700, color: isVerified ? "#1D9E75" : "#e2e8f0", marginBottom:3 }}>
+              {isVerified ? "Perfil activo" : "Perfil inactivo — verificação pendente"}
+            </p>
+            <p style={{ fontSize:13, color: isVerified ? "#4a8a72" : "#6a5a3a" }}>
+              {isVerified
+                ? "A tua conta está verificada e visível para os clientes na plataforma."
+                : "Completa o KYC para que os clientes possam encontrar-te na plataforma."}
+            </p>
           </div>
-          <button className="btn-kyc" onClick={() => router.push("/kyc?role=provider")}>
-            Verificar agora
-          </button>
+          {!isVerified && (
+            <button className="btn-kyc" onClick={() => router.push("/kyc?role=provider")}>
+              Verificar agora
+            </button>
+          )}
         </div>
 
         {/* ═══ STATS DASHBOARD ═══ */}

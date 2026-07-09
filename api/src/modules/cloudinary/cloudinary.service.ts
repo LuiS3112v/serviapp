@@ -40,6 +40,29 @@ export class CloudinaryService {
     });
   }
 
+  // Upload de ficheiros não-imagem (PDF, etc). resource_type:'raw' é
+  // obrigatório na Cloudinary para estes tipos — usar 'image' (o
+  // default de uploadBuffer) corrompe o acesso ao ficheiro e a URL
+  // deixa de abrir para qualquer utilizador, incluindo quem fez upload.
+  async uploadRawFile(buffer: Buffer, folder: string, publicId: string): Promise<{ url: string; publicId: string }> {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          public_id: publicId,
+          resource_type: 'raw',
+          type: 'upload',
+          access_mode: 'public',
+        },
+        (error, result) => {
+          if (error || !result) return reject(error);
+          resolve({ url: result.secure_url, publicId: result.public_id });
+        },
+      );
+      stream.end(buffer);
+    });
+  }
+
   async deleteFile(publicId: string): Promise<void> {
     await cloudinary.uploader.destroy(publicId);
   }

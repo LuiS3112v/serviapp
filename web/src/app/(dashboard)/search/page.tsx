@@ -22,8 +22,6 @@ const CAT_EMOJI: Record<string,string> = {
   "Automóvel":"🚗","Pintura":"🎨","Construção":"🏗️","Segurança":"🔐",
 };
 
-// ── Keywords por categoria para matching amplo de empresas ────────────────────
-// Permite que uma empresa com mainCategory "Technology" apareça em "TI & Redes"
 const COMPANY_CATEGORY_KEYWORDS: Record<string, string[]> = {
   "TI & Redes":   ["ti", "tecnologia", "technology", "tech", "redes", "software", "informatica", "digital", "it", "sistemas", "tic"],
   "Construção":   ["constru", "obra", "engenharia", "civil", "arquitetura", "imobil"],
@@ -98,7 +96,6 @@ function SearchInner() {
       const merged: SearchResult[] = [];
       const providerIdsWithCatalog = new Set<string>();
 
-      // ── 1. Serviços individuais do catálogo ──────────────────────────────
       rawCatalog.forEach((item, idx) => {
         const pid = item.providerId ?? item.provider?.id;
         if (!pid) return;
@@ -122,10 +119,8 @@ function SearchInner() {
         });
       });
 
-      // ── 2. Providers individuais (sem catálogo) + Empresas ───────────────
       for (const p of rawProviders) {
         if (p.cardType === "company" || p.isCompany === true) {
-          // Card de empresa — sempre incluído, categoria filtrada no frontend
           merged.push({
             key:           `company_${p.companyId ?? p.id}`,
             providerId:    p.id,
@@ -140,7 +135,6 @@ function SearchInner() {
             companyId:     p.companyId,
           });
         } else if (!providerIdsWithCatalog.has(p.id)) {
-          // Provider individual sem serviços publicados
           merged.push({
             key:           `provider_${p.id}`,
             providerId:    p.id,
@@ -168,12 +162,9 @@ function SearchInner() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // ── Filter + sort ──────────────────────────────────────────────────────────
   const filtered = results.filter(r => {
     const isComp = isCompanyCard(r);
 
-    // Empresas: categoria filtrada aqui com keyword matching amplo
-    // (backend devolve TODAS as empresas verificadas, nós filtramos aqui)
     if (isComp && cat !== "Todos") {
       const cardCat  = (r.category ?? "").toLowerCase();
       const keywords = COMPANY_CATEGORY_KEYWORDS[cat] ?? [cat.toLowerCase()];
@@ -182,7 +173,6 @@ function SearchInner() {
       if (!matches) return false;
     }
 
-    // Pesquisa de texto
     if (!query.trim()) return true;
     const q = query.toLowerCase();
     return (
@@ -213,6 +203,7 @@ function SearchInner() {
         address:          item.address || "Luanda, Angola",
         budget:           item.pricePerHour || 0,
         targetProviderId: item.providerId,
+        catalogItemId:    item.catalogItemId,
       });
       setSolicitStates(p => ({ ...p, [item.key]: "done" }));
     } catch {
@@ -244,8 +235,6 @@ function SearchInner() {
         .sbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:#131b27;border:1px solid #1a2535;width:100%}
         .sinput{flex:1;background:none;border:none;outline:none;font-size:14px;color:#e2e8f0;font-family:inherit;min-width:0}
         .sinput::placeholder{color:#4a5a6a}
-
-        /* Scroll de categorias — oculto em mobile, visível em desktop */
         .cscroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
         .cscroll::-webkit-scrollbar{display:none}
         @media(min-width:1025px){
@@ -255,7 +244,6 @@ function SearchInner() {
           .cscroll::-webkit-scrollbar-thumb{background:#1a2535;border-radius:99px}
           .cscroll::-webkit-scrollbar-thumb:hover{background:#2a3a4a}
         }
-
         .cpill{padding:7px 14px;border-radius:99px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:1px solid #1a2535;background:#131b27;color:#6a7a8a;transition:all 0.15s;flex-shrink:0;font-family:inherit}
         .cpill.on{background:#1D9E75;border-color:#1D9E75;color:white}
         .fbtn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;font-size:12px;cursor:pointer;border:1px solid #1a2535;background:#0d1117;color:#6a7a8a;font-family:inherit;flex-shrink:0;transition:all 0.15s}
@@ -264,14 +252,10 @@ function SearchInner() {
         .fchip{padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;border:1px solid #1a2535;background:#0d1117;color:#6a7a8a;transition:all 0.15s}
         .fchip.on{background:#1D9E75;border-color:#1D9E75;color:white}
         .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-
-        /* Cards — NÃO clicáveis, animação hover apenas */
         .pcard{background:#131b27;border:1px solid #1a2535;border-radius:16px;padding:20px;transition:transform 0.18s ease,box-shadow 0.18s ease,border-color 0.18s ease;cursor:default}
         .pcard:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.2)}
         .pcard.company-card{border-color:#378ADD18}
         .pcard.company-card:hover{border-color:#378ADD45;box-shadow:0 8px 24px rgba(55,138,221,0.12)}
-
-        /* Botões */
         .sol-idle{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;flex:1;border:1px solid #1a2535;background:#0d1117;color:#8a9ab0;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s}
         .sol-idle:hover{border-color:#8B5CF6;color:#8B5CF6;background:#8B5CF610}
         .sol-load{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;flex:1;border:1px solid #8B5CF640;background:#8B5CF615;color:#8B5CF6;font-size:13px;font-weight:600;font-family:inherit;pointer-events:none}
@@ -283,7 +267,6 @@ function SearchInner() {
         .orc-full{flex:1}
         .ver-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;border:1px solid #378ADD40;background:#378ADD15;color:#378ADD;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;flex:1}
         .ver-btn:hover{background:#378ADD;color:white}
-
         .empty-s{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px;text-align:center}
         .sk{background:#1a2535;border-radius:8px;animation:sk 1.5s infinite}
         @keyframes sk{0%,100%{opacity:1}50%{opacity:0.4}}
@@ -301,20 +284,25 @@ function SearchInner() {
             <div>
               <h1 style={{fontSize:22,fontWeight:700,color:"#e2e8f0",marginBottom:4}}>Pesquisar prestadores</h1>
               <p style={{fontSize:13,color:"#4a6a6a"}}>
-                {loading?"A carregar...":error?"":filtered.length>0?`${filtered.length} resultado${filtered.length!==1?"s":""}` :"Encontra o profissional certo"}
+                {loading ? "A carregar..." : error ? "" :
+                  filtered.length > 0 ? `${filtered.length} resultado${filtered.length!==1?"s":""}` : "Encontra o profissional certo"}
               </p>
             </div>
 
             <div className="sbar">
               <Search size={16} style={{color:"#4a7070",flexShrink:0}}/>
-              <input className="sinput" placeholder="Pesquisa por nome, empresa, serviço ou categoria..." value={query} onChange={e=>setQuery(e.target.value)}/>
-              {query&&<button onClick={()=>setQuery("")} style={{background:"none",border:"none",cursor:"pointer",color:"#4a5a6a",display:"flex"}}><X size={14}/></button>}
-              <button className={`fbtn${showFilters?" on":""}`} onClick={()=>setShowFilters(f=>!f)}>
+              <input className="sinput" placeholder="Pesquisa por nome, empresa, serviço ou categoria..." value={query} onChange={e => setQuery(e.target.value)}/>
+              {query && (
+                <button onClick={() => setQuery("")} style={{background:"none",border:"none",cursor:"pointer",color:"#4a5a6a",display:"flex"}}>
+                  <X size={14}/>
+                </button>
+              )}
+              <button className={`fbtn${showFilters?" on":""}`} onClick={() => setShowFilters(f => !f)}>
                 <Filter size={13}/> Filtros
               </button>
             </div>
 
-            {showFilters&&(
+            {showFilters && (
               <div className="fpanel">
                 <div>
                   <p style={{fontSize:11,fontWeight:600,color:"#4a5a6a",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.06em"}}>Ordenar</p>
@@ -328,128 +316,196 @@ function SearchInner() {
               </div>
             )}
 
-            {/* Categorias — scroll visível no desktop */}
             <div className="cscroll">
-              {CATS.map(c=><button key={c} className={`cpill${cat===c?" on":""}`} onClick={()=>setCat(c)}>{c}</button>)}
+              {CATS.map(c => (
+                <button key={c} className={`cpill${cat===c?" on":""}`} onClick={() => setCat(c)}>{c}</button>
+              ))}
             </div>
 
-            {loading?(
+            {loading ? (
               <div className="pgrid">
                 {[1,2,3,4,5,6].map(i=>(
                   <div key={i} style={{background:"#131b27",border:"1px solid #1a2535",borderRadius:16,padding:20}}>
                     <div style={{display:"flex",gap:12,marginBottom:14}}>
                       <div className="sk" style={{width:52,height:52,borderRadius:"50%",flexShrink:0}}/>
-                      <div style={{flex:1}}><div className="sk" style={{width:"60%",height:14,marginBottom:8}}/><div className="sk" style={{width:"40%",height:11}}/></div>
+                      <div style={{flex:1}}>
+                        <div className="sk" style={{width:"60%",height:14,marginBottom:8}}/>
+                        <div className="sk" style={{width:"40%",height:11}}/>
+                      </div>
                     </div>
                     <div className="sk" style={{width:"80%",height:11,marginBottom:14}}/>
-                    <div style={{display:"flex",gap:8}}><div className="sk" style={{flex:1,height:38,borderRadius:10}}/><div className="sk" style={{flex:1,height:38,borderRadius:10}}/></div>
+                    <div style={{display:"flex",gap:8}}>
+                      <div className="sk" style={{flex:1,height:38,borderRadius:10}}/>
+                      <div className="sk" style={{flex:1,height:38,borderRadius:10}}/>
+                    </div>
                   </div>
                 ))}
               </div>
-            ):error?(
+            ) : error ? (
               <div style={{background:"#E24B4A15",border:"1px solid #E24B4A30",borderRadius:12,padding:16,display:"flex",alignItems:"center",gap:12}}>
                 <p style={{fontSize:13,color:"#E24B4A",flex:1}}>{error}</p>
                 <button onClick={fetchAll} style={{fontSize:12,color:"#E24B4A",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>Tentar novamente</button>
               </div>
-            ):filtered.length===0?(
+            ) : filtered.length === 0 ? (
               <div className="empty-s">
                 <div style={{width:64,height:64,borderRadius:20,background:"#131b27",border:"1px solid #1a2535",display:"flex",alignItems:"center",justifyContent:"center"}}>
                   <Briefcase size={28} style={{color:"#2a3a4a"}}/>
                 </div>
-                <p style={{fontSize:16,fontWeight:700,color:"#c0d0e0"}}>{query||cat!=="Todos"?"Nenhum resultado encontrado":"Prestadores em breve"}</p>
-                <p style={{fontSize:13,color:"#4a6a6a",lineHeight:1.6,maxWidth:320}}>
-                  {query||cat!=="Todos"?"Tenta outra pesquisa ou categoria.":"Os prestadores verificados aparecem aqui após completarem o KYC."}
+                <p style={{fontSize:16,fontWeight:700,color:"#c0d0e0"}}>
+                  {query||cat!=="Todos" ? "Nenhum resultado encontrado" : "Prestadores em breve"}
                 </p>
-                {(query||cat!=="Todos")&&<button onClick={()=>{setQuery("");setCat("Todos");}} style={{fontSize:13,color:"#1D9E75",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>Limpar filtros</button>}
+                <p style={{fontSize:13,color:"#4a6a6a",lineHeight:1.6,maxWidth:320}}>
+                  {query||cat!=="Todos" ? "Tenta outra pesquisa ou categoria." : "Os prestadores verificados aparecem aqui após completarem o KYC."}
+                </p>
+                {(query||cat!=="Todos") && (
+                  <button onClick={()=>{setQuery("");setCat("Todos");}} style={{fontSize:13,color:"#1D9E75",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>
+                    Limpar filtros
+                  </button>
+                )}
               </div>
-            ):(
+            ) : (
               <div className="pgrid">
-                {filtered.map(item=>{
-                  const isEmpresa = isCompanyCard(item);
-                  const isCatalog = item.source==="catalog";
-                  const sol       = solicitStates[item.key]??"idle";
+                {filtered.map(item => {
+                  const sol        = solicitStates[item.key] ?? "idle";
+                  const isCompany  = isCompanyCard(item);
+                  const isCatalog  = item.source === "catalog";
 
-                  return(
-                    <div className={`pcard${isEmpresa?" company-card":""}`} key={item.key}>
-
-                      {/* ── Avatar + Info ── */}
+                  return (
+                    <div
+                      className={`pcard${isCompany ? " company-card" : ""}`}
+                      key={item.key}
+                    >
                       <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:14}}>
                         <div style={{
-                          width:52,height:52,flexShrink:0,position:"relative",
-                          borderRadius:isEmpresa?12:"50%",
-                          background:isEmpresa?"#071830":(item.isOnline?"#0b2a2a":"#1a2535"),
-                          border:isEmpresa?"1px solid #378ADD30":"none",
-                          display:"flex",alignItems:"center",justifyContent:"center",
-                          fontSize:22,overflow:"hidden",
+                          width:52, height:52, flexShrink:0, position:"relative",
+                          borderRadius: isCompany ? 12 : "50%",
+                          background: isCompany ? "#071830" : (item.isOnline ? "#0b2a2a" : "#1a2535"),
+                          border: isCompany ? "1px solid #378ADD30" : "none",
+                          display:"flex", alignItems:"center", justifyContent:"center",
+                          fontSize:22, overflow:"hidden",
                         }}>
                           {item.providerAvatar
-                            ?<img src={item.providerAvatar} alt={item.providerName} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                            :isEmpresa?<Building2 size={22} style={{color:"#378ADD"}}/>:(CAT_EMOJI[item.category??""]??"🔧")
+                            ? <img src={item.providerAvatar} alt={item.providerName} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                            : isCompany
+                              ? <Building2 size={22} style={{color:"#378ADD"}}/>
+                              : (CAT_EMOJI[item.category ?? ""] ?? "🔧")
                           }
-                          {!isEmpresa&&(
-                            <div style={{position:"absolute",bottom:1,right:1,width:13,height:13,borderRadius:"50%",background:item.isOnline?"#1D9E75":"#4a5a6a",border:"2px solid #131b27"}}/>
+                          {!isCompany && (
+                            <div style={{
+                              position:"absolute", bottom:1, right:1,
+                              width:13, height:13, borderRadius:"50%",
+                              background: item.isOnline ? "#1D9E75" : "#4a5a6a",
+                              border:"2px solid #131b27",
+                            }}/>
                           )}
                         </div>
 
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:6,marginBottom:3}}>
-                            <p style={{fontSize:15,fontWeight:700,color:"#e2e8f0",margin:0}}>{item.providerName}</p>
-                            {isEmpresa&&(
-                              <span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:99,background:"#378ADD15",color:"#378ADD",border:"1px solid #378ADD30",display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
+                            <p style={{fontSize:15,fontWeight:700,color:"#e2e8f0",margin:0}}>
+                              {item.providerName}
+                            </p>
+                            {isCompany && (
+                              <span style={{
+                                fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:99,
+                                background:"#378ADD15", color:"#378ADD", border:"1px solid #378ADD30",
+                                display:"flex", alignItems:"center", gap:3, flexShrink:0,
+                              }}>
                                 <Building2 size={9}/> Empresa
                               </span>
                             )}
-                            {!isEmpresa&&isCatalog&&(
-                              <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:99,background:"#8B5CF620",color:"#8B5CF6",border:"1px solid #8B5CF640",display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
+                            {!isCompany && isCatalog && (
+                              <span style={{
+                                fontSize:10, fontWeight:600, padding:"2px 7px", borderRadius:99,
+                                background:"#8B5CF620", color:"#8B5CF6", border:"1px solid #8B5CF640",
+                                display:"flex", alignItems:"center", gap:3, flexShrink:0,
+                              }}>
                                 <Package size={9}/> Catálogo
                               </span>
                             )}
                           </div>
 
                           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
-                            {item.category&&<span style={{fontSize:12,padding:"2px 8px",borderRadius:99,background:"#1a2535",color:"#6a7a8a"}}>{item.category}</span>}
-                            {!isEmpresa&&(
-                              <span style={{fontSize:11,display:"flex",alignItems:"center",gap:3,color:item.isOnline?"#1D9E75":"#4a5a6a"}}>
-                                {item.isOnline?<Wifi size={11}/>:<WifiOff size={11}/>}
-                                {item.isOnline?"Online":"Offline"}
+                            {item.category && (
+                              <span style={{fontSize:12,padding:"2px 8px",borderRadius:99,background:"#1a2535",color:"#6a7a8a"}}>
+                                {item.category}
                               </span>
                             )}
-                            {!isEmpresa&&item.pricePerHour&&(
+                            {!isCompany && (
+                              <span style={{fontSize:11,display:"flex",alignItems:"center",gap:3,color:item.isOnline?"#1D9E75":"#4a5a6a"}}>
+                                {item.isOnline ? <Wifi size={11}/> : <WifiOff size={11}/>}
+                                {item.isOnline ? "Online" : "Offline"}
+                              </span>
+                            )}
+                            {!isCompany && item.pricePerHour && (
                               <span style={{fontSize:11,color:"#EF9F27",fontWeight:600}}>
                                 {Number(item.pricePerHour).toLocaleString("pt-PT")} Kz/h
                               </span>
                             )}
                           </div>
 
-                          {!isEmpresa&&(item.catalogTitle||item.bio)&&(
-                            <p style={{fontSize:12,color:"#4a6a6a",lineHeight:1.5,margin:0,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
-                              {item.catalogTitle??item.bio}
+                          {!isCompany && (item.catalogTitle || item.bio) && (
+                            <p style={{
+                              fontSize:12, color:"#4a6a6a", lineHeight:1.5, margin:0,
+                              overflow:"hidden", textOverflow:"ellipsis",
+                              display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical",
+                            }}>
+                              {item.catalogTitle ?? item.bio}
                             </p>
                           )}
                         </div>
                       </div>
 
-                      {/* ── Botões ── */}
                       <div style={{display:"flex",gap:8}}>
-                        {isEmpresa?(
-                          <button className="ver-btn" onClick={()=>item.companyId&&router.push(`/company/${item.companyId}`)}>
+
+                        {isCompany ? (
+                          <button className="ver-btn" onClick={() => item.companyId && router.push(`/company/${item.companyId}`)}>
                             <Building2 size={13}/> Ver empresa
                           </button>
-                        ):isCatalog?(
+
+                        ) : isCatalog ? (
                           <>
-                            {sol==="idle"   &&<button className="sol-idle" onClick={()=>handleSolicitar(item)}><Package size={14}/> Solicitar</button>}
-                            {sol==="loading"&&<div className="sol-load"><Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>A solicitar...</div>}
-                            {sol==="done"   &&<div className="sol-done"><CheckCircle size={14}/> Solicitado</div>}
-                            {sol==="error"  &&<div className="sol-err">Erro — tenta novamente</div>}
-                            <button className="orc-btn" disabled={quoteLoadingId===item.key} onClick={()=>handleOrcamento(item.key,item.providerId)}>
-                              {quoteLoadingId===item.key?<Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>:<FileText size={14}/>}
-                              {quoteLoadingId===item.key?"A abrir...":"Orçamento"}
+                            {sol === "idle" && (
+                              <button className="sol-idle" onClick={() => handleSolicitar(item)}>
+                                <Package size={14}/> Solicitar
+                              </button>
+                            )}
+                            {sol === "loading" && (
+                              <div className="sol-load">
+                                <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>
+                                A solicitar...
+                              </div>
+                            )}
+                            {sol === "done" && (
+                              <div className="sol-done">
+                                <CheckCircle size={14}/> Solicitado
+                              </div>
+                            )}
+                            {sol === "error" && (
+                              <div className="sol-err">Erro — tenta novamente</div>
+                            )}
+                            <button
+                              className="orc-btn"
+                              disabled={quoteLoadingId === item.key}
+                              onClick={() => handleOrcamento(item.key, item.providerId)}
+                            >
+                              {quoteLoadingId === item.key
+                                ? <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>
+                                : <FileText size={14}/>}
+                              {quoteLoadingId === item.key ? "A abrir..." : "Orçamento"}
                             </button>
                           </>
-                        ):(
-                          <button className="orc-btn orc-full" disabled={quoteLoadingId===item.key} onClick={()=>handleOrcamento(item.key,item.providerId)}>
-                            {quoteLoadingId===item.key?<Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>:<FileText size={14}/>}
-                            {quoteLoadingId===item.key?"A abrir...":"Orçamento"}
+
+                        ) : (
+                          <button
+                            className="orc-btn orc-full"
+                            disabled={quoteLoadingId === item.key}
+                            onClick={() => handleOrcamento(item.key, item.providerId)}
+                          >
+                            {quoteLoadingId === item.key
+                              ? <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>
+                              : <FileText size={14}/>}
+                            {quoteLoadingId === item.key ? "A abrir..." : "Orçamento"}
                           </button>
                         )}
                       </div>
@@ -466,7 +522,7 @@ function SearchInner() {
 }
 
 export default function SearchPage() {
-  return(
+  return (
     <Suspense fallback={
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#0d1117"}}>
         <Loader2 size={24} style={{color:"#1D9E75",animation:"spin 1s linear infinite"}}/>

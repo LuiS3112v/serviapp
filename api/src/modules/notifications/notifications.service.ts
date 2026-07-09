@@ -107,6 +107,29 @@ export class NotificationsService {
     await this.firebaseService.sendToMultiple(tokens.map(t => t.token), title, body, data);
   }
 
+  // ── Notifica todos os admins ──────────────────────────────────────────────
+  // Helper usado pelos métodos notifyAdmin* — busca todos os utilizadores
+  // com role ADMIN e cria uma notificação para cada um, em vez de assumir
+  // um único admin fixo.
+  private async notifyAllAdmins(title: string, body: string, actionUrl?: string) {
+    const admins = await this.userRepo.find({
+      where: { role: Role.ADMIN },
+      select: { id: true },
+    });
+    await Promise.all(
+      admins.map(admin =>
+        this.create({
+          userId: admin.id,
+          type: NotificationType.ADMIN,
+          title,
+          body,
+          priority: NotificationPriority.HIGH,
+          actionUrl,
+        }).catch(() => {}),
+      ),
+    );
+  }
+
   // ─── KYC individual ───────────────────────────────────────────────────────
 
   async notifyKycApproved(userId: string) {
@@ -223,34 +246,27 @@ export class NotificationsService {
 
   // ─── Sistema de empresa ───────────────────────────────────────────────────
 
-  // Convite só para providers — verifica o role antes de criar a notificação
   async notifyCompanyInvitation(inviteeUserId: string, companyName: string) {
-    // Verifica se o utilizador é provider — só providers recebem convites
     const user = await this.userRepo.findOne({
       where: { id: inviteeUserId },
       select: { id: true, role: true },
     });
-
     if (!user || user.role !== Role.PROVIDER) {
       this.logger.warn(
-        `Convite para empresa ignorado — utilizador ${inviteeUserId} tem role "${user?.role ?? 'desconhecido'}" (só providers recebem convites)`,
+        `Convite ignorado — utilizador ${inviteeUserId} tem role "${user?.role ?? 'desconhecido'}"`,
       );
       return;
     }
-
     await this.create({
-      userId: inviteeUserId,
-      type: NotificationType.SYSTEM,
+      userId: inviteeUserId, type: NotificationType.SYSTEM,
       title: '🏢 Convite para equipa',
       body: `${companyName} convidou-te para fazeres parte da equipa.`,
       priority: NotificationPriority.HIGH,
-      // metadata inclui companyName para o frontend poder mostrar os botões
       metadata: { companyName, isCompanyInvite: true },
       actionUrl: '/provider/notifications',
     });
   }
 
-  // Versão com invitationId para resposta directa nas notificações
   async notifyCompanyInvitationWithId(
     inviteeUserId: string,
     companyName: string,
@@ -260,25 +276,19 @@ export class NotificationsService {
       where: { id: inviteeUserId },
       select: { id: true, role: true },
     });
-
     if (!user || user.role !== Role.PROVIDER) {
       this.logger.warn(
         `Convite ignorado — utilizador ${inviteeUserId} tem role "${user?.role ?? 'desconhecido'}"`,
       );
       return;
     }
-
     await this.create({
       userId: inviteeUserId,
       type: NotificationType.SYSTEM,
       title: '🏢 Convite para equipa',
       body: `${companyName} convidou-te para fazeres parte da equipa.`,
       priority: NotificationPriority.HIGH,
-      metadata: {
-        companyName,
-        isCompanyInvite: true,
-        invitationId, // ← chave para os botões funcionarem
-      },
+      metadata: { companyName, isCompanyInvite: true, invitationId },
       actionUrl: '/provider/notifications',
     });
   }
@@ -311,6 +321,128 @@ export class NotificationsService {
       priority: NotificationPriority.HIGH,
       metadata: { reason },
       actionUrl: '/provider/company',
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Sistema de pagamento por comprovativo (novos) — cobrem a secção 14
+  // do prompt: cliente, prestador e admin recebem notificações em cada
+  // passo do fluxo de transferência bancária + comprovativo.
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ── Cliente ──────────────────────────────────────────────────────────────
+
+  async notifyClientBankDetailsAvailable(clientId: string, amount: number) {
+    await this.create({
+      userId: clientId, type: NotificationType.PAYMENT,
+      title: '🏦 Dados bancários disponíveis',
+      body: `Transfere ${amount.toLocaleString('pt-PT')} Kz e envia o comprovativo para avançar com o serviço.`,
+      priority: NotificationPriority.HIGH,
+      actionUrl: '/services',
+    });
+  }
+
+  async notifyClientPaymentConfirmed(clientId: string) {
+    await this.create({
+      userId: clientId, type: NotificationType.PAYMENT,
+      title: '🔒 Pagamento confirmado',
+      body: 'O teu pagamento foi confirmado e está protegido. Já podes gerar o PIN de início.',
+      priority: NotificationPriority.HIGH,
+      actionUrl: '/services',
+    });
+  }
+
+  async notifyClientProofRejected(clientId: string, reason: string) {
+    await this.create({
+      userId: clientId, type: NotificationType.SYSTEM,
+      title: '❌ Comprovativo rejeitado',
+      body: `Motivo: ${reason}. Envia um novo comprovativo para continuar.`,
+      priority: NotificationPriority.HIGH,
+      metadata: { reason },
+      actionUrl: '/services',
+    });
+  }
+
+  // ── Prestador ────────────────────────────────────────────────────────────
+
+  async notifyProviderProofSubmitted(providerId: string) {
+    await this.create({
+      userId: providerId, type: NotificationType.SYSTEM,
+      title: '📎 Comprovativo enviado',
+      body: 'O cliente enviou o comprovativo de pagamento. Está a ser validado pela equipa.',
+      priority: NotificationPriority.MEDIUM,
+      actionUrl: '/provider/services',
+    });
+  }
+
+  async notifyProviderPaymentConfirmed(providerId: string) {
+    await this.create({
+      userId: providerId, type: NotificationType.PAYMENT,
+      title: '🔒 Pagamento confirmado',
+      body: 'O pagamento do cliente foi confirmado. O serviço pode avançar assim que o PIN for validado.',
+      priority: NotificationPriority.HIGH,
+      actionUrl: '/provider/services',
+    });
+  }
+
+  async notifyProviderPayoutDone(providerId: string, amount: number) {
+    await this.create({
+      userId: providerId, type: NotificationType.WALLET,
+      title: '🎉 Pagamento concluído',
+      body: `${amount.toLocaleString('pt-PT')} Kz foi transferido para a tua conta e creditado na tua wallet.`,
+      priority: NotificationPriority.CRITICAL,
+      metadata: { amount },
+      actionUrl: '/provider/wallet',
+    });
+  }
+
+  // ── Administrador ────────────────────────────────────────────────────────
+
+  async notifyAdminNewProof(paymentId: string) {
+    await this.notifyAllAdmins(
+      '📎 Novo comprovativo recebido',
+      'Um cliente enviou um comprovativo de pagamento. Verifica e confirma.',
+      '/admin/payments',
+    );
+  }
+
+  async notifyAdminPayoutPending(serviceId: string) {
+    await this.notifyAllAdmins(
+      '💸 Transferência pendente',
+      'Um serviço foi concluído e confirmado — falta transferir o valor ao prestador.',
+      '/admin/payments',
+    );
+  }
+
+  async notifyAdminRefundNeeded(serviceId: string) {
+    await this.notifyAllAdmins(
+      '↩️ Reembolso necessário',
+      'Um serviço com pagamento confirmado foi cancelado — é necessário reembolsar o cliente manualmente.',
+      '/admin/payments',
+    );
+  }
+
+  // ── Disputa ──────────────────────────────────────────────────────────────
+
+  async notifyClientDisputeResolved(clientId: string, favoredClient: boolean, resolution: string) {
+    await this.create({
+      userId: clientId,
+      type: NotificationType.SYSTEM,
+      title: favoredClient ? '✅ Disputa resolvida a teu favor' : 'ℹ️ Disputa resolvida',
+      body: resolution,
+      priority: NotificationPriority.HIGH,
+      actionUrl: '/services',
+    });
+  }
+
+  async notifyProviderDisputeResolved(providerId: string, favoredProvider: boolean, resolution: string) {
+    await this.create({
+      userId: providerId,
+      type: NotificationType.SYSTEM,
+      title: favoredProvider ? '✅ Disputa resolvida a teu favor' : 'ℹ️ Disputa resolvida',
+      body: resolution,
+      priority: NotificationPriority.HIGH,
+      actionUrl: '/provider/services',
     });
   }
 }

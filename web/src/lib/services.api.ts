@@ -13,6 +13,7 @@ export interface Service {
   proposedByProviderId?: string;
   proposedByProvider?: { id: string; fullName: string };
   targetProviderId?: string;
+  catalogItemId?: string;
   status: string;
   clientId: string;
   providerId?: string;
@@ -23,7 +24,6 @@ export interface Service {
   updatedAt: string;
   clientRating?: number;
   clientReview?: string;
-  // ─── Confirmation fields — vêm do backend após conclusão ────────────────
   clientConfirmedAt?: string;
   providerCompletedAt?: string;
 }
@@ -77,6 +77,11 @@ export interface CreateServicePayload {
   budget: number;
   scheduledAt?: string;
   targetProviderId?: string;
+  // Preenchido quando o pedido nasce de "Solicitar" na página de
+  // pesquisa — liga o Service à entrada de catálogo que o originou,
+  // permitindo desactivá-la automaticamente quando o pagamento ao
+  // prestador for concluído (o serviço "desaparece" da pesquisa).
+  catalogItemId?: string;
 }
 
 export interface ReviewPayload {

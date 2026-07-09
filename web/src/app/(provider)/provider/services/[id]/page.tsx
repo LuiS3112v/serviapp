@@ -1,377 +1,485 @@
 "use client";
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
-import {
-  ArrowLeft, CheckCircle, Clock, MessageCircle,
-  Shield, MapPin, Calendar, Tag, Loader2, AlertCircle,
-  DollarSign, Play,
-} from "lucide-react";
-import { servicesApi, Service } from "@/lib/services.api";
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import ProofViewerModal from "@/components/shared/ProofViewerModal";
+import { servicesDetailApi } from "@/lib/api/services-detail.api";
+import { paymentProofApi, PaymentProof } from "@/lib/api/payment-proof.api";
 import { chatApi } from "@/lib/chat.api";
-import { getToken, getSession } from "@/lib/auth.api";
+import {
+  CheckCircle, Clock, Loader2, ArrowLeft,
+  X, MessageCircle, AlertTriangle, Key, Eye, FileText,
+} from "lucide-react";
 
-const STATUS_CFG: Record<string,{label:string;color:string;bg:string}> = {
-  pending:     {label:"Disponível",  color:"#1D9E75",bg:"#1d9e7520"},
-  accepted:    {label:"Aceite",      color:"#378ADD",bg:"#378ADD20"},
-  in_progress: {label:"Em execução", color:"#EF9F27",bg:"#EF9F2720"},
-  completed:   {label:"Concluído",   color:"#1D9E75",bg:"#1d9e7520"},
-  cancelled:   {label:"Cancelado",   color:"#E24B4A",bg:"#E24B4A20"},
+const STATUS: Record<string, { label: string; color: string }> = {
+  requested:          { label: "Pedido recebido",                   color: "#EF9F27" },
+  rejected:           { label: "Recusado",                          color: "#E24B4A" },
+  accepted:           { label: "Aceite — a aguardar pagamento",     color: "#378ADD" },
+  payment_pending:    { label: "A aguardar transferência",          color: "#EF9F27" },
+  payment_held:       { label: "Pagamento protegido",               color: "#1D9E75" },
+  in_progress:        { label: "Em execução",                       color: "#8B5CF6" },
+  provider_completed: { label: "A aguardar confirmação do cliente", color: "#EF9F27" },
+  completed:          { label: "Concluído",                         color: "#1D9E75" },
+  disputed:           { label: "Em disputa",                        color: "#E24B4A" },
+  cancelled:          { label: "Cancelado",                         color: "#E24B4A" },
+  refunded:           { label: "Reembolsado",                       color: "#1D9E75" },
 };
 
-const TIMELINE = [
-  {label:"Solicitado",  desc:"Pedido criado e aguarda prestador"},
-  {label:"Aceite",      desc:"Prestador aceitou o pedido"},
-  {label:"Em execução", desc:"Trabalho em andamento"},
-  {label:"Concluído",   desc:"Serviço terminado e confirmado"},
-];
-const STATUS_STEP: Record<string,number> = {
-  pending:0, accepted:1, in_progress:2, completed:3,
+const TL: Record<string, string> = {
+  SERVICE_CREATED:         "📋 Pedido recebido",
+  PROVIDER_ACCEPTED:       "✅ Aceitaste o pedido",
+  PROVIDER_REJECTED:       "❌ Recusaste o pedido",
+  BANK_DETAILS_SHOWN:      "🏦 Cliente recebeu dados bancários",
+  PROOF_UPLOADED:          "📎 Cliente enviou comprovativo",
+  ADMIN_CONFIRMED_PAYMENT: "👨‍💼 Administrador confirmou pagamento",
+  ADMIN_REJECTED_PROOF:    "❌ Comprovativo do cliente foi rejeitado",
+  PAYMENT_HELD:            "🔒 Pagamento protegido",
+  PIN_GENERATED:           "🔑 Cliente gerou PIN",
+  SERVICE_STARTED:         "🚀 Serviço iniciado",
+  PROVIDER_COMPLETED:      "🏁 Marcaste como concluído",
+  CLIENT_CONFIRMED:        "👍 Cliente confirmou a conclusão",
+  COMMISSION_CALCULATED:   "💸 Comissão calculada",
+  PAYOUT_COMPLETED:        "🎉 Transferência realizada — pagamento concluído",
+  SERVICE_CANCELLED:       "❌ Serviço cancelado",
+  DISPUTE_OPENED:          "⚠️ Disputa aberta",
 };
 
-const fmt = (d?:string) =>
-  !d?"—":new Date(d).toLocaleString("pt-PT",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});
+function fKz(v: number) { return new Intl.NumberFormat("pt-PT").format(v) + " Kz"; }
+function ago(d: string) {
+  const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
+  if (m < 1) return "agora"; if (m < 60) return `${m}min`;
+  const h = Math.floor(m/60); if (h < 24) return `${h}h`;
+  return new Date(d).toLocaleDateString("pt-PT");
+}
 
-function DetailInner() {
-  const router       = useRouter();
-  const { id }       = useParams() as { id: string };
-  const searchParams = useSearchParams();
-  const autoPropose  = searchParams.get("action") === "propose";
-
-  const [service, setService]         = useState<Service|null>(null);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState("");
-  const [accepting, setAccepting]     = useState(false);
-  const [starting, setStarting]       = useState(false);
-  const [completing, setCompleting]   = useState(false);
-  const [chatLoading, setChatLoading] = useState(false);
-  const [showPropose, setShowPropose] = useState(autoPropose);
-  const [proposedPrice, setProposedPrice] = useState("");
-  const [proposing, setProposing]     = useState(false);
-
-  const [user, setUser] = useState<any>(null);
-  useEffect(() => { setUser(getSession()); }, []);
-
-  useEffect(() => {
-    if (!getToken()) { setLoading(false); return; }
-    servicesApi.getOne(id)
-      .then(setService)
-      .catch(e => setError(e.message || "Erro ao carregar pedido."))
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  // Chat rápido — abre conversa com o cliente
-  const handleChat = async () => {
-    if (!service?.clientId) return;
-    setChatLoading(true);
-    try {
-      const { room } = await chatApi.createOrGetRoom({
-        participantId: service.clientId,
-        serviceId:     service.id,
-      });
-      router.push(`/provider/chat/${room.id}`);
-    } catch {
-      router.push("/provider/chat");
-    } finally {
-      setChatLoading(false);
-    }
+function PinModal({ onSubmit, onClose, loading }: { onSubmit:(p:string)=>void; onClose:()=>void; loading:boolean }) {
+  const [digits, setDigits] = useState(["","","","","",""]);
+  const change = (i: number, v: string) => {
+    if (!/^\d?$/.test(v)) return;
+    const n = [...digits]; n[i] = v; setDigits(n);
+    if (v && i < 5) document.getElementById(`pd-${i+1}`)?.focus();
   };
-
-  // Propor valor — abre formulário + cria sala + envia mensagem de abertura
-  const handleProposeClick = async () => {
-    setShowPropose(true);
-    if (!service?.clientId) return;
-    try {
-      const { room } = await chatApi.createOrGetRoom({
-        participantId: service.clientId,
-        serviceId:     service.id,
-      });
-      await chatApi.sendMessage(
-        room.id,
-        `Olá! Tenho interesse no teu pedido "${service.title}". Gostaria de negociar o preço antes de aceitar formalmente. Vou enviar uma proposta em breve.`,
-      );
-    } catch {
-      // Não bloqueia o formulário se o chat falhar
-    }
-  };
-
-  // Aceitar pelo orçamento do cliente
-  const handleAccept = async () => {
-    if (!service) return;
-    setAccepting(true); setError("");
-    try { setService(await servicesApi.accept(service.id, service.budget)); }
-    catch (e:any) { setError(e.message || "Erro ao aceitar."); }
-    finally { setAccepting(false); }
-  };
-
-  // Enviar proposta de preço
-  const handlePropose = async () => {
-    if (!service || !proposedPrice || Number(proposedPrice) <= 0) {
-      setError("Introduz um valor válido."); return;
-    }
-    setProposing(true); setError("");
-    try {
-      setService(await servicesApi.proposePrice(service.id, Number(proposedPrice)));
-      setShowPropose(false);
-    }
-    catch (e:any) { setError(e.message || "Erro ao enviar proposta."); }
-    finally { setProposing(false); }
-  };
-
-  const handleStart = async () => {
-    if (!service) return;
-    setStarting(true); setError("");
-    try { setService(await servicesApi.start(service.id)); }
-    catch (e:any) { setError(e.message || "Erro ao iniciar."); }
-    finally { setStarting(false); }
-  };
-
-  const handleComplete = async () => {
-    if (!service) return;
-    setCompleting(true); setError("");
-    try { setService(await servicesApi.complete(service.id)); }
-    catch (e:any) { setError(e.message || "Erro ao concluir."); }
-    finally { setCompleting(false); }
-  };
-
-  const cfg           = service ? (STATUS_CFG[service.status] ?? STATUS_CFG.pending) : STATUS_CFG.pending;
-  const currentStep   = service ? (STATUS_STEP[service.status] ?? 0) : 0;
-  const isAvailable   = service?.status === "pending" && !service?.providerId;
-  const isMyService   = service?.providerId === user?.id;
-  const isMyProposal  = service?.proposedByProviderId === user?.id;
-  const hasOtherProp  = !!service?.proposedByProviderId && service.proposedByProviderId !== user?.id;
-
+  const pin = digits.join("");
   return (
-    <>
-      <style>{`
-        .sdi{padding:28px 32px;max-width:680px;display:flex;flex-direction:column;gap:20px}
-        .sdc{background:#131b27;border:1px solid #1a2535;border-radius:16px;padding:22px}
-        .tli{display:flex;gap:16px;position:relative}
-        .tll{position:absolute;left:17px;top:36px;width:2px;height:calc(100% - 8px);background:#1a2535}
-        .tll.done{background:#1D9E75}
-        .tld{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1}
-        .tlc{flex:1;padding-bottom:24px}
-        .ir{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #1a2535}
-        .ir:last-child{border-bottom:none}
-        .ab{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;flex:1;transition:opacity 0.2s}
-        .ab:disabled{opacity:0.6;cursor:not-allowed}
-        .ab:hover:not(:disabled){opacity:0.9}
-        .pi{width:100%;padding:13px 16px;border-radius:12px;background:#0d1117;border:1px solid #EF9F2740;color:#e2e8f0;font-size:14px;outline:none;font-family:inherit;margin-bottom:12px}
-        .pi:focus{border-color:#EF9F27}
-        .pi::placeholder{color:#4a5a6a}
-        @media(max-width:640px){.sdi{padding:16px;gap:16px}}
-        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-      `}</style>
-
-      <div className="sdi">
-        <button onClick={()=>router.back()} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#4a6a6a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",width:"fit-content"}}>
-          <ArrowLeft size={15}/> Voltar
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.88)",
+      zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background:"#131b27", border:"1px solid #1a2535",
+        borderRadius:20, padding:32, maxWidth:340, width:"100%", textAlign:"center" }}>
+        <div style={{ fontSize:36, marginBottom:12 }}>🔑</div>
+        <p style={{ fontSize:16, fontWeight:700, color:"#e2e8f0", marginBottom:6 }}>Inserir PIN</p>
+        <p style={{ fontSize:13, color:"#4a6a6a", marginBottom:24, lineHeight:1.5 }}>
+          Pede o PIN de 6 dígitos ao cliente para confirmar que chegaste ao local.
+        </p>
+        <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:24 }}>
+          {digits.map((d,i) => (
+            <input key={i} id={`pd-${i}`} value={d} maxLength={1}
+              onChange={e => change(i, e.target.value)}
+              style={{ width:44, height:52, textAlign:"center", fontSize:22, fontWeight:700,
+                borderRadius:10, background:"#0d1117",
+                border:`2px solid ${d ? "#8B5CF6" : "#1a2535"}`,
+                color:"#e2e8f0", outline:"none", fontFamily:"monospace" }} />
+          ))}
+        </div>
+        <button disabled={pin.length < 6 || loading} onClick={() => onSubmit(pin)}
+          style={{ width:"100%", padding:13, borderRadius:11, border:"none",
+            background: pin.length === 6 ? "linear-gradient(135deg,#8B5CF6,#7C3AED)" : "#1a2535",
+            color: pin.length === 6 ? "white" : "#4a5a6a",
+            fontSize:14, fontWeight:700, cursor: pin.length === 6 ? "pointer" : "not-allowed",
+            display:"flex", alignItems:"center", justifyContent:"center", gap:8, fontFamily:"inherit" }}>
+          {loading && <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }} />}
+          {loading ? "A validar..." : "Iniciar serviço"}
         </button>
-
-        {loading && (
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"80px 20px",gap:12}}>
-            <Loader2 size={24} style={{color:"#EF9F27",animation:"spin 1s linear infinite"}}/>
-            <span style={{fontSize:14,color:"#4a6a6a"}}>A carregar...</span>
-          </div>
-        )}
-
-        {error && !loading && (
-          <div style={{background:"#E24B4A15",border:"1px solid #E24B4A30",borderRadius:12,padding:16,display:"flex",gap:12}}>
-            <AlertCircle size={18} style={{color:"#E24B4A",flexShrink:0}}/>
-            <p style={{fontSize:13,color:"#E24B4A"}}>{error}</p>
-          </div>
-        )}
-
-        {service && !loading && (
-          <>
-            {/* Título */}
-            <div>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,flexWrap:"wrap"}}>
-                <h1 style={{fontSize:22,fontWeight:700,color:"#e2e8f0",margin:0}}>{service.title}</h1>
-                <span style={{fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:99,background:cfg.bg,color:cfg.color}}>{cfg.label}</span>
-                {isMyProposal && service.status==="pending" && (
-                  <span style={{fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:99,background:"#378ADD20",color:"#378ADD"}}>
-                    Proposta: {Number(service.proposedPrice).toLocaleString("pt-PT")} Kz
-                  </span>
-                )}
-              </div>
-              <p style={{fontSize:13,color:"#4a6a6a"}}>Criado em {fmt(service.createdAt)}</p>
-            </div>
-
-            {/* Info cliente */}
-            <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",background:"#131b27",border:"1px solid #1a2535",borderRadius:14}}>
-              <div style={{width:44,height:44,borderRadius:"50%",background:"#1a3a2a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:"#1D9E75",flexShrink:0}}>
-                {service.client?.fullName?.charAt(0)?.toUpperCase() ?? "C"}
-              </div>
-              <div>
-                <p style={{fontSize:11,color:"#4a6a6a",marginBottom:2}}>Cliente</p>
-                <p style={{fontSize:15,fontWeight:700,color:"#e2e8f0"}}>{service.client?.fullName ?? "—"}</p>
-              </div>
-            </div>
-
-            {/* Detalhes */}
-            <div className="sdc">
-              <p style={{fontSize:11,fontWeight:600,color:"#4a5a6a",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14}}>Informações</p>
-              {[
-                {icon:<Tag size={14}/>,      label:"Categoria",         value:service.category},
-                {icon:<MapPin size={14}/>,   label:"Morada",            value:service.address||"—"},
-                {icon:<Calendar size={14}/>, label:"Data agendada",     value:fmt(service.scheduledAt)},
-                {icon:"💰",                  label:"Orçamento cliente", value:`${Number(service.budget).toLocaleString("pt-PT")} Kz`, hl:true},
-                ...(service.agreedPrice && Number(service.agreedPrice)!==Number(service.budget)
-                  ? [{icon:"✅", label:"Valor acordado", value:`${Number(service.agreedPrice).toLocaleString("pt-PT")} Kz`, hl2:true}]
-                  : []),
-              ].map((item,i)=>(
-                <div className="ir" key={i}>
-                  <span style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"#4a6a6a"}}>{item.icon} {item.label}</span>
-                  <span style={{fontSize:13,fontWeight:600,color:(item as any).hl2?"#1D9E75":(item as any).hl?"#EF9F27":"#c0d0e0",textAlign:"right",maxWidth:"60%"}}>
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-              {service.description && (
-                <div style={{marginTop:14,padding:"12px 14px",background:"#0d1117",borderRadius:10,border:"1px solid #1a2535"}}>
-                  <p style={{fontSize:11,fontWeight:600,color:"#4a5a6a",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>Descrição</p>
-                  <p style={{fontSize:13,color:"#6a7a8a",lineHeight:1.7}}>{service.description}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Timeline */}
-            <div className="sdc">
-              <p style={{fontSize:11,fontWeight:600,color:"#4a5a6a",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:16}}>Progresso</p>
-              {TIMELINE.map((step,i)=>{
-                const done=i<currentStep; const active=i===currentStep;
-                return (
-                  <div className="tli" key={i}>
-                    {i<TIMELINE.length-1 && <div className={`tll${done?" done":""}`}/>}
-                    <div className="tld" style={{background:done?"#1D9E75":active?"#1d9e7520":"#1a2535",border:active?"2px solid #1D9E75":"none"}}>
-                      {done ? <CheckCircle size={18} color="white"/> : <Clock size={16} style={{color:active?"#1D9E75":"#3a4a5a"}}/>}
-                    </div>
-                    <div className="tlc">
-                      <p style={{fontSize:14,fontWeight:600,color:done||active?"#e2e8f0":"#3a4a5a",marginBottom:3}}>{step.label}</p>
-                      <p style={{fontSize:12,color:"#4a5a6a",lineHeight:1.5}}>{step.desc}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Formulário proposta */}
-            {showPropose && isAvailable && !hasOtherProp && !isMyProposal && (
-              <div className="sdc" style={{border:"1px solid #EF9F2740",background:"#1a1205"}}>
-                <p style={{fontSize:13,fontWeight:700,color:"#EF9F27",marginBottom:4}}>Propor outro valor</p>
-                <p style={{fontSize:12,color:"#6a5a3a",marginBottom:14,lineHeight:1.5}}>
-                  O cliente foi notificado via chat. Introduz o valor que propões para este trabalho.
-                </p>
-                <input
-                  className="pi"
-                  type="number"
-                  placeholder={`Orçamento do cliente: ${Number(service.budget).toLocaleString("pt-PT")} Kz`}
-                  value={proposedPrice}
-                  onChange={e=>{setProposedPrice(e.target.value);setError("");}}
-                  min="1"
-                />
-                <div style={{display:"flex",gap:8}}>
-                  <button className="ab" style={{background:"#EF9F27",color:"#0d1117"}} disabled={proposing||!proposedPrice} onClick={handlePropose}>
-                    {proposing?<Loader2 size={15} style={{animation:"spin 1s linear infinite"}}/>:<DollarSign size={15}/>}
-                    {proposing?"A enviar...":"Enviar proposta formal"}
-                  </button>
-                  <button onClick={()=>setShowPropose(false)} style={{padding:"14px 20px",borderRadius:12,border:"1px solid #1a2535",background:"#0d1117",color:"#6a7a8a",fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Proposta enviada — aguarda cliente */}
-            {isMyProposal && service.status==="pending" && (
-              <div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"16px 20px",borderRadius:14,background:"#0b2020",border:"1px solid #378ADD25"}}>
-                <Clock size={18} style={{color:"#378ADD",flexShrink:0,marginTop:2}}/>
-                <div>
-                  <p style={{fontSize:14,fontWeight:600,color:"#c0d0e0",marginBottom:4}}>A aguardar resposta do cliente</p>
-                  <p style={{fontSize:13,color:"#4a6a6a"}}>
-                    Propuseste <strong style={{color:"#378ADD"}}>{Number(service.proposedPrice).toLocaleString("pt-PT")} Kz</strong>. O cliente irá aceitar ou recusar.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Em negociação com outro */}
-            {hasOtherProp && isAvailable && (
-              <div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"16px 20px",borderRadius:14,background:"#2a1e08",border:"1px solid #EF9F2725"}}>
-                <AlertCircle size={18} style={{color:"#EF9F27",flexShrink:0,marginTop:2}}/>
-                <p style={{fontSize:13,color:"#8a6a3a"}}>
-                  Este pedido está em negociação com outro prestador. Não podes aceitar enquanto a negociação estiver activa.
-                </p>
-              </div>
-            )}
-
-            {/* Segurança */}
-            <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 18px",borderRadius:14,background:"#0b2424",border:"1px solid #1d9e7525"}}>
-              <Shield size={18} style={{color:"#1D9E75",flexShrink:0}}/>
-              <p style={{fontSize:13,color:"#4a7a7a"}}>Pagamento protegido — libertado após confirmação do cliente.</p>
-            </div>
-
-            {/* Botões de acção */}
-            <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-              {/* Disponível para aceitar */}
-              {isAvailable && !hasOtherProp && !isMyProposal && (
-                <>
-                  <button className="ab" style={{background:"#EF9F27",color:"#0d1117"}} disabled={accepting} onClick={handleAccept}>
-                    {accepting?<Loader2 size={16} style={{animation:"spin 1s linear infinite"}}/>:<CheckCircle size={16}/>}
-                    {accepting?"A aceitar…":`Aceitar — ${Number(service.budget).toLocaleString("pt-PT")} Kz`}
-                  </button>
-                  {!showPropose && (
-                    <button className="ab" style={{background:"#131b27",color:"#EF9F27",border:"1px solid #EF9F2740",flex:"0 0 auto"}} onClick={handleProposeClick}>
-                      <DollarSign size={16}/> Propor valor
-                    </button>
-                  )}
-                </>
-              )}
-
-              {/* Aceite → Iniciar */}
-              {isMyService && service.status==="accepted" && (
-                <button className="ab" style={{background:"#1D9E75",color:"white"}} disabled={starting} onClick={handleStart}>
-                  {starting?<Loader2 size={16} style={{animation:"spin 1s linear infinite"}}/>:<Play size={16}/>}
-                  {starting?"A iniciar…":"Iniciar trabalho"}
-                </button>
-              )}
-
-              {/* Em execução → Concluir */}
-              {isMyService && service.status==="in_progress" && (
-                <button className="ab" style={{background:"#1D9E75",color:"white"}} disabled={completing} onClick={handleComplete}>
-                  {completing?<Loader2 size={16} style={{animation:"spin 1s linear infinite"}}/>:<CheckCircle size={16}/>}
-                  {completing?"A concluir…":"Marcar como concluído"}
-                </button>
-              )}
-
-              {/* Chat sempre disponível */}
-              <button
-                className="ab"
-                style={{background:"#131b27",color:"#8a9ab0",border:"1px solid #1a2535",flex:"0 0 auto"}}
-                disabled={chatLoading || !service.clientId}
-                onClick={handleChat}
-              >
-                {chatLoading?<Loader2 size={16} style={{animation:"spin 1s linear infinite"}}/>:<MessageCircle size={16}/>}
-                {chatLoading?"A abrir…":"Chat rápido"}
-              </button>
-            </div>
-          </>
-        )}
       </div>
-    </>
+    </div>
   );
 }
 
 export default function ProviderServiceDetailPage() {
-  return (
-    <Suspense fallback={
-      <div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"80px 20px",gap:12}}>
-        <Loader2 size={24} style={{color:"#EF9F27",animation:"spin 1s linear infinite"}}/>
-        <span style={{fontSize:14,color:"#4a6a6a"}}>A carregar...</span>
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-      </div>
-    }>
-      <DetailInner/>
-    </Suspense>
+  const { id } = useParams() as { id: string };
+  const router  = useRouter();
+
+  const [service, setService]   = useState<any>(null);
+  const [timeline, setTimeline] = useState<any[]>([]);
+  const [payment, setPayment]   = useState<any>(null);
+  const [providerProof, setProviderProof] = useState<PaymentProof | null>(null);
+  const [proofLoading, setProofLoading]   = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [actL, setActL]         = useState<string|null>(null);
+  const [showPin, setShowPin]   = useState(false);
+  const [showProofViewer, setShowProofViewer] = useState(false);
+  const [warranty, setWarranty] = useState<number|"">("");
+  const [priceIn, setPriceIn]   = useState("");
+  const [chatL, setChatL]       = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const [s, t] = await Promise.all([
+        servicesDetailApi.get(id),
+        servicesDetailApi.timeline(id),
+      ]);
+      setService(s); setTimeline(t);
+      setPriceIn(String(s.budget ?? ""));
+
+      // Carrega o estado do pagamento (sem dados bancários — o prestador
+      // nunca vê a conta da ServiApp nem a sua própria seria mostrada
+      // aqui, isso fica só na área do admin).
+      const existingPayment = await servicesDetailApi.getPayment(id).catch(() => null);
+      if (existingPayment) {
+        setPayment(existingPayment);
+      }
+    } catch (e: any) { alert(e.message); }
+    finally { setLoading(false); }
+  }, [id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const act = async (key: string, fn: () => Promise<any>) => {
+    setActL(key);
+    try { await fn(); await load(); }
+    catch (e: any) { alert(e.message || "Erro. Tenta novamente."); }
+    finally { setActL(null); }
+  };
+
+  const handleChat = async () => {
+    if (!service?.clientId) return;
+    setChatL(true);
+    try {
+      const { room } = await chatApi.createOrGetRoom({ participantId: service.clientId });
+      router.push(`/provider/chat/${room.id}`);
+    } catch { router.push("/provider/chat"); }
+    finally { setChatL(false); }
+  };
+
+  // ── Ver comprovativo do cliente — carrega no clique, só uma vez ────────────
+  const handleViewProof = async () => {
+    if (!payment) return;
+    if (providerProof) { setShowProofViewer(true); return; }
+    setProofLoading(true);
+    try {
+      const proof = await paymentProofApi.getForProvider(payment.id);
+      setProviderProof(proof);
+      setShowProofViewer(true);
+    } catch (e: any) {
+      alert(e.message || "O cliente ainda não enviou comprovativo.");
+    } finally {
+      setProofLoading(false);
+    }
+  };
+
+  if (loading) return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"60vh" }}>
+      <Loader2 size={28} style={{ color:"#EF9F27", animation:"spin 1s linear infinite" }} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
   );
+
+  if (!service) return null;
+
+  const cfg    = STATUS[service.status] ?? STATUS.requested;
+  const amount = Number(service.agreedPrice ?? service.budget);
+  const ended  = ["completed","cancelled","refunded","rejected"].includes(service.status);
+
+  // Botão "Ver comprovativo" só faz sentido depois de existir Payment e
+  // depois do cliente ter tido oportunidade de enviar algo — mostra-se
+  // sempre que payment existir e o status já não seja o inicial "pending"
+  // sem nada enviado ainda, mas o próprio pedido ao backend já trata o
+  // caso de "ainda não enviou" com uma mensagem clara.
+  const canViewProof = !!payment && ["proof_submitted", "confirmed", "pending_payout", "completed"].includes(payment.status);
+
+  return (
+    <>
+      <style>{`
+        *, *::before, *::after { box-sizing: border-box; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .pd-body { padding: 28px 32px; display: flex; flex-direction: column;
+                   gap: 20px; max-width: 760px; width: 100%; }
+        .pd-card { background: #131b27; border: 1px solid #1a2535;
+                   border-radius: 18px; padding: 24px; }
+        .ab { display: flex; align-items: center; justify-content: center; gap: 8px;
+              padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 700;
+              cursor: pointer; font-family: inherit; border: none; transition: all .2s; width: 100%; }
+        .ab:disabled { opacity: .5; cursor: not-allowed; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .info-item { background: #0d1117; border-radius: 10px; padding: 10px 14px; }
+        .pr-input { width: 100%; padding: 11px 14px; border-radius: 10px; background: #0d1117;
+                    border: 1px solid #1a2535; color: #e2e8f0; font-size: 14px; outline: none;
+                    font-family: inherit; transition: border-color .15s; }
+        .pr-input:focus { border-color: #EF9F27; }
+        .tl-wrap { display: flex; flex-direction: column; }
+        .tl-item { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
+        .tl-item:last-child { padding-bottom: 0; }
+        .tl-line { position: absolute; left: 9px; top: 20px; bottom: 0;
+                   width: 1px; background: #1a2535; }
+        .tl-dot  { width: 20px; height: 20px; border-radius: 50%; background: #EF9F2720;
+                   border: 1px solid #EF9F27; display: flex; align-items: center;
+                   justify-content: center; flex-shrink: 0; z-index: 1; }
+        @media(max-width:640px)  { .pd-body { padding: 20px 16px; gap: 14px; }
+                                   .info-grid { grid-template-columns: 1fr; } }
+      `}</style>
+
+      <div className="pd-body">
+
+        <button onClick={() => router.push("/provider/services")}
+          style={{ display:"flex", alignItems:"center", gap:8, background:"none",
+            border:"none", color:"#4a6a6a", cursor:"pointer", fontSize:13,
+            fontFamily:"inherit", width:"fit-content" }}>
+          <ArrowLeft size={15} /> Voltar
+        </button>
+
+        {/* ── Header ── */}
+        <div className="pd-card">
+          <div style={{ display:"flex", alignItems:"flex-start",
+            justifyContent:"space-between", gap:12, marginBottom:16 }}>
+            <div>
+              <h1 style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", marginBottom:8 }}>
+                {service.title}
+              </h1>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:6,
+                padding:"4px 10px", borderRadius:99, fontSize:12, fontWeight:700,
+                background:`${cfg.color}20`, color:cfg.color, border:`1px solid ${cfg.color}40` }}>
+                {cfg.label}
+              </span>
+            </div>
+            <div style={{ textAlign:"right", flexShrink:0 }}>
+              <p style={{ fontSize:24, fontWeight:800, color:"#EF9F27" }}>{fKz(amount)}</p>
+              <p style={{ fontSize:11, color:"#4a6a6a", marginTop:2 }}>Valor acordado</p>
+            </div>
+          </div>
+
+          <div className="info-grid">
+            {[
+              { l:"Cliente",   v: service.client?.fullName ?? "—" },
+              { l:"Categoria", v: service.category },
+              { l:"Morada",    v: service.address },
+              { l:"Data",      v: new Date(service.createdAt).toLocaleDateString("pt-PT") },
+            ].map((x,i) => (
+              <div className="info-item" key={i}>
+                <p style={{ fontSize:11, color:"#4a6a6a", marginBottom:2 }}>{x.l}</p>
+                <p style={{ fontSize:13, color:"#c0d0e0", fontWeight:600 }}>{x.v}</p>
+              </div>
+            ))}
+          </div>
+
+          {service.description && (
+            <p style={{ fontSize:13, color:"#6a7a8a", lineHeight:1.6,
+              marginTop:14, padding:"12px 14px", background:"#0d1117", borderRadius:10 }}>
+              {service.description}
+            </p>
+          )}
+
+          {service.warrantyExpiresAt && (
+            <div style={{ marginTop:12, padding:"10px 14px", background:"#EF9F2710",
+              border:"1px solid #EF9F2730", borderRadius:10, fontSize:12, color:"#EF9F27" }}>
+              ⭐ Garantia válida até {new Date(service.warrantyExpiresAt).toLocaleDateString("pt-PT")}
+            </div>
+          )}
+        </div>
+
+        {/* ── Comprovativo do cliente ── */}
+        {canViewProof && (
+          <div className="pd-card">
+            <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+              <FileText size={16} style={{ color:"#378ADD" }} /> Comprovativo do cliente
+            </p>
+            <p style={{ fontSize:12, color:"#4a6a6a", lineHeight:1.6, marginBottom:14 }}>
+              O cliente enviou um comprovativo de pagamento. Podes vê-lo para confirmar visualmente que a transferência foi feita.
+            </p>
+            <button className="ab" disabled={proofLoading}
+              style={{ background:"#378ADD20", color:"#378ADD", border:"1px solid #378ADD40" }}
+              onClick={handleViewProof}>
+              {proofLoading ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/> : <Eye size={15}/>}
+              {proofLoading ? "A carregar..." : "Ver comprovativo enviado"}
+            </button>
+          </div>
+        )}
+
+        {/* ── Acções ── */}
+        {!ended && (
+          <div className="pd-card">
+            <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:14 }}>
+              Acções disponíveis
+            </p>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+
+              {service.status === "requested" && (
+                <>
+                  <div>
+                    <label style={{ fontSize:12, color:"#4a6a6a", display:"block", marginBottom:6 }}>
+                      Preço a propor (orçamento do cliente: {fKz(service.budget)})
+                    </label>
+                    <input className="pr-input" type="number" value={priceIn}
+                      onChange={e => setPriceIn(e.target.value)} placeholder="Valor em Kz" />
+                  </div>
+                  <button className="ab" disabled={actL==="accept"}
+                    style={{ background:"linear-gradient(135deg,#1D9E75,#16876a)", color:"white",
+                             boxShadow:"0 4px 14px rgba(29,158,117,0.3)" }}
+                    onClick={() => act("accept", () => servicesDetailApi.accept(id, priceIn ? Number(priceIn) : undefined))}>
+                    {actL==="accept" ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/> : <CheckCircle size={15}/>}
+                    {actL==="accept" ? "A aceitar..." : "Aceitar pedido"}
+                  </button>
+                  <button className="ab" disabled={actL==="reject"}
+                    style={{ background:"#E24B4A15", color:"#E24B4A", border:"1px solid #E24B4A40" }}
+                    onClick={() => {
+                      if (confirm("Tens a certeza que queres recusar este pedido?"))
+                        act("reject", () => servicesDetailApi.reject(id, "Prestador indisponível"));
+                    }}>
+                    {actL==="reject" ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/> : <X size={15}/>}
+                    Recusar pedido
+                  </button>
+                </>
+              )}
+
+              {["accepted", "payment_pending"].includes(service.status) && !canViewProof && (
+                <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px",
+                  background:"#378ADD10", border:"1px solid #378ADD30", borderRadius:12 }}>
+                  <Clock size={18} style={{ color:"#378ADD", flexShrink:0 }} />
+                  <p style={{ fontSize:13, color:"#8ab0dd", lineHeight:1.5 }}>
+                    A aguardar que o cliente efectue a transferência de {fKz(amount)}.
+                  </p>
+                </div>
+              )}
+
+              {["accepted", "payment_pending"].includes(service.status) && canViewProof && (
+                <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px",
+                  background:"#EF9F2710", border:"1px solid #EF9F2730", borderRadius:12 }}>
+                  <Clock size={18} style={{ color:"#EF9F27", flexShrink:0 }} />
+                  <p style={{ fontSize:13, color:"#d4b578", lineHeight:1.5 }}>
+                    A aguardar confirmação do comprovativo pelo administrador.
+                  </p>
+                </div>
+              )}
+
+              {service.status === "payment_held" && (
+                <button className="ab"
+                  style={{ background:"linear-gradient(135deg,#8B5CF6,#7C3AED)", color:"white", boxShadow:"0 4px 14px rgba(139,92,246,0.35)" }}
+                  onClick={() => setShowPin(true)}>
+                  <Key size={15}/> Inserir PIN e iniciar serviço
+                </button>
+              )}
+
+              {service.status === "in_progress" && (
+                <>
+                  <div>
+                    <label style={{ fontSize:12, color:"#4a6a6a", display:"block", marginBottom:6 }}>
+                      Garantia (opcional)
+                    </label>
+                    <select className="pr-input"
+                      value={warranty}
+                      onChange={e => setWarranty(e.target.value ? Number(e.target.value) : "")}>
+                      <option value="">Sem garantia</option>
+                      <option value={7}>7 dias</option>
+                      <option value={15}>15 dias</option>
+                      <option value={30}>30 dias</option>
+                      <option value={90}>90 dias</option>
+                    </select>
+                  </div>
+                  <button className="ab" disabled={actL==="complete"}
+                    style={{ background:"linear-gradient(135deg,#1D9E75,#16876a)", color:"white",
+                             boxShadow:"0 4px 14px rgba(29,158,117,0.3)" }}
+                    onClick={() => act("complete", () => servicesDetailApi.providerComplete(id, warranty ? Number(warranty) : undefined))}>
+                    {actL==="complete" ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/> : <CheckCircle size={15}/>}
+                    {actL==="complete" ? "A marcar..." : "Marcar como concluído"}
+                  </button>
+                </>
+              )}
+
+              {service.status === "provider_completed" && (
+                <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px",
+                  background:"#EF9F2710", border:"1px solid #EF9F2730", borderRadius:12 }}>
+                  <Clock size={18} style={{ color:"#EF9F27", flexShrink:0 }} />
+                  <p style={{ fontSize:13, color:"#d4b578", lineHeight:1.5 }}>
+                    A aguardar confirmação do cliente para avançar com o pagamento.
+                  </p>
+                </div>
+              )}
+
+              {service.status === "completed" && payment?.status === "pending_payout" && (
+                <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px",
+                  background:"#8B5CF610", border:"1px solid #8B5CF630", borderRadius:12 }}>
+                  <Clock size={18} style={{ color:"#8B5CF6", flexShrink:0 }} />
+                  <p style={{ fontSize:13, color:"#c0a8f0", lineHeight:1.5 }}>
+                    A administração está a preparar a transferência do teu pagamento.
+                  </p>
+                </div>
+              )}
+
+              {isActiveForChat(service.status) && (
+                <button className="ab"
+                  style={{ background:"#378ADD20", color:"#378ADD", border:"1px solid #378ADD40" }}
+                  disabled={chatL}
+                  onClick={handleChat}>
+                  {chatL ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/> : <MessageCircle size={15}/>}
+                  Conversar com cliente
+                </button>
+              )}
+
+              {["payment_held","in_progress"].includes(service.status) && (
+                <button className="ab"
+                  style={{ background:"#E24B4A15", color:"#E24B4A", border:"1px solid #E24B4A40", fontSize:13 }}
+                  onClick={() => {
+                    const r = prompt("Motivo da disputa:");
+                    if (r?.trim()) act("dispute", () => servicesDetailApi.openDispute(id, r));
+                  }}>
+                  <AlertTriangle size={14} /> Abrir disputa
+                </button>
+              )}
+
+              {service.status === "completed" && payment?.status === "completed" && (
+                <div style={{ textAlign:"center", padding:"20px", background:"#1D9E7510", border:"1px solid #1D9E7530", borderRadius:12 }}>
+                  <CheckCircle size={24} style={{ color:"#1D9E75", marginBottom:8 }} />
+                  <p style={{ fontSize:14, fontWeight:700, color:"#1D9E75" }}>Pagamento concluído!</p>
+                  <p style={{ fontSize:12, color:"#4a6a6a", marginTop:4 }}>
+                    {fKz(Number(payment.providerAmount))} foi creditado na tua wallet.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Timeline ── */}
+        {timeline.length > 0 && (
+          <div className="pd-card">
+            <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:16 }}>Histórico</p>
+            <div className="tl-wrap">
+              {timeline.map((ev, i) => (
+                <div className="tl-item" key={ev.id}>
+                  {i < timeline.length-1 && <span className="tl-line" />}
+                  <div className="tl-dot">
+                    <span style={{ fontSize:8, color:"#EF9F27" }}>●</span>
+                  </div>
+                  <div style={{ flex:1, paddingTop:1 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", gap:8 }}>
+                      <p style={{ fontSize:13, fontWeight:600, color:"#c0d0e0" }}>
+                        {TL[ev.action] ?? ev.action}
+                      </p>
+                      <span style={{ fontSize:11, color:"#3a4a5a", flexShrink:0 }}>
+                        {ago(ev.createdAt)}
+                      </span>
+                    </div>
+                    <p style={{ fontSize:12, color:"#4a6a6a", marginTop:2 }}>{ev.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {showPin && (
+        <PinModal
+          loading={actL==="start"}
+          onClose={() => setShowPin(false)}
+          onSubmit={pin => { setShowPin(false); act("start", () => servicesDetailApi.startService(id, pin)); }}
+        />
+      )}
+      {showProofViewer && providerProof && (
+        <ProofViewerModal proofId={providerProof.id} fileType={providerProof.fileType} onClose={() => setShowProofViewer(false)} />
+      )}
+    </>
+  );
+}
+
+function isActiveForChat(status: string): boolean {
+  return !["completed", "cancelled", "refunded", "rejected"].includes(status);
 }

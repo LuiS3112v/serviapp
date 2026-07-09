@@ -63,9 +63,7 @@ export class CompaniesService {
 
   async create(ownerId: string, dto: CreateCompanyDto): Promise<Company> {
     const existing = await this.companyRepo.findOne({ where: { ownerId } });
-    if (existing) {
-      throw new ConflictException('Já tens uma empresa registada.');
-    }
+    if (existing) throw new ConflictException('Já tens uma empresa registada.');
 
     const company = this.companyRepo.create({
       ownerId,
@@ -77,10 +75,6 @@ export class CompaniesService {
 
     const saved = await this.companyRepo.save(company);
 
-    // O owner não precisa de uma CompanyEmployee row — ele é identificado
-    // por Company.ownerId directamente (ver CompanyRolesGuard).
-
-    // Garante que o User tem role COMPANY (não troca se já for ADMIN, por segurança)
     const user = await this.userRepo.findOne({ where: { id: ownerId } });
     if (user && user.role !== Role.ADMIN) {
       await this.userRepo.update(ownerId, { role: Role.COMPANY });
@@ -94,9 +88,7 @@ export class CompaniesService {
       where: { ownerId },
       relations: { services: true, verification: true },
     });
-    if (!company) {
-      throw new NotFoundException('Ainda não criaste um perfil de empresa.');
-    }
+    if (!company) throw new NotFoundException('Ainda não criaste um perfil de empresa.');
     return company;
   }
 
@@ -166,40 +158,58 @@ export class CompaniesService {
   }
 
   // ══════════════════════════════════════════════════════════════════════
-  // STATS — calculados a partir de Service + CompanyEmployee, NUNCA inventados
+  // STATS — calculados a partir de Service + CompanyEmployee
+  //
+  // FIX: A nova Service entity NÃO tem companyId nem clientRating.
+  // Os serviços são ligados ao providerId do employee.
+  // Buscamos serviços pelos userIds dos employees desta empresa.
   // ══════════════════════════════════════════════════════════════════════
 
   async getStats(companyId: string) {
     const company = await this.getOrFail(companyId);
+    const now = new Date();
 
+    // Conta funcionários
     const employeeCount = await this.employeeRepo.count({ where: { companyId } });
 
-    const allServices = await this.serviceRepo.find({ where: { companyId } });
+    // Busca IDs dos employees para ligar aos serviços deles
+    const employees = await this.employeeRepo.find({
+      where: { companyId },
+      select: { userId: true },
+    });
+    const employeeUserIds = [company.ownerId, ...employees.map(e => e.userId)];
 
-    const completedServices = allServices.filter(s => s.status === ServiceStatus.COMPLETED);
+    // Busca todos os serviços onde o provider é o owner ou um employee
+    let allServices: Service[] = [];
+    if (employeeUserIds.length > 0) {
+      allServices = await this.serviceRepo
+        .createQueryBuilder('s')
+        .where('s.providerId IN (:...ids)', { ids: employeeUserIds })
+        .getMany();
+    }
+
+    const completedServices = allServices.filter(
+      s => s.status === ServiceStatus.COMPLETED,
+    );
     const activeServices = allServices.filter(s =>
-      [ServiceStatus.ACCEPTED, ServiceStatus.IN_PROGRESS].includes(s.status as any),
+      [ServiceStatus.ACCEPTED, ServiceStatus.IN_PROGRESS].includes(s.status as ServiceStatus),
     );
 
     const totalEarnings = completedServices.reduce(
       (sum, s) => sum + Number(s.agreedPrice ?? 0), 0,
     );
 
-    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthlyEarnings = completedServices
-      .filter(s => s.completedAt && new Date(s.completedAt).getMonth() === now.getMonth()
-        && new Date(s.completedAt).getFullYear() === now.getFullYear())
+      .filter(s => s.completedAt && new Date(s.completedAt) >= startOfMonth)
       .reduce((sum, s) => sum + Number(s.agreedPrice ?? 0), 0);
 
-    const ratedServices = completedServices.filter(s => s.clientRating != null);
-    const averageRating = ratedServices.length > 0
-      ? ratedServices.reduce((sum, s) => sum + Number(s.clientRating), 0) / ratedServices.length
-      : 0;
+    // Sem clientRating na nova entity — rating virá do módulo de reviews (futuro)
+    const averageRating = 0;
 
     const uniqueClientIds = new Set(allServices.map(s => s.clientId));
     const clientsServed = uniqueClientIds.size;
 
-    // Cliente recorrente = cliente com 2+ serviços concluídos com esta empresa
     const clientCompletionCounts = new Map<string, number>();
     completedServices.forEach(s => {
       clientCompletionCounts.set(s.clientId, (clientCompletionCounts.get(s.clientId) ?? 0) + 1);
@@ -212,12 +222,11 @@ export class CompaniesService {
 
     const yearsActive = Math.max(0, now.getFullYear() - company.foundedYear);
 
-    // Tempo médio de resposta: diferença entre createdAt e acceptedAt, em horas
     const acceptedWithTimes = allServices.filter(s => s.acceptedAt && s.createdAt);
     const avgResponseTimeHours = acceptedWithTimes.length > 0
       ? Math.round(
           acceptedWithTimes.reduce((sum, s) => {
-            const diffMs = new Date(s.acceptedAt).getTime() - new Date(s.createdAt).getTime();
+            const diffMs = new Date(s.acceptedAt!).getTime() - new Date(s.createdAt).getTime();
             return sum + diffMs / (1000 * 60 * 60);
           }, 0) / acceptedWithTimes.length,
         )
@@ -228,7 +237,7 @@ export class CompaniesService {
       clientsServed,
       activeServices: activeServices.length,
       completedServices: completedServices.length,
-      averageRating: Number(averageRating.toFixed(2)),
+      averageRating,
       totalEarnings,
       monthlyEarnings,
       yearsActive,
@@ -239,7 +248,7 @@ export class CompaniesService {
   }
 
   // ══════════════════════════════════════════════════════════════════════
-  // TIMELINE — calculada automaticamente a partir de dados reais
+  // TIMELINE — calculada automaticamente
   // ══════════════════════════════════════════════════════════════════════
 
   async getTimeline(companyId: string) {
@@ -266,16 +275,18 @@ export class CompaniesService {
       {
         id: '100-clients',
         label: '100 clientes atendidos',
-        date: stats.clientsServed >= 100 ? new Date().toISOString().slice(0, 10) : '',
+        date: stats.clientsServed >= 100 ? now().toISOString().slice(0, 10) : '',
         achieved: stats.clientsServed >= 100,
       },
       {
         id: 'verified',
         label: 'Empresa verificada',
-        date: company.verifiedAt ? company.verifiedAt.toISOString().slice(0, 10) : '',
+        date: company.verifiedAt ? new Date(company.verifiedAt).toISOString().slice(0, 10) : '',
         achieved: !!company.verifiedAt,
       },
     ];
+
+    function now() { return new Date(); }
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -346,28 +357,19 @@ export class CompaniesService {
     const invitee = await this.userRepo.findOne({ where: { id: dto.inviteeUserId } });
     if (!invitee) throw new NotFoundException('Utilizador não encontrado.');
 
-    // Só providers podem ser convidados para empresas
-    if (invitee.role !== 'provider' && invitee.role !== 'company') {
+    if (invitee.role !== Role.PROVIDER && invitee.role !== Role.COMPANY) {
       throw new BadRequestException('Só utilizadores com conta de prestador podem ser convidados para empresas.');
     }
 
     const alreadyEmployee = await this.employeeRepo.findOne({
       where: { companyId, userId: dto.inviteeUserId },
     });
-    if (alreadyEmployee) {
-      throw new ConflictException('Este utilizador já faz parte da equipa.');
-    }
+    if (alreadyEmployee) throw new ConflictException('Este utilizador já faz parte da equipa.');
 
     const existingPending = await this.invitationRepo.findOne({
-      where: {
-        companyId,
-        inviteeUserId: dto.inviteeUserId,
-        status: CompanyInvitationStatus.PENDING,
-      },
+      where: { companyId, inviteeUserId: dto.inviteeUserId, status: CompanyInvitationStatus.PENDING },
     });
-    if (existingPending) {
-      throw new ConflictException('Já existe um convite pendente para este utilizador.');
-    }
+    if (existingPending) throw new ConflictException('Já existe um convite pendente para este utilizador.');
 
     const invitation = this.invitationRepo.create({
       companyId,
@@ -382,8 +384,7 @@ export class CompaniesService {
 
     const company = await this.getOrFail(companyId);
 
-    // Passa o invitationId no metadata para o frontend poder responder
-    // directamente a partir da notificação sem ir ao perfil da empresa
+    // Usa o método com invitationId para os botões nas notificações funcionarem
     await this.notificationsService.notifyCompanyInvitationWithId(
       dto.inviteeUserId,
       company.name,
@@ -414,8 +415,6 @@ export class CompaniesService {
     const saved = await this.invitationRepo.save(invitation);
 
     if (accept) {
-      // Cria a ligação CompanyEmployee — a conta do user continua normal,
-      // isto é apenas uma ligação extra (decisão confirmada).
       const employee = this.employeeRepo.create({
         companyId: invitation.companyId,
         userId: invitation.inviteeUserId,

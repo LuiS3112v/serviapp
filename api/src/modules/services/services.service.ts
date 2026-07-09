@@ -1,545 +1,813 @@
 import {
-  Injectable, NotFoundException,
-  ForbiddenException, BadRequestException,
+  Injectable, NotFoundException, BadRequestException,
+  ForbiddenException, Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Service } from '../../database/entities/service.entity';
-import { CreateServiceDto } from './dto/create-service.dto';
-import { UpdateServiceDto } from './dto/update-service.dto';
-import { AcceptServiceDto } from './dto/accept-service.dto';
-import { CancelServiceDto } from './dto/cancel-service.dto';
-import { ReviewServiceDto } from './dto/review-service.dto';
-import { FilterServicesDto } from './dto/filter-services.dto';
-import { ProposePriceDto } from './dto/propose-price.dto';
+import { ServiceTimeline } from '../../database/entities/service-timeline.entity';
+import { Payment } from '../../database/entities/payment.entity';
+import { Transaction } from '../../database/entities/transaction.entity';
 import { ServiceStatus } from '../../common/enums/service-status.enum';
+import { PaymentStatus } from '../../common/enums/payment-status.enum';
+import { TransactionType } from '../../common/enums/transaction-type.enum';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WalletService } from '../wallet/wallet.service';
+import { BankAccountsService } from '../bank-accounts/bank-accounts.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
+import { CreateServiceDto } from './dto/create-service.dto';
 import { Role } from '../../common/enums/role.enum';
-
-export interface ProviderStats {
-  totalOrders: number;
-  totalCompleted: number;
-  totalEarnings: number;
-  averageRating: number | null;
-  activeOrders: number;
-}
-
-export interface ProviderStatsByPeriod {
-  totalCompleted: number;
-  totalEarnings: number;
-  averageRating: number | null;
-  avgResponseTimeHours: number | null;
-  rankingScore: number;
-  earningsByPeriod: { label: string; value: number }[];
-  completedByPeriod: { label: string; value: number }[];
-}
-
-export interface ClientStats {
-  totalCreated: number;
-  totalSpent: number;
-  totalCompleted: number;
-  totalCancelled: number;
-  averageRating: number | null;
-}
-
-export interface ProviderReviewItem {
-  id: string;
-  title: string;
-  clientName: string;
-  rating: number;
-  review: string | null;
-  completedAt: Date;
-}
-
-export interface ProviderReviewsData {
-  reviews: ProviderReviewItem[];
-  stats: {
-    total: number;
-    average: number | null;
-    distribution: Record<string, number>;
-  };
-}
 
 @Injectable()
 export class ServicesService {
+  private readonly logger = new Logger(ServicesService.name);
+
   constructor(
     @InjectRepository(Service)
     private serviceRepo: Repository<Service>,
+    @InjectRepository(ServiceTimeline)
+    private timelineRepo: Repository<ServiceTimeline>,
+    @InjectRepository(Payment)
+    private paymentRepo: Repository<Payment>,
+    private dataSource: DataSource,
     private notificationsService: NotificationsService,
+    private walletService: WalletService,
+    private bankAccountsService: BankAccountsService,
+    private platformSettingsService: PlatformSettingsService,
   ) {}
 
-  // ─── Provider: stats simples ──────────────────────────────────────────────
-  async getProviderStats(providerId: string): Promise<ProviderStats> {
-    const totalOrders = await this.serviceRepo.count({ where: { providerId } });
+  // ══════════════════════════════════════════════════════════════════════
+  // Criação do pedido.
+  //
+  // FIX: agora grava também catalogItemId quando o cliente solicitou a
+  // partir da página de pesquisa (ver CreateServiceDto). Sem alterar
+  // nenhum outro comportamento — se catalogItemId vier undefined
+  // (fluxo antigo de pedido directo, sem catálogo), fica simplesmente
+  // null e nada muda.
+  // ══════════════════════════════════════════════════════════════════════
 
-    const totalCompleted = await this.serviceRepo.count({
-      where: { providerId, status: ServiceStatus.COMPLETED },
+  async create(clientId: string, dto: CreateServiceDto): Promise<Service> {
+    const service = this.serviceRepo.create({
+      ...dto,
+      clientId,
+      status: ServiceStatus.REQUESTED,
     });
+    const saved = await this.serviceRepo.save(service);
 
-    const earningsResult = await this.serviceRepo
-      .createQueryBuilder('s')
-      .select('SUM(s.agreedPrice)', 'total')
-      .where('s.providerId = :providerId', { providerId })
-      .andWhere('s.status = :status', { status: ServiceStatus.COMPLETED })
-      .getRawOne();
-    const totalEarnings = Number(earningsResult?.total ?? 0);
+    await this.addTimeline(saved.id, null, 'SERVICE_CREATED',
+      `Cliente criou pedido: "${saved.title}"`,
+      { budget: saved.budget, category: saved.category },
+    );
 
-    const ratingResult = await this.serviceRepo
-      .createQueryBuilder('s')
-      .select('AVG(s.clientRating)', 'avg')
-      .where('s.providerId = :providerId', { providerId })
-      .andWhere('s.clientRating IS NOT NULL')
-      .getRawOne();
-    const averageRating = ratingResult?.avg
-      ? Number(Number(ratingResult.avg).toFixed(1))
-      : null;
+    if (dto.targetProviderId) {
+      await this.notificationsService.notifyServiceRequested(
+        dto.targetProviderId, 'Cliente', saved.title,
+      ).catch(() => {});
+    }
 
-    const activeOrders = await this.serviceRepo
-      .createQueryBuilder('s')
-      .where('s.providerId = :providerId', { providerId })
-      .andWhere('s.status IN (:...statuses)', {
-        statuses: [ServiceStatus.ACCEPTED, ServiceStatus.IN_PROGRESS],
-      })
-      .getCount();
-
-    return { totalOrders, totalCompleted, totalEarnings, averageRating, activeOrders };
+    return saved;
   }
 
-  // ─── Provider: stats por período ─────────────────────────────────────────
-  async getProviderStatsByPeriod(
+  // ── Listagem ──────────────────────────────────────────────────────────────
+
+  async findByClient(clientId: string, status?: string): Promise<Service[]> {
+    const where: any = { clientId };
+    if (status) where.status = status;
+    return this.serviceRepo.find({
+      where,
+      order: { createdAt: 'DESC' },
+      relations: { provider: true },
+    });
+  }
+
+  async findByProvider(providerId: string, status?: string): Promise<Service[]> {
+    if (status) {
+      return this.serviceRepo.find({
+        where: { providerId, status: status as ServiceStatus },
+        order: { createdAt: 'DESC' },
+        relations: { client: true },
+      });
+    }
+    return this.serviceRepo.find({
+      where: [
+        { providerId },
+        { targetProviderId: providerId, status: ServiceStatus.REQUESTED },
+      ],
+      order: { createdAt: 'DESC' },
+      relations: { client: true },
+    });
+  }
+
+  async findAvailableForProvider(
     providerId: string,
-    period: string,
-  ): Promise<ProviderStatsByPeriod> {
-    const { from, to } = this.getPeriodDates(period);
-
-    const totalCompleted = await this.serviceRepo
+    filter?: { category?: string; province?: string; minBudget?: number; maxBudget?: number },
+  ): Promise<Service[]> {
+    const qb = this.serviceRepo
       .createQueryBuilder('s')
-      .where('s.providerId = :providerId', { providerId })
-      .andWhere('s.status = :status', { status: ServiceStatus.COMPLETED })
-      .andWhere('s.completedAt BETWEEN :from AND :to', { from, to })
-      .getCount();
+      .leftJoinAndSelect('s.client', 'client')
+      .where('s.status = :status', { status: ServiceStatus.REQUESTED })
+      .andWhere('s.providerId IS NULL')
+      .andWhere('(s.targetProviderId IS NULL OR s.targetProviderId = :providerId)', { providerId });
 
-    const earningsResult = await this.serviceRepo
-      .createQueryBuilder('s')
-      .select('SUM(s.agreedPrice)', 'total')
-      .where('s.providerId = :providerId', { providerId })
-      .andWhere('s.status = :status', { status: ServiceStatus.COMPLETED })
-      .andWhere('s.completedAt BETWEEN :from AND :to', { from, to })
-      .getRawOne();
-    const totalEarnings = Number(earningsResult?.total ?? 0);
+    if (filter?.category) qb.andWhere('s.category = :category', { category: filter.category });
+    if (filter?.province) qb.andWhere('s.province = :province', { province: filter.province });
+    if (filter?.minBudget !== undefined) qb.andWhere('s.budget >= :minBudget', { minBudget: filter.minBudget });
+    if (filter?.maxBudget !== undefined) qb.andWhere('s.budget <= :maxBudget', { maxBudget: filter.maxBudget });
 
-    const ratingResult = await this.serviceRepo
-      .createQueryBuilder('s')
-      .select('AVG(s.clientRating)', 'avg')
-      .where('s.providerId = :providerId', { providerId })
-      .andWhere('s.clientRating IS NOT NULL')
-      .getRawOne();
-    const averageRating = ratingResult?.avg
-      ? Number(Number(ratingResult.avg).toFixed(1))
-      : null;
-
-    const responseResult = await this.serviceRepo
-      .createQueryBuilder('s')
-      .select(
-        `AVG(EXTRACT(EPOCH FROM (s."acceptedAt" - s."createdAt")) / 3600)`,
-        'avgHours',
-      )
-      .where('s.providerId = :providerId', { providerId })
-      .andWhere('s."acceptedAt" IS NOT NULL')
-      .andWhere('s."createdAt" BETWEEN :from AND :to', { from, to })
-      .getRawOne();
-    const avgResponseTimeHours = responseResult?.avgHours
-      ? Number(Number(responseResult.avgHours).toFixed(1))
-      : null;
-
-    const allCompleted = await this.serviceRepo.count({
-      where: { providerId, status: ServiceStatus.COMPLETED },
-    });
-    const ratingScore = averageRating ? (averageRating / 5) * 40 : 0;
-    const volumeScore = Math.min(allCompleted / 50, 1) * 30;
-    const speedScore = avgResponseTimeHours !== null
-      ? Math.max(0, (1 - avgResponseTimeHours / 24) * 20)
-      : 0;
-    const rankingScore = Math.round(ratingScore + volumeScore + speedScore + 10);
-
-    const earningsByPeriod = await this.buildEarningsChart(providerId, period, from, to);
-    const completedByPeriod = await this.buildCompletedChart(providerId, period, from, to);
-
-    return { totalCompleted, totalEarnings, averageRating, avgResponseTimeHours, rankingScore, earningsByPeriod, completedByPeriod };
+    return qb.orderBy('s.createdAt', 'DESC').getMany();
   }
 
-  // ─── Client: stats ───────────────────────────────────────────────────────
-  async getClientStats(clientId: string): Promise<ClientStats> {
-    const totalCreated = await this.serviceRepo.count({ where: { clientId } });
-    const totalCompleted = await this.serviceRepo.count({ where: { clientId, status: ServiceStatus.COMPLETED } });
-    const totalCancelled = await this.serviceRepo.count({ where: { clientId, status: ServiceStatus.CANCELLED } });
-
-    const spentResult = await this.serviceRepo
-      .createQueryBuilder('s')
-      .select('SUM(s.agreedPrice)', 'total')
-      .where('s.clientId = :clientId', { clientId })
-      .andWhere('s.status = :status', { status: ServiceStatus.COMPLETED })
-      .getRawOne();
-    const totalSpent = Number(spentResult?.total ?? 0);
-
-    const ratingResult = await this.serviceRepo
-      .createQueryBuilder('s')
-      .select('AVG(s.clientRating)', 'avg')
-      .where('s.clientId = :clientId', { clientId })
-      .andWhere('s.clientRating IS NOT NULL')
-      .getRawOne();
-    const averageRating = ratingResult?.avg
-      ? Number(Number(ratingResult.avg).toFixed(1))
-      : null;
-
-    return { totalCreated, totalSpent, totalCompleted, totalCancelled, averageRating };
-  }
-
-  // ─── Provider: avaliações ─────────────────────────────────────────────────
-  async getProviderReviews(providerId: string): Promise<ProviderReviewsData> {
-    const services = await this.serviceRepo
+  async findMyProposals(providerId: string): Promise<Service[]> {
+    return this.serviceRepo
       .createQueryBuilder('s')
       .leftJoinAndSelect('s.client', 'client')
       .where('s.providerId = :providerId', { providerId })
-      .andWhere('s.status = :status', { status: ServiceStatus.COMPLETED })
-      .andWhere('s.clientRating IS NOT NULL')
-      .orderBy('s.completedAt', 'DESC')
+      .andWhere('s.proposedPrice IS NOT NULL')
+      .andWhere('s.status = :status', { status: ServiceStatus.REQUESTED })
+      .orderBy('s.createdAt', 'DESC')
       .getMany();
+  }
 
-    const distribution: Record<string, number> = { '5':0,'4':0,'3':0,'2':0,'1':0 };
-    let sum = 0;
-    for (const s of services) {
-      const key = String(Math.round(Number(s.clientRating)));
-      if (distribution[key] !== undefined) distribution[key]++;
-      sum += Number(s.clientRating);
+  async findById(id: string): Promise<Service> {
+    const service = await this.serviceRepo.findOne({
+      where: { id },
+      relations: { client: true, provider: true },
+    });
+    if (!service) throw new NotFoundException('Serviço não encontrado.');
+    return service;
+  }
+
+  async findByIdForUser(id: string, userId: string, userRole?: Role): Promise<Service> {
+    const service = await this.findById(id);
+
+    if (service.clientId === userId) return service;
+    if (service.providerId === userId) return service;
+
+    const isProviderRole = userRole === Role.PROVIDER || userRole === Role.COMPANY;
+    const isStillAvailable =
+      service.status === ServiceStatus.REQUESTED &&
+      !service.providerId &&
+      (!service.targetProviderId || service.targetProviderId === userId);
+
+    if (isProviderRole && isStillAvailable) return service;
+
+    throw new ForbiddenException('Sem acesso a este serviço.');
+  }
+
+  // ── Estado 1 → 2: Prestador aceita ou rejeita ────────────────────────────
+
+  async accept(serviceId: string, providerId: string, agreedPrice?: number): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    if (service.status !== ServiceStatus.REQUESTED) {
+      throw new BadRequestException('Este pedido já não pode ser aceite.');
+    }
+    if (service.targetProviderId && service.targetProviderId !== providerId) {
+      throw new ForbiddenException('Este pedido foi dirigido a outro prestador.');
     }
 
+    service.status = ServiceStatus.ACCEPTED;
+    service.providerId = providerId;
+    service.agreedPrice = agreedPrice ?? service.budget;
+    service.acceptedAt = new Date();
+
+    const saved = await this.serviceRepo.save(service);
+
+    await this.addTimeline(serviceId, providerId, 'PROVIDER_ACCEPTED',
+      `Prestador aceitou o pedido por ${saved.agreedPrice?.toLocaleString('pt-PT')} Kz`,
+    );
+
+    await this.notificationsService.notifyServiceAccepted(service.clientId, providerId).catch(() => {});
+
+    return saved;
+  }
+
+  async reject(serviceId: string, providerId: string, reason?: string): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    if (service.status !== ServiceStatus.REQUESTED) {
+      throw new BadRequestException('Este pedido já não pode ser rejeitado.');
+    }
+
+    service.status = ServiceStatus.REJECTED;
+    service.cancelReason = reason ?? 'Rejeitado pelo prestador';
+    const saved = await this.serviceRepo.save(service);
+
+    await this.addTimeline(serviceId, providerId, 'PROVIDER_REJECTED',
+      `Prestador recusou o pedido${reason ? ': ' + reason : ''}`,
+    );
+
+    return saved;
+  }
+
+  // ── Proposta de preço (fluxo antigo — prestador propõe, cliente decide) ──
+
+  async proposePrice(serviceId: string, providerId: string, proposedPrice: number): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    if (service.status !== ServiceStatus.REQUESTED) {
+      throw new BadRequestException('Este pedido já não aceita propostas.');
+    }
+    if (service.targetProviderId && service.targetProviderId !== providerId) {
+      throw new ForbiddenException('Este pedido foi dirigido a outro prestador.');
+    }
+
+    service.proposedPrice = proposedPrice;
+    service.proposedByProviderId = providerId;
+    service.targetProviderId = providerId;
+
+    const saved = await this.serviceRepo.save(service);
+
+    await this.addTimeline(serviceId, providerId, 'PROPOSAL_MADE',
+      `Prestador propôs ${proposedPrice.toLocaleString('pt-PT')} Kz`,
+    );
+
+    await this.notificationsService.notifyServiceProposed(
+      service.clientId, 'Prestador', proposedPrice,
+    ).catch(() => {});
+
+    return saved;
+  }
+
+  async acceptProposal(serviceId: string, clientId: string): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    if (service.clientId !== clientId) throw new ForbiddenException('Sem permissão.');
+    if (!service.proposedPrice || !service.proposedByProviderId) {
+      throw new BadRequestException('Não existe proposta pendente para este pedido.');
+    }
+
+    service.status = ServiceStatus.ACCEPTED;
+    service.providerId = service.proposedByProviderId;
+    service.agreedPrice = service.proposedPrice;
+    service.acceptedAt = new Date();
+
+    const saved = await this.serviceRepo.save(service);
+
+    await this.addTimeline(serviceId, clientId, 'PROPOSAL_ACCEPTED',
+      `Cliente aceitou a proposta de ${service.agreedPrice.toLocaleString('pt-PT')} Kz`,
+    );
+
+    await this.notificationsService.notifyProposalAccepted(
+      service.providerId, Number(service.agreedPrice),
+    ).catch(() => {});
+
+    return saved;
+  }
+
+  async rejectProposal(serviceId: string, clientId: string): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    if (service.clientId !== clientId) throw new ForbiddenException('Sem permissão.');
+
+    const rejectedProviderId = service.proposedByProviderId;
+
+    service.proposedPrice = null;
+    service.proposedByProviderId = null;
+    service.targetProviderId = null;
+
+    const saved = await this.serviceRepo.save(service);
+
+    await this.addTimeline(serviceId, clientId, 'PROPOSAL_REJECTED',
+      'Cliente recusou a proposta — pedido voltou a ficar disponível',
+    );
+
+    if (rejectedProviderId) {
+      await this.notificationsService.notifyProposalRejected(rejectedProviderId).catch(() => {});
+    }
+
+    return saved;
+  }
+
+  // ── Estado 2 → 3: Cliente inicia o pagamento ─────────────────────────────
+
+  async initiatePayment(serviceId: string, clientId: string): Promise<{
+    payment: Payment;
+    bankAccount: { bankName: string; accountHolder: string; iban: string; accountNumber: string | null };
+  }> {
+    const service = await this.findById(serviceId);
+
+    if (service.clientId !== clientId) throw new ForbiddenException('Sem permissão.');
+    if (service.status !== ServiceStatus.ACCEPTED) {
+      throw new BadRequestException('O serviço tem de estar aceite para iniciar o pagamento.');
+    }
+
+    const existing = await this.paymentRepo.findOne({ where: { serviceId } });
+    const bankAccount = await this.bankAccountsService.getDefaultPlatformAccount();
+
+    if (existing) {
+      return {
+        payment: existing,
+        bankAccount: {
+          bankName: bankAccount.bankName,
+          accountHolder: bankAccount.accountHolder,
+          iban: bankAccount.iban,
+          accountNumber: bankAccount.accountNumber,
+        },
+      };
+    }
+
+    const amount = Number(service.agreedPrice ?? service.budget);
+    const commissionPercentage = await this.platformSettingsService.getCommissionPercentage();
+    const platformFee = Math.round(amount * (commissionPercentage / 100) * 100) / 100;
+    const providerAmount = amount - platformFee;
+
+    const payment = this.paymentRepo.create({
+      serviceId,
+      clientId,
+      providerId: service.providerId!,
+      amount,
+      platformFee,
+      providerAmount,
+      commissionPercentageUsed: commissionPercentage,
+      status: PaymentStatus.PENDING,
+      platformBankAccountId: bankAccount.id,
+    });
+
+    const saved = await this.paymentRepo.save(payment);
+
+    service.status = ServiceStatus.PAYMENT_PENDING;
+    await this.serviceRepo.save(service);
+
+    await this.addTimeline(serviceId, clientId, 'BANK_DETAILS_SHOWN',
+      `Dados bancários disponibilizados — valor a transferir: ${amount.toLocaleString('pt-PT')} Kz`,
+    );
+
+    await this.notificationsService.notifyClientBankDetailsAvailable(clientId, amount).catch(() => {});
+
     return {
-      reviews: services.map(s => ({
-        id: s.id,
-        title: s.title,
-        clientName: s.client?.fullName ?? 'Cliente',
-        rating: Number(s.clientRating),
-        review: s.clientReview,
-        completedAt: s.completedAt,
-      })),
-      stats: {
-        total: services.length,
-        average: services.length > 0 ? Number((sum / services.length).toFixed(1)) : null,
-        distribution,
+      payment: saved,
+      bankAccount: {
+        bankName: bankAccount.bankName,
+        accountHolder: bankAccount.accountHolder,
+        iban: bankAccount.iban,
+        accountNumber: bankAccount.accountNumber,
       },
     };
   }
 
-  // ─── Client: criar pedido ────────────────────────────────────────────────
-  async create(clientId: string, dto: CreateServiceDto, clientName?: string): Promise<Service> {
-    const service = this.serviceRepo.create({
-      ...dto,
-      budget:          Number(dto.budget),
-      scheduledAt:     dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
-      clientId,
-      targetProviderId: dto.targetProviderId ?? undefined,
-      status:          ServiceStatus.PENDING,
-    });
+  async getPaymentForService(serviceId: string): Promise<Payment | null> {
+    return this.paymentRepo.findOne({ where: { serviceId } });
+  }
+
+  // ── Estado 3 → 4: Gerar PIN para início do serviço ───────────────────────
+
+  async generatePin(serviceId: string, clientId: string): Promise<{ pin: string; expiresAt: Date }> {
+    const service = await this.findById(serviceId);
+
+    if (service.clientId !== clientId) throw new ForbiddenException('Sem permissão.');
+    if (service.status !== ServiceStatus.PAYMENT_HELD) {
+      throw new BadRequestException('O pagamento tem de estar confirmado antes de gerar o PIN.');
+    }
+
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    service.servicePin = pin;
+    service.pinExpiresAt = expiresAt;
+    service.pinUsed = false;
+    await this.serviceRepo.save(service);
+
+    await this.addTimeline(serviceId, null, 'PIN_GENERATED',
+      'PIN de início gerado e enviado ao cliente (válido 24h)',
+    );
+
+    return { pin, expiresAt };
+  }
+
+  // ── Estado 4 → 5: Prestador valida PIN e inicia serviço ──────────────────
+
+  async startService(serviceId: string, providerId: string, pin: string): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    if (service.providerId !== providerId) throw new ForbiddenException('Sem permissão.');
+    if (service.status !== ServiceStatus.PAYMENT_HELD) {
+      throw new BadRequestException('O serviço não está no estado correcto para iniciar.');
+    }
+    if (!service.servicePin) {
+      throw new BadRequestException('O cliente ainda não gerou o PIN de início.');
+    }
+    if (service.pinUsed) {
+      throw new BadRequestException('Este PIN já foi utilizado.');
+    }
+    if (service.pinExpiresAt && new Date() > service.pinExpiresAt) {
+      throw new BadRequestException('O PIN expirou. O cliente deve gerar um novo.');
+    }
+    if (service.servicePin !== pin.trim()) {
+      throw new BadRequestException('PIN inválido.');
+    }
+
+    service.status = ServiceStatus.IN_PROGRESS;
+    service.pinUsed = true;
+    service.startedAt = new Date();
     const saved = await this.serviceRepo.save(service);
 
-    // Notifica o provider quando o serviço é dirigido especificamente a ele
-    if (dto.targetProviderId) {
-      this.notificationsService
-        .notifyServiceRequested(
-          dto.targetProviderId,
-          clientName ?? 'Um cliente',
-          dto.title,
-        )
-        .catch(() => {}); // não-bloqueante — se falhar, o serviço já foi criado
-    }
+    await this.addTimeline(serviceId, providerId, 'SERVICE_STARTED',
+      'Prestador validou o PIN e iniciou o serviço',
+    );
+
+    await this.notificationsService.notifyServiceStarted(service.clientId, providerId).catch(() => {});
 
     return saved;
   }
 
-  async findByClient(clientId: string, filter: FilterServicesDto): Promise<Service[]> {
-    const query = this.serviceRepo.createQueryBuilder('service')
-      .leftJoinAndSelect('service.provider', 'provider')
-      .leftJoinAndSelect('service.proposedByProvider', 'proposedByProvider')
-      .where('service.clientId = :clientId', { clientId });
-    if (filter.status) query.andWhere('service.status = :status', { status: filter.status });
-    if (filter.category) query.andWhere('service.category = :category', { category: filter.category });
-    return query.orderBy('service.createdAt', 'DESC').getMany();
+  // ── Estado 5 → 6: Prestador marca como concluído ─────────────────────────
+
+  async markProviderCompleted(serviceId: string, providerId: string, warrantyDays?: number): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    if (service.providerId !== providerId) throw new ForbiddenException('Sem permissão.');
+    if (service.status !== ServiceStatus.IN_PROGRESS) {
+      throw new BadRequestException('O serviço tem de estar em curso para ser marcado como concluído.');
+    }
+
+    service.status = ServiceStatus.PROVIDER_COMPLETED;
+    service.providerCompletedAt = new Date();
+
+    if (warrantyDays) {
+      service.warrantyDays = warrantyDays;
+      service.warrantyExpiresAt = new Date(Date.now() + warrantyDays * 24 * 60 * 60 * 1000);
+    }
+
+    const saved = await this.serviceRepo.save(service);
+
+    await this.addTimeline(serviceId, providerId, 'PROVIDER_COMPLETED',
+      `Prestador marcou serviço como concluído${warrantyDays ? ` — garantia de ${warrantyDays} dias` : ''}`,
+    );
+
+    await this.notificationsService.notifyServiceCompleted(service.clientId, providerId).catch(() => {});
+
+    return saved;
   }
 
-  async findAvailable(providerId: string, filter: FilterServicesDto): Promise<Service[]> {
-    const query = this.serviceRepo.createQueryBuilder('service')
-      .leftJoinAndSelect('service.client', 'client')
-      .leftJoinAndSelect('service.proposedByProvider', 'proposedByProvider')
-      .where('service.status = :status', { status: ServiceStatus.PENDING })
-      .andWhere('service.providerId IS NULL')
-      .andWhere(
-        '(service.targetProviderId IS NULL OR service.targetProviderId = :providerId)',
-        { providerId },
+  // ── Estado 6 → 7: Cliente confirma conclusão ──────────────────────────────
+
+  async confirmCompletion(
+    serviceId: string,
+    clientId: string,
+    review?: { rating?: number; review?: string },
+  ): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    if (service.clientId !== clientId) throw new ForbiddenException('Sem permissão.');
+    if (service.status !== ServiceStatus.PROVIDER_COMPLETED) {
+      throw new BadRequestException('O prestador ainda não marcou o serviço como concluído.');
+    }
+
+    const payment = await this.paymentRepo.findOne({ where: { serviceId } });
+    if (!payment) throw new NotFoundException('Registo de pagamento não encontrado.');
+
+    payment.status = PaymentStatus.PENDING_PAYOUT;
+    await this.paymentRepo.save(payment);
+
+    service.status = ServiceStatus.COMPLETED;
+    service.completedAt = new Date();
+
+    if (review?.rating) {
+      service.clientRating = review.rating;
+      service.clientReview = review.review ?? null;
+    }
+
+    const saved = await this.serviceRepo.save(service);
+
+    await this.addTimeline(serviceId, clientId, 'CLIENT_CONFIRMED',
+      'Cliente confirmou a conclusão do serviço',
+    );
+
+    await this.addTimeline(serviceId, null, 'COMMISSION_CALCULATED',
+      `Comissão calculada: ${Number(payment.platformFee).toLocaleString('pt-PT')} Kz — valor líquido ao prestador: ${Number(payment.providerAmount).toLocaleString('pt-PT')} Kz`,
+    );
+
+    await this.notificationsService.notifyAdminPayoutPending(serviceId).catch(() => {});
+
+    return saved;
+  }
+
+  // ── Update do pedido (fluxo antigo — cliente edita antes de aceitação) ──
+
+  async updateByClient(serviceId: string, clientId: string, dto: Partial<CreateServiceDto>): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    if (service.clientId !== clientId) throw new ForbiddenException('Sem permissão.');
+    if (service.status !== ServiceStatus.REQUESTED) {
+      throw new BadRequestException('Só é possível editar pedidos ainda não aceites.');
+    }
+
+    Object.assign(service, dto);
+    return this.serviceRepo.save(service);
+  }
+
+  // ── Cancelamento ──────────────────────────────────────────────────────────
+
+  async cancel(serviceId: string, userId: string, reason?: string): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    const isClient = service.clientId === userId;
+    const isProvider = service.providerId === userId;
+
+    if (!isClient && !isProvider) throw new ForbiddenException('Sem permissão.');
+
+    const cancellableStates = [
+      ServiceStatus.REQUESTED,
+      ServiceStatus.ACCEPTED,
+      ServiceStatus.PAYMENT_PENDING,
+    ];
+    const refundableStates = [ServiceStatus.PAYMENT_HELD];
+
+    if (!cancellableStates.includes(service.status) && !refundableStates.includes(service.status)) {
+      throw new BadRequestException(
+        'Não é possível cancelar após o início do serviço. Abre uma disputa se necessário.',
       );
-    if (filter.category) query.andWhere('service.category = :category', { category: filter.category });
-    if (filter.province) query.andWhere('service.province = :province', { province: filter.province });
-    if ((filter as any).minBudget) query.andWhere('service.budget >= :min', { min: (filter as any).minBudget });
-    if ((filter as any).maxBudget) query.andWhere('service.budget <= :max', { max: (filter as any).maxBudget });
-    return query.orderBy('service.createdAt', 'DESC').getMany();
-  }
-
-  async findByProvider(providerId: string, filter: FilterServicesDto): Promise<Service[]> {
-    const query = this.serviceRepo.createQueryBuilder('service')
-      .leftJoinAndSelect('service.client', 'client')
-      .where('service.providerId = :providerId', { providerId });
-    if (filter.status) query.andWhere('service.status = :status', { status: filter.status });
-    return query.orderBy('service.createdAt', 'DESC').getMany();
-  }
-
-  async findMyProposals(providerId: string): Promise<Service[]> {
-    return this.serviceRepo.createQueryBuilder('service')
-      .leftJoinAndSelect('service.client', 'client')
-      .where('service.proposedByProviderId = :providerId', { providerId })
-      .andWhere('service.status = :status', { status: ServiceStatus.PENDING })
-      .orderBy('service.createdAt', 'DESC')
-      .getMany();
-  }
-
-  async findOne(id: string, userId: string, userRole?: Role): Promise<Service> {
-    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!UUID_REGEX.test(id)) throw new NotFoundException('Recurso não encontrado.');
-
-    const service = await this.serviceRepo.findOne({
-      where: { id },
-      relations: { client: true, provider: true, proposedByProvider: true },
-    });
-    if (!service) throw new NotFoundException('Serviço não encontrado.');
-    if (userRole === Role.ADMIN) return service;
-    if (userRole === Role.PROVIDER || userRole === Role.COMPANY) {
-      const ok = service.providerId === userId ||
-        (service.status === ServiceStatus.PENDING && !service.providerId) ||
-        service.proposedByProviderId === userId ||
-        service.targetProviderId === userId;
-      if (!ok) throw new ForbiddenException('Sem permissão.');
-      return service;
     }
-    if (userRole === Role.CLIENT) {
-      if (service.clientId !== userId) throw new ForbiddenException('Sem permissão.');
-      return service;
+
+    const wasPaymentConfirmed = service.status === ServiceStatus.PAYMENT_HELD;
+
+    if (wasPaymentConfirmed) {
+      const payment = await this.paymentRepo.findOne({ where: { serviceId } });
+      if (payment) {
+        payment.status = PaymentStatus.REFUNDED;
+        payment.refundedAt = new Date();
+        await this.paymentRepo.save(payment);
+      }
+      service.status = ServiceStatus.REFUNDED;
+    } else {
+      service.status = ServiceStatus.CANCELLED;
     }
-    const isParticipant = service.clientId === userId || service.providerId === userId;
-    if (!isParticipant) throw new ForbiddenException('Sem permissão.');
+
+    service.cancelReason = reason ?? 'Cancelado pelo utilizador';
+    await this.serviceRepo.save(service);
+
+    await this.addTimeline(serviceId, userId, 'SERVICE_CANCELLED',
+      `Serviço cancelado por ${isClient ? 'cliente' : 'prestador'}${reason ? ': ' + reason : ''}` +
+      (wasPaymentConfirmed ? ' — reembolso a processar manualmente pelo administrador' : ''),
+    );
+
+    if (wasPaymentConfirmed) {
+      await this.notificationsService.notifyAdminRefundNeeded(serviceId).catch(() => {});
+    }
+
     return service;
   }
 
-  async update(id: string, clientId: string, dto: UpdateServiceDto): Promise<Service> {
-    const service = await this.serviceRepo.findOne({ where: { id, clientId } });
-    if (!service) throw new NotFoundException('Serviço não encontrado.');
-    if (service.status !== ServiceStatus.PENDING)
-      throw new BadRequestException('Só podes editar serviços pendentes.');
-    Object.assign(service, {
-      ...dto,
-      budget: dto.budget ? Number(dto.budget) : service.budget,
-      scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : service.scheduledAt,
-    });
-    return this.serviceRepo.save(service);
-  }
+  // ── Disputa ───────────────────────────────────────────────────────────────
 
-  async accept(id: string, providerId: string, dto: AcceptServiceDto): Promise<Service> {
-    const service = await this.serviceRepo.findOne({ where: { id } });
-    if (!service) throw new NotFoundException('Serviço não encontrado.');
-    if (service.status !== ServiceStatus.PENDING)
-      throw new BadRequestException('Este serviço já não está disponível.');
-    if (service.providerId)
-      throw new BadRequestException('Este serviço já foi aceite por outro prestador.');
-    service.providerId = providerId;
-    service.agreedPrice = Number(dto.agreedPrice);
-    service.status = ServiceStatus.ACCEPTED;
-    service.acceptedAt = new Date();
-    service.proposedPrice = null;
-    service.proposedByProviderId = null;
+  async openDispute(serviceId: string, userId: string, reason: string): Promise<Service> {
+    const service = await this.findById(serviceId);
+
+    if (service.clientId !== userId && service.providerId !== userId) {
+      throw new ForbiddenException('Sem permissão.');
+    }
+
+    const disputeableStates = [
+      ServiceStatus.PAYMENT_HELD,
+      ServiceStatus.IN_PROGRESS,
+      ServiceStatus.PROVIDER_COMPLETED,
+    ];
+
+    if (!disputeableStates.includes(service.status)) {
+      throw new BadRequestException('Não é possível abrir disputa neste estado.');
+    }
+
+    service.status = ServiceStatus.DISPUTED;
+    service.disputeReason = reason;
     const saved = await this.serviceRepo.save(service);
-    await this.notificationsService.notifyServiceAccepted(service.clientId, providerId);
+
+    await this.addTimeline(serviceId, userId, 'DISPUTE_OPENED', `Disputa aberta: ${reason}`);
+
     return saved;
   }
 
-  async proposePrice(id: string, providerId: string, dto: ProposePriceDto): Promise<Service> {
-    const service = await this.serviceRepo.findOne({
-      where: { id },
-      relations: { client: true },
+  // ── Timeline ──────────────────────────────────────────────────────────────
+
+  async getTimeline(serviceId: string): Promise<ServiceTimeline[]> {
+    return this.timelineRepo.find({
+      where: { serviceId },
+      order: { createdAt: 'ASC' },
+      relations: { actor: true },
     });
-    if (!service) throw new NotFoundException('Serviço não encontrado.');
-    if (service.status !== ServiceStatus.PENDING)
-      throw new BadRequestException('Só é possível propor preço em pedidos pendentes.');
-    if (service.providerId) throw new BadRequestException('Este serviço já foi aceite.');
-    if (service.proposedByProviderId && service.proposedByProviderId !== providerId)
-      throw new BadRequestException('Este pedido já tem uma proposta de outro prestador.');
-    service.proposedPrice = Number(dto.proposedPrice);
-    service.proposedByProviderId = providerId;
-    const saved = await this.serviceRepo.save(service);
-    await this.notificationsService.notifyServiceProposed(
-      service.clientId, 'Um prestador', Number(dto.proposedPrice),
+  }
+
+  async addTimelineEvent(
+    serviceId: string,
+    actorId: string | null,
+    action: string,
+    description: string,
+    metadata?: Record<string, any>,
+  ): Promise<void> {
+    return this.addTimeline(serviceId, actorId, action, description, metadata);
+  }
+
+  // ── Estatísticas do cliente (fluxo antigo) ────────────────────────────────
+
+  async getClientStats(clientId: string) {
+    const all = await this.serviceRepo.find({ where: { clientId } });
+
+    const totalCreated = all.length;
+    const totalCompleted = all.filter(s => s.status === ServiceStatus.COMPLETED).length;
+    const totalCancelled = all.filter(s =>
+      [ServiceStatus.CANCELLED, ServiceStatus.REFUNDED, ServiceStatus.REJECTED].includes(s.status),
+    ).length;
+    const totalSpent = all
+      .filter(s => s.status === ServiceStatus.COMPLETED)
+      .reduce((sum, s) => sum + Number(s.agreedPrice ?? s.budget), 0);
+
+    const averageRating = null;
+
+    return { totalCreated, totalSpent, totalCompleted, totalCancelled, averageRating };
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // FIX: totalEarnings agora vem de Payment.providerAmount (valor já
+  // líquido, com a comissão descontada no momento da criação do
+  // pagamento) somado apenas para Payments com status COMPLETED — ou
+  // seja, só depois do admin ter marcado "Transferência realizada".
+  // Antes usava Service.agreedPrice (valor bruto do serviço), por isso
+  // a Home e as Estatísticas mostravam sempre o mesmo valor bruto em
+  // vez do dinheiro real já recebido pelo prestador.
+  // ══════════════════════════════════════════════════════════════════════
+
+  async getProviderStats(providerId: string) {
+    const all = await this.serviceRepo.find({ where: { providerId } });
+
+    const totalOrders = all.length;
+    const completed = all.filter(s => s.status === ServiceStatus.COMPLETED);
+    const totalCompleted = completed.length;
+
+    // Valor real já pago ao prestador — só Payments COMPLETED
+    const completedPayments = await this.paymentRepo.find({
+      where: { providerId, status: PaymentStatus.COMPLETED },
+    });
+    const totalEarnings = completedPayments.reduce(
+      (sum, p) => sum + Number(p.providerAmount), 0,
     );
-    return saved;
+
+    const activeOrders = all.filter(s =>
+      [ServiceStatus.ACCEPTED, ServiceStatus.PAYMENT_HELD, ServiceStatus.IN_PROGRESS, ServiceStatus.PROVIDER_COMPLETED]
+        .includes(s.status),
+    ).length;
+
+    const rated = completed.filter(s => s.clientRating != null);
+    const averageRating = rated.length > 0
+      ? rated.reduce((sum, s) => sum + Number(s.clientRating), 0) / rated.length
+      : null;
+
+    return { totalOrders, totalCompleted, totalEarnings, averageRating, activeOrders };
   }
 
-  async acceptProposal(id: string, clientId: string): Promise<Service> {
-    const service = await this.serviceRepo.findOne({ where: { id, clientId } });
-    if (!service) throw new NotFoundException('Serviço não encontrado.');
-    if (!service.proposedByProviderId || !service.proposedPrice)
-      throw new BadRequestException('Não existe nenhuma proposta pendente.');
-    const agreedPrice = Number(service.proposedPrice);
-    const providerId = service.proposedByProviderId;
-    service.providerId = providerId;
-    service.agreedPrice = agreedPrice;
-    service.status = ServiceStatus.ACCEPTED;
-    service.acceptedAt = new Date();
-    service.proposedPrice = null;
-    service.proposedByProviderId = null;
-    const saved = await this.serviceRepo.save(service);
-    await this.notificationsService.notifyProposalAccepted(providerId, agreedPrice);
-    return saved;
-  }
+  async getProviderStatsByPeriod(providerId: string, period: string) {
+    const all = await this.serviceRepo.find({ where: { providerId } });
+    const completed = all.filter(s => s.status === ServiceStatus.COMPLETED && s.completedAt);
 
-  async rejectProposal(id: string, clientId: string): Promise<Service> {
-    const service = await this.serviceRepo.findOne({ where: { id, clientId } });
-    if (!service) throw new NotFoundException('Serviço não encontrado.');
-    if (!service.proposedByProviderId) throw new BadRequestException('Não existe nenhuma proposta pendente.');
-    const providerId = service.proposedByProviderId;
-    service.proposedPrice = null;
-    service.proposedByProviderId = null;
-    const saved = await this.serviceRepo.save(service);
-    await this.notificationsService.notifyProposalRejected(providerId);
-    return saved;
-  }
+    // Todos os Payments COMPLETED deste prestador, para calcular o
+    // valor real (líquido) por período em vez do bruto.
+    const completedPayments = await this.paymentRepo.find({
+      where: { providerId, status: PaymentStatus.COMPLETED },
+    });
+    const paymentByServiceId = new Map(completedPayments.map(p => [p.serviceId, p]));
 
-  async start(id: string, providerId: string): Promise<Service> {
-    const service = await this.serviceRepo.findOne({ where: { id, providerId } });
-    if (!service) throw new NotFoundException('Serviço não encontrado.');
-    if (service.status !== ServiceStatus.ACCEPTED && service.status !== ServiceStatus.PAID)
-      throw new BadRequestException('O serviço tem de estar aceite para ser iniciado.');
-    service.status = ServiceStatus.IN_PROGRESS;
-    service.startedAt = new Date();
-    const saved = await this.serviceRepo.save(service);
-    await this.notificationsService.notifyServiceStarted(service.clientId, providerId);
-    return saved;
-  }
-
-  async complete(id: string, providerId: string): Promise<Service> {
-    const service = await this.serviceRepo.findOne({ where: { id, providerId } });
-    if (!service) throw new NotFoundException('Serviço não encontrado.');
-    if (service.status !== ServiceStatus.IN_PROGRESS)
-      throw new BadRequestException('O serviço tem de estar em execução para ser concluído.');
-    service.status = ServiceStatus.COMPLETED;
-    service.completedAt = new Date();
-    const saved = await this.serviceRepo.save(service);
-    await this.notificationsService.notifyServiceCompleted(service.clientId, providerId);
-    return saved;
-  }
-
-  async confirm(id: string, clientId: string, dto: ReviewServiceDto): Promise<Service> {
-    const service = await this.serviceRepo.findOne({ where: { id, clientId } });
-    if (!service) throw new NotFoundException('Serviço não encontrado.');
-    if (service.status !== ServiceStatus.COMPLETED)
-      throw new BadRequestException('O serviço tem de estar concluído para confirmar.');
-    if (service.clientConfirmedAt)
-      throw new BadRequestException('Já confirmaste este serviço.');
-    service.clientConfirmedAt = new Date();
-    service.clientRating = dto.rating;
-    service.clientReview = dto.review ?? null;
-    return this.serviceRepo.save(service);
-  }
-
-  async cancel(id: string, userId: string, dto: CancelServiceDto): Promise<Service> {
-    const service = await this.serviceRepo.findOne({ where: { id } });
-    if (!service) throw new NotFoundException('Serviço não encontrado.');
-    const isOwner = service.clientId === userId || service.providerId === userId;
-    if (!isOwner) throw new ForbiddenException('Sem permissão para cancelar este serviço.');
-    const cancellable = [ServiceStatus.PENDING, ServiceStatus.ACCEPTED];
-    if (!cancellable.includes(service.status))
-      throw new BadRequestException('Não é possível cancelar um serviço neste estado.');
-    service.status = ServiceStatus.CANCELLED;
-    service.cancelledAt = new Date();
-    service.cancellationReason = dto.reason;
-    service.proposedPrice = null;
-    service.proposedByProviderId = null;
-    return this.serviceRepo.save(service);
-  }
-
-  async findAll(filter: FilterServicesDto): Promise<Service[]> {
-    const query = this.serviceRepo.createQueryBuilder('service')
-      .leftJoinAndSelect('service.client', 'client')
-      .leftJoinAndSelect('service.provider', 'provider');
-    if (filter.status) query.andWhere('service.status = :status', { status: filter.status });
-    if (filter.category) query.andWhere('service.category = :category', { category: filter.category });
-    return query.orderBy('service.createdAt', 'DESC').getMany();
-  }
-
-  // ─── Helpers ──────────────────────────────────────────────────────────────
-  private getPeriodDates(period: string): { from: Date; to: Date } {
     const now = new Date();
-    const to = new Date(now);
-    let from: Date;
-    switch (period) {
-      case 'Esta semana': from = new Date(now); from.setDate(now.getDate() - 7); break;
-      case 'Este mês': from = new Date(now.getFullYear(), now.getMonth(), 1); break;
-      case 'Este ano': from = new Date(now.getFullYear(), 0, 1); break;
-      default: from = new Date('2020-01-01'); break;
-    }
-    return { from, to };
-  }
+    let cutoff: Date;
+    let buckets: number;
+    let bucketMs: number;
+    let labelFn: (offset: number) => string;
 
-  private async buildEarningsChart(providerId: string, period: string, from: Date, to: Date) {
-    const services = await this.serviceRepo.createQueryBuilder('s')
-      .select(['s.completedAt','s.agreedPrice'])
-      .where('s.providerId = :providerId', { providerId })
-      .andWhere('s.status = :status', { status: ServiceStatus.COMPLETED })
-      .andWhere('s.completedAt BETWEEN :from AND :to', { from, to })
-      .getMany();
-    const buckets = this.buildBuckets(period, from, to);
-    for (const s of services) {
-      const label = this.getBucketLabel(new Date(s.completedAt), period);
-      const b = buckets.find(b => b.label === label);
-      if (b) b.value += Number(s.agreedPrice ?? 0);
-    }
-    return buckets;
-  }
+    const normalized = period.toLowerCase();
 
-  private async buildCompletedChart(providerId: string, period: string, from: Date, to: Date) {
-    const services = await this.serviceRepo.createQueryBuilder('s')
-      .select('s.completedAt')
-      .where('s.providerId = :providerId', { providerId })
-      .andWhere('s.status = :status', { status: ServiceStatus.COMPLETED })
-      .andWhere('s.completedAt BETWEEN :from AND :to', { from, to })
-      .getMany();
-    const buckets = this.buildBuckets(period, from, to);
-    for (const s of services) {
-      const label = this.getBucketLabel(new Date(s.completedAt), period);
-      const b = buckets.find(b => b.label === label);
-      if (b) b.value += 1;
-    }
-    return buckets;
-  }
-
-  private buildBuckets(period: string, from: Date, to: Date): { label: string; value: number }[] {
-    const buckets: { label: string; value: number }[] = [];
-    const cursor = new Date(from);
-    if (period === 'Esta semana') {
-      const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-      while (cursor <= to) { buckets.push({ label: days[cursor.getDay()], value: 0 }); cursor.setDate(cursor.getDate() + 1); }
-    } else if (period === 'Este mês') {
-      while (cursor <= to) { buckets.push({ label: `${cursor.getDate()}`, value: 0 }); cursor.setDate(cursor.getDate() + 1); }
-    } else if (period === 'Este ano') {
-      const m = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-      for (let i = 0; i < 12; i++) buckets.push({ label: m[i], value: 0 });
+    if (normalized.includes('semana')) {
+      buckets = 7;
+      bucketMs = 24 * 60 * 60 * 1000;
+      cutoff = new Date(now.getTime() - buckets * bucketMs);
+      labelFn = (i) => {
+        const d = new Date(cutoff.getTime() + i * bucketMs);
+        return d.toLocaleDateString('pt-PT', { weekday: 'short' });
+      };
+    } else if (normalized.includes('ano')) {
+      buckets = 12;
+      cutoff = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+      bucketMs = 0;
+      labelFn = (i) => {
+        const d = new Date(cutoff.getFullYear(), cutoff.getMonth() + i, 1);
+        return d.toLocaleDateString('pt-PT', { month: 'short' });
+      };
     } else {
-      for (let y = from.getFullYear(); y <= to.getFullYear(); y++) buckets.push({ label: `${y}`, value: 0 });
+      buckets = 30;
+      bucketMs = 24 * 60 * 60 * 1000;
+      cutoff = new Date(now.getTime() - buckets * bucketMs);
+      labelFn = (i) => {
+        const d = new Date(cutoff.getTime() + i * bucketMs);
+        return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+      };
     }
-    return buckets;
+
+    const earningsByPeriod: { label: string; value: number }[] = [];
+    const completedByPeriod: { label: string; value: number }[] = [];
+
+    for (let i = 0; i < buckets; i++) {
+      let bucketStart: Date;
+      let bucketEnd: Date;
+
+      if (normalized.includes('ano')) {
+        bucketStart = new Date(cutoff.getFullYear(), cutoff.getMonth() + i, 1);
+        bucketEnd = new Date(cutoff.getFullYear(), cutoff.getMonth() + i + 1, 1);
+      } else {
+        bucketStart = new Date(cutoff.getTime() + i * bucketMs);
+        bucketEnd = new Date(bucketStart.getTime() + bucketMs);
+      }
+
+      const inBucket = completed.filter(s => {
+        const d = new Date(s.completedAt!);
+        return d >= bucketStart && d < bucketEnd;
+      });
+
+      // Soma o valor LÍQUIDO (providerAmount) de cada serviço concluído
+      // neste período, usando o Payment correspondente. Se um serviço
+      // concluído ainda não tiver Payment COMPLETED (ex: admin ainda
+      // não fez o payout), contribui com 0 — não com o valor bruto.
+      const periodEarnings = inBucket.reduce((sum, s) => {
+        const payment = paymentByServiceId.get(s.id);
+        return sum + (payment ? Number(payment.providerAmount) : 0);
+      }, 0);
+
+      earningsByPeriod.push({ label: labelFn(i), value: periodEarnings });
+      completedByPeriod.push({ label: labelFn(i), value: inBucket.length });
+    }
+
+    const periodCompleted = completed.filter(s => new Date(s.completedAt!) >= cutoff);
+    const totalCompleted = periodCompleted.length;
+    const totalEarnings = periodCompleted.reduce((sum, s) => {
+      const payment = paymentByServiceId.get(s.id);
+      return sum + (payment ? Number(payment.providerAmount) : 0);
+    }, 0);
+
+    const rated = periodCompleted.filter(s => s.clientRating != null);
+    const averageRating = rated.length > 0
+      ? rated.reduce((sum, s) => sum + Number(s.clientRating), 0) / rated.length
+      : null;
+
+    const withResponseTime = all.filter(s => s.acceptedAt && s.createdAt);
+    const avgResponseTimeHours = withResponseTime.length > 0
+      ? withResponseTime.reduce((sum, s) => {
+          const diffMs = new Date(s.acceptedAt!).getTime() - new Date(s.createdAt).getTime();
+          return sum + diffMs / (1000 * 60 * 60);
+        }, 0) / withResponseTime.length
+      : null;
+
+    const totalAll = all.length;
+    const completionRate = totalAll > 0 ? completed.length / totalAll : 0;
+    const rankingScore = Math.round(
+      (completionRate * 50) + ((averageRating ?? 0) / 5 * 30) + Math.min(totalCompleted, 20) / 20 * 20,
+    );
+
+    return {
+      totalCompleted, totalEarnings, averageRating, avgResponseTimeHours,
+      rankingScore, earningsByPeriod, completedByPeriod,
+    };
   }
 
-  private getBucketLabel(date: Date, period: string): string {
-    const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    if (period === 'Esta semana') return days[date.getDay()];
-    if (period === 'Este mês') return `${date.getDate()}`;
-    if (period === 'Este ano') return months[date.getMonth()];
-    return `${date.getFullYear()}`;
+  // ── Reviews do prestador (fluxo antigo) ────────────────────────────────────
+
+  async getProviderReviews(providerId: string) {
+    const completed = await this.serviceRepo.find({
+      where: { providerId, status: ServiceStatus.COMPLETED },
+      relations: { client: true },
+      order: { completedAt: 'DESC' },
+    });
+
+    const reviews = completed
+      .filter(s => s.clientRating != null)
+      .map(s => ({
+        id: s.id,
+        title: s.title,
+        clientName: s.client?.fullName ?? '—',
+        rating: Number(s.clientRating),
+        review: s.clientReview ?? null,
+        completedAt: s.completedAt!.toISOString(),
+      }));
+
+    const total = reviews.length;
+    const average = total > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / total
+      : null;
+
+    const distribution: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+    reviews.forEach(r => {
+      const key = String(Math.round(r.rating));
+      if (distribution[key] !== undefined) distribution[key]++;
+    });
+
+    return { reviews, stats: { total, average, distribution } };
+  }
+
+  // ── Timeline helper ───────────────────────────────────────────────────────
+
+  private async addTimeline(
+    serviceId: string,
+    actorId: string | null,
+    action: string,
+    description: string,
+    metadata?: Record<string, any>,
+  ): Promise<void> {
+    const event = this.timelineRepo.create({ serviceId, actorId, action, description, metadata: metadata ?? null });
+    await this.timelineRepo.save(event).catch(err => this.logger.error('Timeline error:', err));
   }
 }

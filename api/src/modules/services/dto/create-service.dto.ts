@@ -37,4 +37,10 @@ export class CreateServiceDto {
   @IsString()
   @IsOptional()
   targetProviderId?: string;
+
+  // Preenchido quando o pedido nasce de um "Solicitar" na página de
+  // pesquisa — liga o Service à entrada de catálogo que o originou.
+  @IsString()
+  @IsOptional()
+  catalogItemId?: string;
 }
