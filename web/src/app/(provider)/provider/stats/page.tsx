@@ -9,6 +9,10 @@ import { servicesApi, ProviderStatsByPeriod } from "@/lib/services.api";
 
 const periods = ["Esta semana", "Este mês", "Este ano", "Total"];
 
+// Rating arredondado a 1 casa decimal — evita números tipo
+// "4.666666666666667" que rebentam o layout, principalmente no telemóvel.
+const fmtRating = (n: number) => n.toFixed(1);
+
 // Gráfico de barras simples inline — sem biblioteca externa
 function BarChart({
   data, color, unit,
@@ -94,7 +98,7 @@ export default function ProviderStatsPage() {
     },
     {
       label: "Avaliação média",
-      value: stats.averageRating != null ? `${stats.averageRating} ★` : "—",
+      value: stats.averageRating != null ? `${fmtRating(stats.averageRating)} ★` : "—",
       sub: stats.averageRating != null ? "Média histórica" : "Sem avaliações",
       color: "#378ADD",
       icon: Star,
@@ -119,6 +123,7 @@ export default function ProviderStatsPage() {
         .ps-inner{padding:28px 32px;display:flex;flex-direction:column;gap:24px}
         .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
         .stat-card{background:#131b27;border:1px solid #1a2535;border-radius:16px;padding:20px}
+        .stat-value{font-size:26px;font-weight:700;margin-bottom:4px;line-height:1.15;word-break:break-word}
         .periods{display:flex;gap:4px;background:#131b27;border-radius:12px;padding:4px;border:1px solid #1a2535;flex-wrap:wrap}
         .period-btn{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:#6a7a8a;transition:all 0.15s;font-family:inherit}
         .period-btn.on{background:#EF9F27;color:#0d1117}
@@ -132,7 +137,8 @@ export default function ProviderStatsPage() {
         .ranking-bar{height:8px;border-radius:99px;background:#1a2535;overflow:hidden;margin-top:8px}
         .ranking-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#EF9F27,#1D9E75);transition:width 0.6s ease}
         @media(max-width:1024px){.stats-grid{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
-        @media(max-width:640px){.ps-inner{padding:16px}.stats-grid{grid-template-columns:1fr 1fr}.periods{width:100%}.period-btn{flex:1;text-align:center}}
+        @media(max-width:640px){.ps-inner{padding:16px}.stats-grid{grid-template-columns:1fr 1fr}.periods{width:100%}.period-btn{flex:1;text-align:center}.stat-value{font-size:22px}}
+        @media(max-width:400px){.stat-value{font-size:19px}}
       `}</style>
 
       <div className="ps-inner">
@@ -173,7 +179,7 @@ export default function ProviderStatsPage() {
                 </div>
                 {loading
                   ? <Loader2 size={18} style={{ color: m.color, animation: "spin 1s linear infinite" }} />
-                  : <p style={{ fontSize: 26, fontWeight: 700, color: m.color, marginBottom: 4 }}>{m.value}</p>
+                  : <p className="stat-value" style={{ color: m.color }}>{m.value}</p>
                 }
                 <p style={{ fontSize: 12, color: "#3a4a5a" }}>{m.sub}</p>
               </div>
@@ -258,7 +264,7 @@ export default function ProviderStatsPage() {
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#c0d0e0", marginBottom: 4 }}>Factores de ranking</h2>
             <p style={{ fontSize: 13, color: "#4a6a6a", marginBottom: 16 }}>O que influencia a tua posição</p>
             {[
-              { label: "Avaliação média",             desc: "Peso: 40%", color: "#1D9E75", value: stats?.averageRating != null ? `${stats.averageRating}/5` : "—" },
+              { label: "Avaliação média",             desc: "Peso: 40%", color: "#1D9E75", value: stats?.averageRating != null ? `${fmtRating(stats.averageRating)}/5` : "—" },
               { label: "Volume de serviços via app",  desc: "Peso: 30%", color: "#EF9F27", value: stats ? String(stats.totalCompleted) : "—" },
               { label: "Velocidade de resposta",      desc: "Peso: 20%", color: "#378ADD", value: fmtResponseTime(stats?.avgResponseTimeHours ?? null) },
               { label: "Perfil completo e verificado",desc: "Peso: 10%", color: "#D4537E", value: "KYC" },

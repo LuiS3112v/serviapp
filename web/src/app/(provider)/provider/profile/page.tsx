@@ -8,6 +8,10 @@ import { AuthUser } from "@/lib/auth.api";
 
 const CATEGORIES = ["Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Segurança"];
 
+// Rating arredondado a 1 casa decimal — evita números tipo
+// "4.666666666666667" que rebentam o layout, principalmente no telemóvel.
+const fmtRating = (n: number) => n.toFixed(1);
+
 export default function ProviderProfilePage() {
   const router = useRouter();
   const [user, setUser]       = useState<AuthUser | null>(null);
@@ -65,6 +69,7 @@ export default function ProviderProfilePage() {
         .info-row:last-child{border-bottom:none}
         .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
         .stat{background:#0d1117;border:1px solid #1a2535;border-radius:12px;padding:14px;text-align:center}
+        .stat-value{font-size:20px;font-weight:700;margin-bottom:4px;line-height:1.15;word-break:break-word}
         .edit-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:12px;border:1px solid #1a2535;background:#131b27;color:#8a9ab0;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s}
         .edit-btn:hover{border-color:#EF9F27;color:#EF9F27}
         .kyc-btn{padding:10px 18px;border-radius:10px;background:#EF9F27;color:#0d1117;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
@@ -80,7 +85,8 @@ export default function ProviderProfilePage() {
         .save-btn:disabled{opacity:0.6;cursor:not-allowed}
         .skeleton{background:#1a2535;border-radius:8px;animation:pulse 1.5s infinite}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-        @media(max-width:640px){.pp-inner{padding:70px 16px 20px}.cat-grid{grid-template-columns:repeat(2,1fr)}.stat-grid{grid-template-columns:1fr 1fr}}
+        @media(max-width:640px){.pp-inner{padding:70px 16px 20px}.cat-grid{grid-template-columns:repeat(2,1fr)}.stat-grid{grid-template-columns:1fr 1fr}.stat-value{font-size:17px}}
+        @media(max-width:360px){.stat-value{font-size:16px}}
       `}</style>
 
       <div className="pp-inner">
@@ -135,13 +141,13 @@ export default function ProviderProfilePage() {
           {[
             {label:"Pedidos recebidos", value:loading?"...":fmt(stats?.totalOrders??0),                                              color:"#EF9F27", icon:Briefcase},
             {label:"Concluídos",        value:loading?"...":fmt(stats?.totalCompleted??0),                                            color:"#1D9E75", icon:CheckCircle},
-            {label:"Avaliação média",   value:loading?"...":stats?.averageRating!=null?`${stats.averageRating}★`:"Sem dados",         color:"#378ADD", icon:Star},
+            {label:"Avaliação média",   value:loading?"...":stats?.averageRating!=null?`${fmtRating(stats.averageRating)}★`:"Sem dados",   color:"#378ADD", icon:Star},
           ].map((s,i)=>{
             const Icon=s.icon;
             return (
               <div className="stat" key={i}>
                 <Icon size={16} style={{color:s.color,margin:"0 auto 8px"}}/>
-                <p style={{fontSize:20,fontWeight:700,color:s.color,marginBottom:4}}>{s.value}</p>
+                <p className="stat-value" style={{color:s.color}}>{s.value}</p>
                 <p style={{fontSize:11,color:"#4a6a6a"}}>{s.label}</p>
               </div>
             );

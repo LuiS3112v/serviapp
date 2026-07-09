@@ -60,7 +60,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      <div style={{ flex:1, overflowY:"auto", padding:"12px 0" }}>
+      <div className="sb-nav">
         {navItems.map(group => (
           <div key={group.section} style={{ marginBottom:8 }}>
             <p style={{ padding:"10px 20px 4px", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.1em", color:"#2a3a4a" }}>
@@ -92,7 +92,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         ))}
       </div>
 
-      <div style={{ padding:"16px 20px", borderTop:"1px solid #1a2535", display:"flex", alignItems:"center", gap:12 }}>
+      <div className="sb-footer">
         <div style={{ width:36, height:36, borderRadius:"50%", background:"#1a3a2a", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#1D9E75", flexShrink:0 }}>U</div>
         <div style={{ flex:1, minWidth:0 }}>
           <p style={{ fontSize:14, fontWeight:600, color:"#c0d0e0", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>O meu perfil</p>
@@ -116,15 +116,19 @@ export default function Sidebar() {
   return (
     <>
       <style>{`
-        .sb-desktop{position:fixed;left:0;top:0;height:100vh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:40}
+        .sb-desktop{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:40}
         .sb-toggle{display:none;position:fixed;top:14px;left:14px;z-index:50;width:40px;height:40px;border-radius:12px;background:#080e1a;border:1px solid #1a2535;align-items:center;justify-content:center;cursor:pointer}
         .sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:45;display:none}
-        .sb-drawer{position:fixed;left:0;top:0;height:100vh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:46;transform:translateX(-100%);transition:transform 0.25s ease}
+        .sb-drawer{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:46;transform:translateX(-100%);transition:transform 0.25s ease}
         .sb-drawer.open{transform:translateX(0)}
+        .sb-nav{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 0}
+        .sb-footer{padding:16px 20px;border-top:1px solid #1a2535;display:flex;align-items:center;gap:12}
         @media(max-width:1024px){
           .sb-desktop{display:none!important}
           .sb-toggle{display:flex!important}
           .sb-close{display:flex!important}
+          .sb-nav{padding:8px 0}
+          .sb-footer{padding:12px 20px}
         }
       `}</style>
 
