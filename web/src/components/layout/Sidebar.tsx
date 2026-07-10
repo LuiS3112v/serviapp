@@ -92,8 +92,8 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         ))}
       </div>
 
-      <div className="sb-footer">
-        <div style={{ width:36, height:36, borderRadius:"50%", background:"#1a3a2a", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#1D9E75", flexShrink:0 }}>U</div>
+       <div style={{ padding:"16px 20px", borderTop:"1px solid #1a2535", display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ width:36, height:36, borderRadius:"50%", background:"#1a3a2a", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#1D9E75", flexShrink:0 }}>C</div>
         <div style={{ flex:1, minWidth:0 }}>
           <p style={{ fontSize:14, fontWeight:600, color:"#c0d0e0", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>O meu perfil</p>
           <p style={{ fontSize:12, color:"#4a5a6a" }}>Cliente</p>

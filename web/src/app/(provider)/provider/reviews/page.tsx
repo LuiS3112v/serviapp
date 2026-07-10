@@ -5,6 +5,10 @@ import { Star, ArrowRight, TrendingUp, Shield, Loader2, AlertCircle } from "luci
 import { servicesApi, ProviderReviewsData } from "@/lib/services.api";
 import { getToken } from "@/lib/auth.api";
 
+// Rating arredondado a 1 casa decimal — evita números tipo
+// "4.666666666666667" que rebentam o layout, principalmente no telemóvel.
+const fmtRating = (n: number) => n.toFixed(1);
+
 function StarRow({ rating, max = 5 }: { rating: number; max?: number }) {
   return (
     <div style={{ display:"flex", gap:3 }}>
@@ -56,6 +60,8 @@ export default function ProviderReviewsPage() {
         .rv-inner{padding:28px 32px;display:flex;flex-direction:column;gap:24px;max-width:900px}
         .rv-grid{display:grid;grid-template-columns:300px 1fr;gap:20px}
         .rv-card{background:#131b27;border:1px solid #1a2535;border-radius:20px;padding:24px}
+        .rv-avg-num{font-size:52px;font-weight:700;color:#EF9F27;line-height:1;margin-bottom:12px}
+        .rv-avg-skel{width:80px;height:52px;margin:0 auto 12px}
         .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
         .bar-track{flex:1;height:6px;border-radius:99px;background:#1a2535;overflow:hidden}
         .bar-fill{height:100%;border-radius:99px;background:#EF9F27;transition:width 0.6s ease}
@@ -68,7 +74,8 @@ export default function ProviderReviewsPage() {
         .skeleton{background:#1a2535;border-radius:8px;animation:sk 1.5s infinite}
         @keyframes sk{0%,100%{opacity:1}50%{opacity:0.4}}
         @media(max-width:1024px){.rv-grid{grid-template-columns:1fr}}
-        @media(max-width:640px){.rv-inner{padding:16px}}
+        @media(max-width:640px){.rv-inner{padding:16px}.rv-avg-num{font-size:42px}}
+        @media(max-width:400px){.rv-avg-num{font-size:36px}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
       `}</style>
 
@@ -92,10 +99,10 @@ export default function ProviderReviewsPage() {
             <div className="rv-card" style={{ textAlign:"center" }}>
               <p style={{ fontSize:13, color:"#4a6a6a", marginBottom:12 }}>Avaliação média</p>
               {loading ? (
-                <div className="skeleton" style={{ width:80, height:52, margin:"0 auto 12px" }}/>
+                <div className="skeleton rv-avg-skel"/>
               ) : (
-                <p style={{ fontSize:52, fontWeight:700, color:"#EF9F27", lineHeight:1, marginBottom:12 }}>
-                  {stats?.average != null ? stats.average : "—"}
+                <p className="rv-avg-num">
+                  {stats?.average != null ? fmtRating(stats.average) : "—"}
                 </p>
               )}
               <div style={{ display:"flex", justifyContent:"center", gap:4, marginBottom:10 }}>
