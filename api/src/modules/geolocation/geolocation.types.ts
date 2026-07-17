@@ -1,7 +1,11 @@
 export interface UpdateLocationPayload {
   latitude: number;
   longitude: number;
-  isOnline?: boolean;          // ← was "isBoolean" (typo) — fixed
+  isOnline?: boolean;
+}
+
+export interface UpdateSharingPayload {
+  enabled: boolean;
 }
 
 export interface NearbyQueryPayload {
@@ -9,7 +13,8 @@ export interface NearbyQueryPayload {
   longitude: number;
   radiusKm?: number;
   category?: string;
-  status?: 'online' | 'offline' | 'all';   // ← new: Estado filter
+  status?: 'online' | 'offline' | 'all';
+  availableOnly?: boolean;
 }
 
 export interface ProviderLocation {
@@ -24,7 +29,8 @@ export interface ProviderLocation {
   latitude: number | null;
   longitude: number | null;
   isOnline: boolean;
-  locationEnabled: boolean;     // ← new: derived field (has coords + isOnline)
+  locationSharingEnabled: boolean;
+  locationEnabled: boolean;
   isVerified: boolean;
   lastSeenAt: Date | null;
 }

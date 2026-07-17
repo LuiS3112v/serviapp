@@ -19,6 +19,7 @@ import { BankAccountsModule }      from './modules/bank-accounts/bank-accounts.m
 import { PlatformSettingsModule }  from './modules/platform-settings/platform-settings.module';
 import { PaymentProofModule }      from './modules/payment-proof/payment-proof.module';
 import { AdminPaymentsModule }     from './modules/admin-payments/admin-payments.module';
+import { ActiveServiceLocationModule } from './modules/active-service-location/active-service-location.module';
 
 // ── Entities existentes ───────────────────────────────────────────────────
 import { User }                 from './database/entities/user.entity';
@@ -47,7 +48,7 @@ import { Wallet }          from './database/entities/wallet.entity';
 import { Transaction }     from './database/entities/transaction.entity';
 import { Dispute }         from './database/entities/dispute.entity';
 
-// ── Entities do sistema de pagamento por comprovativo (novas) ─────────────
+// ── Entities do sistema de pagamento por comprovativo ─────────────────────
 import { PlatformBankAccount } from './database/entities/platform-bank-account.entity';
 import { ProviderBankAccount } from './database/entities/provider-bank-account.entity';
 import { PaymentProof }        from './database/entities/payment-proof.entity';
@@ -63,18 +64,14 @@ import { PlatformSettings }    from './database/entities/platform-settings.entit
         type: 'postgres',
         url: config.get('DATABASE_URL'),
         entities: [
-          // ── Core ─────────────────────────────────────────────────────
           User, ProviderVerification, Service,
           Notification, DeviceToken,
           ChatRoom, ChatMessage,
           ProviderCatalog,
-          // ── Empresa ──────────────────────────────────────────────────
           Company, CompanyVerification, CompanyEmployee,
           CompanyInvitation, CompanyService, CompanyPortfolioItem,
           CompanyGalleryImage, CompanyCertification,
-          // ── Serviços + pagamentos ───────────────────────────────────
           ServiceTimeline, Payment, Wallet, Transaction, Dispute,
-          // ── Pagamento por comprovativo (novas) ──────────────────────
           PlatformBankAccount, ProviderBankAccount, PaymentProof, PlatformSettings,
         ],
         ssl: process.env.NODE_ENV === 'production'
@@ -99,6 +96,7 @@ import { PlatformSettings }    from './database/entities/platform-settings.entit
     PlatformSettingsModule,
     PaymentProofModule,
     AdminPaymentsModule,
+    ActiveServiceLocationModule,
   ],
 })
 export class AppModule {}

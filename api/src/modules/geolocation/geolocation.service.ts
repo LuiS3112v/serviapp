@@ -1,13 +1,11 @@
-// src/modules/geolocation/geolocation.service.ts
-// REPLACE entire file
-
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../database/entities/user.entity';
 import { Role } from '../../common/enums/role.enum';
 import {
   UpdateLocationPayload,
+  UpdateSharingPayload,
   NearbyQueryPayload,
   ProviderLocation,
   ProviderWithDistance,
@@ -20,7 +18,6 @@ export class GeolocationService {
     private userRepo: Repository<User>,
   ) {}
 
-  // ─── Haversine formula ──────────────────────────────────────────────────
   private haversineKm(
     lat1: number, lon1: number,
     lat2: number, lon2: number,
@@ -49,23 +46,31 @@ export class GeolocationService {
       latitude: user.latitude != null ? Number(user.latitude) : null,
       longitude: user.longitude != null ? Number(user.longitude) : null,
       isOnline: user.isOnline,
-      locationEnabled: user.latitude != null && user.longitude != null && user.isOnline,
+      locationSharingEnabled: user.locationSharingEnabled,
+      locationEnabled:
+        user.latitude != null &&
+        user.longitude != null &&
+        user.locationSharingEnabled,
       isVerified: user.isVerified,
       lastSeenAt: user.lastSeenAt ?? null,
     };
   }
 
-  // ─── Provider updates their own location ────────────────────────────────
   async updateLocation(
     userId: string,
     payload: UpdateLocationPayload,
   ): Promise<ProviderLocation> {
     const user = await this.userRepo.findOneOrFail({ where: { id: userId } });
 
+    if (!user.locationSharingEnabled) {
+      throw new ForbiddenException(
+        'A partilha de localização está desativada. Ativa-a no teu perfil primeiro.',
+      );
+    }
+
     user.latitude = payload.latitude;
     user.longitude = payload.longitude;
 
-    // If isOnline is explicitly sent, honour it; otherwise keep current value
     if (typeof payload.isOnline === 'boolean') {
       user.isOnline = payload.isOnline;
     }
@@ -75,11 +80,26 @@ export class GeolocationService {
     return this.toProviderLocation(saved);
   }
 
-  // ─── Nearby providers (Haversine sort + filters) ─────────────────────────
+  async updateSharingStatus(
+    userId: string,
+    payload: UpdateSharingPayload,
+  ): Promise<ProviderLocation> {
+    const user = await this.userRepo.findOneOrFail({ where: { id: userId } });
+
+    user.locationSharingEnabled = payload.enabled;
+
+    if (!payload.enabled) {
+      user.isOnline = false;
+    }
+
+    const saved = await this.userRepo.save(user);
+    return this.toProviderLocation(saved);
+  }
+
   async findNearbyProviders(
     payload: NearbyQueryPayload,
   ): Promise<ProviderWithDistance[]> {
-    const { latitude, longitude, radiusKm = 50, category, status } = payload;
+    const { latitude, longitude, radiusKm = 50, category, status, availableOnly } = payload;
 
     const qb = this.userRepo
       .createQueryBuilder('user')
@@ -88,6 +108,7 @@ export class GeolocationService {
       })
       .andWhere('user.isVerified = :verified', { verified: true })
       .andWhere('user.profileVisible = :visible', { visible: true })
+      .andWhere('user.locationSharingEnabled = :sharing', { sharing: true })
       .andWhere('user.latitude IS NOT NULL')
       .andWhere('user.longitude IS NOT NULL');
 
@@ -101,6 +122,10 @@ export class GeolocationService {
       qb.andWhere('user.isOnline = :online', { online: false });
     }
 
+    if (availableOnly) {
+      qb.andWhere('user.isOnline = :available', { available: true });
+    }
+
     const users = await qb.getMany();
 
     const withDistance: ProviderWithDistance[] = users
@@ -112,7 +137,7 @@ export class GeolocationService {
         return {
           ...this.toProviderLocation(u),
           distanceKm: Math.round(distanceKm * 10) / 10,
-          etaMinutes: Math.round((distanceKm / 30) * 60), // avg 30 km/h urban
+          etaMinutes: Math.round((distanceKm / 30) * 60),
         };
       })
       .filter((p) => p.distanceKm <= radiusKm)
@@ -121,7 +146,6 @@ export class GeolocationService {
     return withDistance;
   }
 
-  // ─── Online providers (simple list, optional category) ──────────────────
   async findOnlineProviders(category?: string): Promise<ProviderLocation[]> {
     const qb = this.userRepo
       .createQueryBuilder('user')
@@ -130,6 +154,7 @@ export class GeolocationService {
       })
       .andWhere('user.isVerified = :verified', { verified: true })
       .andWhere('user.profileVisible = :visible', { visible: true })
+      .andWhere('user.locationSharingEnabled = :sharing', { sharing: true })
       .andWhere('user.isOnline = :online', { online: true })
       .andWhere('user.latitude IS NOT NULL')
       .andWhere('user.longitude IS NOT NULL');

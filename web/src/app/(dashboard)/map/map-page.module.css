@@ -1,0 +1,437 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  padding: 20px 24px;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #8a9ab0;
+  margin-top: 2px;
+}
+
+.viewToggle {
+  display: flex;
+  background-color: #131b27;
+  border: 1px solid #1a2535;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.viewToggleButton {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #8a9ab0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.viewToggleButtonActive {
+  background-color: #1D9E75;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.locationDeniedMessage {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background-color: rgba(226, 75, 74, 0.1);
+  border: 1px solid rgba(226, 75, 74, 0.3);
+  color: #f0a8a7;
+  font-size: 12px;
+}
+
+.mapWrapper {
+  flex: 1;
+  min-height: 480px;
+  position: relative;
+}
+
+.listWrapper {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+
+.listCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #1a2535;
+  background-color: #131b27;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.listCard:hover {
+  border-color: #EF9F27;
+  background-color: #171f2d;
+}
+
+.listCardAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #EF9F27, #d97706);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.listCardAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listCardInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.listCardName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.listCardMeta {
+  font-size: 12px;
+  color: #8a9ab0;
+  margin-top: 2px;
+}
+
+.listCardDistance {
+  font-size: 12px;
+  font-weight: 700;
+  color: #EF9F27;
+  flex-shrink: 0;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 60px 20px;
+  text-align: center;
+  color: #4a5a6a;
+}
+
+.emptyStateTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #8a9ab0;
+}
+
+/* ── Elementos flutuantes sobre o mapa — busca, categorias, filtro e
+   ativar localização ficam em branco (pedido explícito), o resto dos
+   elementos flutuantes (banners, card do prestador) mantém-se em vidro
+   escuro, definido nos outros ficheiros. ── */
+
+.floatingSearchBar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 550;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.searchInputWrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 11px 14px 11px 38px;
+  border-radius: 12px;
+  border: 1px solid #d9dce2;
+  background-color: #ffffff;
+  color: #111827;
+  font-size: 13px;
+  outline: none;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  transition: border-color 0.16s ease;
+}
+
+.searchInput::placeholder {
+  color: #9ca3af;
+}
+
+.searchInput:focus {
+  border-color: #1D9E75;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.filterToggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #d9dce2;
+  background-color: #ffffff;
+  color: #4b5563;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  flex-shrink: 0;
+  transition: all 0.16s ease;
+}
+
+.filterToggleButtonActive {
+  border-color: #EF9F27;
+  background-color: #fff7ed;
+  color: #b45309;
+}
+
+.floatingCategoryScroll {
+  position: absolute;
+  top: 68px;
+  left: 16px;
+  right: 16px;
+  z-index: 540;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(29, 158, 117, 0.5) transparent;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+}
+
+.floatingCategoryScroll::-webkit-scrollbar {
+  height: 5px;
+}
+
+.floatingCategoryScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.floatingCategoryScroll::-webkit-scrollbar-thumb {
+  background-color: rgba(29, 158, 117, 0.5);
+  border-radius: 999px;
+}
+
+.categoryChip {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid #d9dce2;
+  background-color: #ffffff;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.1);
+  transition: all 0.16s ease;
+  flex-shrink: 0;
+}
+
+.categoryChipActive {
+  border-color: #1D9E75;
+  background-color: #1D9E75;
+  color: #ffffff;
+}
+
+.floatingFilterPanel {
+  position: absolute;
+  top: 118px;
+  left: 16px;
+  right: 16px;
+  z-index: 560;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.16);
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filterGroupTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filterOptionRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filterChip {
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #d9dce2;
+  background-color: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.filterChipActive {
+  border-color: #EF9F27;
+  background-color: #fff7ed;
+  color: #b45309;
+}
+
+.availabilityToggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.toggleSwitch {
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background-color: #d1d5db;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.16s ease;
+  flex-shrink: 0;
+}
+
+.toggleSwitchOn {
+  background-color: #1D9E75;
+}
+
+.toggleSwitchKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  transition: transform 0.16s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggleSwitchOn .toggleSwitchKnob {
+  transform: translateX(18px);
+}
+
+.floatingActivateLocation {
+  position: absolute;
+  bottom: 20px;
+  left: 16px;
+  z-index: 550;
+}
+
+.activateLocationButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: 1px solid #EF9F27;
+  background-color: #ffffff;
+  color: #b45309;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+  transition: background-color 0.16s ease;
+}
+
+.activateLocationButton:hover:not(:disabled) {
+  background-color: #fff7ed;
+}
+
+.activateLocationButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .floatingCategoryScroll {
+    top: 62px;
+  }
+
+  .floatingFilterPanel {
+    top: 108px;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

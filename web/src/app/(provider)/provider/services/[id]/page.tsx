@@ -5,6 +5,7 @@ import ProofViewerModal from "@/components/shared/ProofViewerModal";
 import { servicesDetailApi } from "@/lib/api/services-detail.api";
 import { paymentProofApi, PaymentProof } from "@/lib/api/payment-proof.api";
 import { chatApi } from "@/lib/chat.api";
+import { useProviderActiveServiceLocationBroadcast } from '@/hooks/useProviderActiveServiceLocationBroadcast';
 import {
   CheckCircle, Clock, Loader2, ArrowLeft,
   X, MessageCircle, AlertTriangle, Key, Eye, FileText,
@@ -109,6 +110,8 @@ export default function ProviderServiceDetailPage() {
   const [warranty, setWarranty] = useState<number|"">("");
   const [priceIn, setPriceIn]   = useState("");
   const [chatL, setChatL]       = useState(false);
+
+  useProviderActiveServiceLocationBroadcast(id, service?.status === "in_progress");
 
   const load = useCallback(async () => {
     try {

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Bell, MapPin, Loader2, Search, X, ChevronRight } from "lucide-react";
 import { chatApi } from "@/lib/chat.api";
 import { notificationsApi } from "@/lib/notifications.api";
-import { activateLocation, type ProviderLocation } from "@/lib/geolocation.api";
+import { activateLocation, updateLocationSharing, type ProviderLocation } from "@/lib/geolocation.api";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { getToken } from "@/lib/auth.api";
@@ -18,7 +18,35 @@ const CAT_EMOJI: Record<string, string> = {
   "Automóvel":"🚗","Pintura":"🎨","Construção":"🏗️","Segurança":"🔐",
 };
 
+// idle: partilha desligada
+// loading: a pedir permissão de GPS / a confirmar com o backend
+// active: partilha ligada e a emitir posição periodicamente
+// denied: permissão de GPS negada pelo browser
 type LocationState = "idle" | "loading" | "active" | "denied";
+
+// Reaproveita a mesma lógica de distância e cadência do
+// useProviderLocationBroadcast: 15m de movimento significativo,
+// 6s de intervalo em movimento, 30s parado. Mantida aqui em vez de
+// importada porque o navbar precisa de controlar o próprio watchId
+// dentro do ciclo de vida do botão, e não deve depender de um hook
+// externo montado noutra página.
+const MOVEMENT_INTERVAL_MS = 6000;
+const IDLE_INTERVAL_MS = 30000;
+const SIGNIFICANT_MOVEMENT_METERS = 15;
+
+function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const earthRadiusMeters = 6371000;
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) ** 2;
+
+  return earthRadiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 export default function ProviderNavbar() {
   const router   = useRouter();
@@ -36,17 +64,34 @@ export default function ProviderNavbar() {
   const [locState, setLocState] = useState<LocationState>("idle");
   const [mounted, setMounted]   = useState(false);
 
+  const watchIdRef = useRef<number | null>(null);
+  const lastSentRef = useRef<{ latitude: number; longitude: number; timestamp: number } | null>(null);
+  const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     setMounted(true);
     async function checkLocation() {
       try {
         const me = await api.get<ProviderLocation>("/users/me");
-        if (me.latitude != null && me.longitude != null && me.isOnline) {
+        if (me.locationSharingEnabled) {
           setLocState("active");
         }
       } catch { /* silencioso */ }
     }
     checkLocation();
+
+    // Garante que o watch é encerrado se o componente desmontar com a
+    // partilha ainda ativa (ex: navegação para fora do painel de
+    // prestador), evitando um watchPosition órfão a correr em segundo
+    // plano sem nenhum estado de UI a refletir isso.
+    return () => {
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -96,19 +141,104 @@ export default function ProviderNavbar() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const handleActivate = useCallback(() => {
-    if (locState !== "idle") return;
+  // Inicia o watchPosition, enviando a posição inicial de imediato e
+  // depois só reenviando conforme a distância percorrida desde o
+  // último envio — 6s em movimento, 30s parado. A escolha de
+  // watchPosition em vez de um setInterval com getCurrentPosition é
+  // deliberada: o browser já otimiza a captura de GPS nativamente,
+  // e aqui só decidimos QUANDO reenviar, sem forçar leituras de GPS
+  // extra que o setInterval exigiria a cada tick independentemente de
+  // ter havido movimento real.
+  const startWatchingPosition = useCallback(() => {
+    if (watchIdRef.current != null) return;
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const last = lastSentRef.current;
+
+        const hasMovedSignificantly =
+          !last || distanceMeters(last.latitude, last.longitude, latitude, longitude) > SIGNIFICANT_MOVEMENT_METERS;
+
+        const intervalSinceLastSend = last ? Date.now() - last.timestamp : Infinity;
+        const requiredInterval = hasMovedSignificantly ? MOVEMENT_INTERVAL_MS : IDLE_INTERVAL_MS;
+
+        if (intervalSinceLastSend < requiredInterval) {
+          return;
+        }
+
+        if (throttleTimerRef.current) {
+          clearTimeout(throttleTimerRef.current);
+        }
+
+        throttleTimerRef.current = setTimeout(() => {
+          activateLocation(latitude, longitude).catch(() => {
+            // Falha pontual de rede não interrompe o watch — a próxima
+            // atualização de posição tenta novamente.
+          });
+          lastSentRef.current = { latitude, longitude, timestamp: Date.now() };
+        }, 300);
+      },
+      () => {
+        // Erro pontual do GPS depois de já estar ativo não desliga o
+        // toggle — só a rejeição inicial de permissão o faz.
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
+    );
+  }, []);
+
+  const stopWatchingPosition = useCallback(() => {
+    if (watchIdRef.current != null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    if (throttleTimerRef.current) {
+      clearTimeout(throttleTimerRef.current);
+      throttleTimerRef.current = null;
+    }
+    lastSentRef.current = null;
+  }, []);
+
+  const handleToggleLocation = useCallback(async () => {
+    if (locState === "loading") return;
+
+    if (locState === "active") {
+      stopWatchingPosition();
+      setLocState("idle");
+      updateLocationSharing(false).catch(() => {
+        // Falha ao desligar no backend não deve travar a UI — o
+        // watch já parou localmente, que é o efeito que importa para
+        // o utilizador imediatamente.
+      });
+      return;
+    }
+
     if (!navigator.geolocation) {
       alert("O teu navegador não suporta geolocalização.");
       return;
     }
+
     setLocState("loading");
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
+          // A ordem importa: o backend rejeita atualizações de posição
+          // enquanto locationSharingEnabled estiver false, por isso a
+          // partilha tem de ser ligada antes do primeiro envio de
+          // posição.
+          await updateLocationSharing(true);
           await activateLocation(pos.coords.latitude, pos.coords.longitude);
+          lastSentRef.current = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            timestamp: Date.now(),
+          };
           setLocState("active");
-        } catch { setLocState("idle"); }
+          startWatchingPosition();
+        } catch {
+          setLocState("idle");
+        }
       },
       () => {
         setLocState("denied");
@@ -116,7 +246,7 @@ export default function ProviderNavbar() {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
-  }, [locState]);
+  }, [locState, startWatchingPosition, stopWatchingPosition]);
 
   return (
     <>
@@ -190,20 +320,23 @@ export default function ProviderNavbar() {
           white-space: nowrap; position: relative; overflow: hidden;
           flex-shrink: 0;
         }
-        .pnav-loc-btn:hover:not(:disabled) {
+        .pnav-loc-btn:hover:not(.pnav-loc-btn--loading) {
           background: rgba(239,159,39,0.12);
           border-color: rgba(239,159,39,0.5);
         }
-        .pnav-loc-btn:disabled { cursor: not-allowed; }
+        .pnav-loc-btn--loading { opacity: 0.8; cursor: wait; }
         .pnav-loc-btn--active {
           border-color: rgba(34,197,94,0.4);
           background: rgba(34,197,94,0.08);
+        }
+        .pnav-loc-btn--active:hover {
+          background: rgba(34,197,94,0.14);
+          border-color: rgba(34,197,94,0.6);
         }
         .pnav-loc-btn--denied {
           border-color: rgba(239,68,68,0.4);
           background: rgba(239,68,68,0.08);
         }
-        .pnav-loc-btn--loading { opacity: 0.8; }
 
         /* ── Location label ────────────────────────────────────────────── */
         .pnav-loc-label {
@@ -348,7 +481,6 @@ export default function ProviderNavbar() {
               </button>
             )}
           </div>
-
           {showResults && (
             <div className="pnav-drop">
               {results.length === 0 ? (
@@ -389,12 +521,12 @@ export default function ProviderNavbar() {
                 locState === "active"  ? "pnav-loc-btn--active"  : "",
                 locState === "denied"  ? "pnav-loc-btn--denied"  : "",
               ].filter(Boolean).join(" ")}
-              onClick={handleActivate}
-              disabled={locState !== "idle"}
+              onClick={handleToggleLocation}
+              disabled={locState === "loading"}
               aria-label={
-                locState === "idle"    ? "Ativar localização"  :
-                locState === "loading" ? "A localizar…"        :
-                locState === "active"  ? "Localização ativada" :
+                locState === "idle"    ? "Ativar localização"      :
+                locState === "loading" ? "A localizar…"            :
+                locState === "active"  ? "Desativar localização"  :
                                          "Acesso negado"
               }
             >

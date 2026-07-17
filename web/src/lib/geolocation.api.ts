@@ -1,5 +1,5 @@
 // src/lib/geolocation.api.ts
-// CREATE new file
+// UPDATE existing file — adds sharing toggle support, keeps everything else intact
 
 import { api } from './api';
 
@@ -15,6 +15,7 @@ export interface ProviderLocation {
   latitude: number | null;
   longitude: number | null;
   isOnline: boolean;
+  locationSharingEnabled: boolean;
   locationEnabled: boolean;
   isVerified: boolean;
   lastSeenAt: string | null;
@@ -34,9 +35,9 @@ export interface NearbyQuery {
   radiusKm?: number;
   category?: string;
   status?: StatusFilter;
+  availableOnly?: boolean;
 }
 
-// ─── Provider: activate/update own location ─────────────────────────────────
 export async function activateLocation(
   latitude: number,
   longitude: number,
@@ -48,7 +49,13 @@ export async function activateLocation(
   });
 }
 
-// ─── Client: fetch nearby providers with full filter support ────────────────
+// Liga/desliga a partilha de localização do prestador. Distinto de
+// activateLocation: este endpoint controla se o backend aceita
+// atualizações de posição, não a posição em si.
+export async function updateLocationSharing(enabled: boolean): Promise<ProviderLocation> {
+  return api.patch<ProviderLocation>('/geolocation/sharing', { enabled });
+}
+
 export async function fetchNearbyProviders(
   query: NearbyQuery,
 ): Promise<ProviderWithDistance[]> {
@@ -62,10 +69,12 @@ export async function fetchNearbyProviders(
   if (query.status && query.status !== 'all') {
     params.set('status', query.status);
   }
+  if (query.availableOnly) {
+    params.set('availableOnly', 'true');
+  }
   return api.get<ProviderWithDistance[]>(`/geolocation/providers/nearby?${params}`);
 }
 
-// ─── Client: fetch all providers (no distance, simple list) ─────────────────
 export async function fetchProviders(category?: string): Promise<ProviderLocation[]> {
   const params = category && category !== 'Todos'
     ? `?category=${encodeURIComponent(category)}`

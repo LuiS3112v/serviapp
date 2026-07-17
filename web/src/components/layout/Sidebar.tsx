@@ -118,8 +118,8 @@ export default function Sidebar() {
       <style>{`
         .sb-desktop{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:40}
         .sb-toggle{display:none;position:fixed;top:14px;left:14px;z-index:50;width:40px;height:40px;border-radius:12px;background:#080e1a;border:1px solid #1a2535;align-items:center;justify-content:center;cursor:pointer}
-        .sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:45;display:none}
-        .sb-drawer{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:46;transform:translateX(-100%);transition:transform 0.25s ease}
+        .sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:2000;display:none}
+        .sb-drawer{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:2001;transform:translateX(-100%);transition:transform 0.25s ease}
         .sb-drawer.open{transform:translateX(0)}
         .sb-nav{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 0}
         .sb-footer{padding:16px 20px;border-top:1px solid #1a2535;display:flex;align-items:center;gap:12}

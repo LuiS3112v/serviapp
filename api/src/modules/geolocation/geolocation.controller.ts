@@ -1,6 +1,3 @@
-// src/modules/geolocation/geolocation.controller.ts
-// REPLACE entire file
-
 import {
   Controller,
   Get,
@@ -17,6 +14,7 @@ import {
 import { GeolocationService } from './geolocation.service';
 import {
   UpdateLocationPayload,
+  UpdateSharingPayload,
   NearbyQueryPayload,
   ProviderLocation,
   ProviderWithDistance,
@@ -39,6 +37,11 @@ export class UpdateLocationDto implements UpdateLocationPayload {
   @IsBoolean()
   @IsOptional()
   isOnline?: boolean;
+}
+
+export class UpdateSharingDto implements UpdateSharingPayload {
+  @IsBoolean()
+  enabled: boolean;
 }
 
 export class NearbyQueryDto implements NearbyQueryPayload {
@@ -65,6 +68,11 @@ export class NearbyQueryDto implements NearbyQueryPayload {
   @IsOptional()
   @IsIn(['online', 'offline', 'all'])
   status?: 'online' | 'offline' | 'all';
+
+  @Type(() => Boolean)
+  @IsBoolean()
+  @IsOptional()
+  availableOnly?: boolean;
 }
 
 @Controller('geolocation')
@@ -79,6 +87,15 @@ export class GeolocationController {
     @Body() dto: UpdateLocationDto,
   ): Promise<ProviderLocation> {
     return this.geolocationService.updateLocation(user.id, dto);
+  }
+
+  @Patch('sharing')
+  @Roles(Role.PROVIDER, Role.COMPANY)
+  async updateSharing(
+    @CurrentUser() user: { id: string },
+    @Body() dto: UpdateSharingDto,
+  ): Promise<ProviderLocation> {
+    return this.geolocationService.updateSharingStatus(user.id, dto);
   }
 
   @Get('providers/nearby')

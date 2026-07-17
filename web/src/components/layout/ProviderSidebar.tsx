@@ -142,8 +142,8 @@ export default function ProviderSidebar() {
       <style>{`
         .psb-d{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:40;overflow:hidden}
         .psb-mb{display:none;position:fixed;top:14px;left:14px;z-index:50;width:40px;height:40px;border-radius:12px;background:#080e1a;border:1px solid #1a2535;align-items:center;justify-content:center;cursor:pointer}
-        .psb-ov{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:45;display:none}
-        .psb-dr{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:46;transform:translateX(-100%);transition:transform 0.25s ease;overflow:hidden}
+        .psb-ov{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:2000;display:none}
+        .psb-dr{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#080e1a;border-right:1px solid #1a2535;display:flex;flex-direction:column;z-index:2001;transform:translateX(-100%);transition:transform 0.25s ease;overflow:hidden}
         .psb-dr.open{transform:translateX(0)}
         .psb-nav{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 0}
         .psb-footer{padding:16px 20px;border-top:1px solid #1a2535;display:flex;align-items:center;gap:12px}
