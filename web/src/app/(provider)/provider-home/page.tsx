@@ -2,8 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Briefcase, Wallet, Star, Clock, ArrowRight,
+  Briefcase, Wallet, Star, Clock, ArrowRight, ChevronDown,
   Shield, Zap, Users, TrendingUp, CheckCircle, AlertCircle, Loader2,
+  Handshake, KeyRound, ImagePlus, MapPin,
 } from "lucide-react";
 import { servicesApi, ProviderStats } from "@/lib/services.api";
 import { chatApi } from "@/lib/chat.api";
@@ -11,10 +12,18 @@ import { getSession } from "@/lib/auth.api";
 import { kycApi } from "@/lib/api/kyc.api";
 
 // ── Static data ─────────────────────────────────────────────────────────────
+// 3 sempre visíveis (mantidos tal como estavam) + 5 atrás de "Ver todos"
+// (8 no total). `action`/`href` só existem nos passos com CTA própria —
+// os restantes são apenas informativos.
 const STEPS = [
   { Icon: CheckCircle, color:"#1D9E75", bg:"#0b2a20", title:"Completa o KYC",          desc:"Verifica a tua identidade para activar o perfil e receber pedidos.", action:"Verificar agora", href:"/kyc?role=provider"    },
-  { Icon: Star,        color:"#EF9F27", bg:"#271a05", title:"Cria o teu portfólio",     desc:"Adiciona fotos e descrição dos serviços que ofereces.",               action:"Editar perfil",   href:"/provider/profile"     },
+  { Icon: ImagePlus,   color:"#EF9F27", bg:"#271a05", title:"Cria o teu portfólio",     desc:"Adiciona fotos e descrição dos serviços que ofereces.",               action:"Editar perfil",   href:"/provider/profile"     },
   { Icon: Zap,         color:"#378ADD", bg:"#071830", title:"Recebe o primeiro pedido", desc:"Quando o perfil estiver activo, os clientes vão encontrar-te.",        action:"Ver pedidos",     href:"/provider/services"    },
+  { Icon: MapPin,      color:"#1D9E75", bg:"#0b2a20", title:"Activa a tua localização", desc:"Liga a partilha de localização no teu painel para apareceres no mapa e receberes pedidos perto de ti." },
+  { Icon: Handshake,   color:"#8B5CF6", bg:"#1a1030", title:"Aceita e negoceia",        desc:"Analisa o pedido, propõe um preço se quiseres, e aceita para começar." },
+  { Icon: KeyRound,    color:"#EF9F27", bg:"#271a05", title:"Valida o PIN no local",    desc:"O cliente dá-te um código quando chegares — introduz para iniciares o serviço com segurança." },
+  { Icon: Wallet,      color:"#1D9E75", bg:"#0b2a20", title:"Recebe o pagamento protegido", desc:"O valor fica reservado desde o início; depois de confirmado, a comissão é descontada automaticamente e transferido para ti." },
+  { Icon: TrendingUp,  color:"#D4537E", bg:"#2a0f1a", title:"Constrói a tua reputação", desc:"Cada serviço concluído soma avaliações e aumenta a tua visibilidade nas pesquisas." },
 ];
 
 const FEATS = [
@@ -30,7 +39,6 @@ const HERO_PROV = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?
 export default function ProviderHomePage() {
   const router = useRouter();
 
-  // ── State (preservado na íntegra) ───────────────────────────────────────
   const [user, setUser] = useState<any>(null);
   useEffect(() => { setUser(getSession()); }, []);
 
@@ -38,13 +46,11 @@ export default function ProviderHomePage() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
 
-  // NOVO: estado real de verificação do prestador — null enquanto não
-  // há confirmação (a carregar, ou o prestador nunca submeteu KYC), ou
-  // os valores do KycStatus do backend ('pending' | 'approved' |
-  // 'rejected'). Só 'approved' activa o banner "Perfil activo".
   const [kycStatus, setKycStatus] = useState<string | null>(null);
 
-  // ── Effects (preservados na íntegra, só acrescentei a chamada ao KYC) ───
+  const [showAllSteps, setShowAllSteps] = useState(false);
+  const visibleSteps = showAllSteps ? STEPS : STEPS.slice(0, 3);
+
   useEffect(() => {
     let cancelled = false;
     const fetchStats = async () => {
@@ -67,7 +73,6 @@ export default function ProviderHomePage() {
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
-  // ── Derived data (preservado na íntegra) ────────────────────────────────
   const heroStats = [
     { value: loadingStats ? "…" : stats ? String(stats.totalOrders) : "0",                                          label:"Pedidos",   color:"#EF9F27" },
     { value: loadingStats ? "…" : stats ? `${stats.totalEarnings.toLocaleString("pt-PT")} Kz` : "0 Kz",            label:"Ganhos",    color:"#1D9E75" },
@@ -101,9 +106,6 @@ export default function ProviderHomePage() {
     },
   ];
 
-  // NOVO: deriva o estado "verificado" a partir do kycStatus real. Antes
-  // de confirmar "approved" — a carregar, pending, rejected, ou sem
-  // qualquer submissão — o banner mantém-se exactamente como estava.
   const isVerified = kycStatus === "approved";
 
   return (
@@ -204,7 +206,6 @@ export default function ProviderHomePage() {
         }
         .btn-kyc:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(239,159,39,0.48)}
 
-        /* NOVO — variantes verificadas do banner, aditivo, não altera nada acima */
         .kyc.verified{
           background:linear-gradient(135deg,rgba(29,158,117,0.07),rgba(29,158,117,0.02));
           border:1px solid rgba(29,158,117,0.2);
@@ -250,6 +251,17 @@ export default function ProviderHomePage() {
           cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap;
         }
         .btn-step:hover{background:rgba(239,159,39,0.2)}
+        .psteps-more-wrap{display:flex;justify-content:center;margin-top:6px}
+        .btn-psteps-more{
+          display:inline-flex;align-items:center;gap:6px;
+          padding:9px 18px;border-radius:10px;
+          background:rgba(239,159,39,0.08);border:1px solid rgba(239,159,39,0.22);
+          color:#EF9F27;font-size:13px;font-weight:600;
+          cursor:pointer;font-family:inherit;transition:all 0.16s ease;
+        }
+        .btn-psteps-more:hover{background:rgba(239,159,39,0.16)}
+        .btn-psteps-more svg{transition:transform 0.2s ease}
+        .btn-psteps-more.open svg{transform:rotate(180deg)}
 
         /* ── Feature cards ── */
         .feats2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -352,10 +364,6 @@ export default function ProviderHomePage() {
         </section>
 
         {/* ═══ KYC BANNER ═══ */}
-        {/* NOVO: alterna consoante o kycStatus real vindo de
-            GET /provider/kyc/status. Enquanto não houver confirmação de
-            "approved" — a carregar, pending, rejected, ou sem qualquer
-            submissão — mantém-se exactamente como estava antes. */}
         <div className={`kyc${isVerified ? " verified" : ""}`}>
           <div className={`kyc-ico${isVerified ? " verified" : ""}`}>
             {isVerified
@@ -411,23 +419,33 @@ export default function ProviderHomePage() {
           <div className="psec">
             <p className="psec-title">Primeiros passos</p>
             <p className="psec-sub">Completa estes passos para activar o teu perfil</p>
-            {STEPS.map((s, i) => {
+            {visibleSteps.map((s) => {
               const Icon = s.Icon;
               return (
-                <div className="pstep" key={i}>
+                <div className="pstep" key={s.title}>
                   <div className="pstep-ico" style={{ background:s.bg, border:`1px solid ${s.color}24` }}>
                     <Icon size={20} style={{ color:s.color }} />
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontSize:14, fontWeight:700, color:"#e2e8f0", marginBottom:5 }}>{s.title}</p>
-                    <p style={{ fontSize:12, color:"#4a6a6a", lineHeight:1.55, marginBottom:10 }}>{s.desc}</p>
-                    <button className="btn-step" onClick={() => router.push(s.href)}>
-                      {s.action} <ArrowRight size={12} />
-                    </button>
+                    <p style={{ fontSize:12, color:"#4a6a6a", lineHeight:1.55, marginBottom: s.action ? 10 : 0 }}>{s.desc}</p>
+                    {s.action && s.href && (
+                      <button className="btn-step" onClick={() => router.push(s.href)}>
+                        {s.action} <ArrowRight size={12} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
             })}
+            <div className="psteps-more-wrap">
+              <button
+                className={`btn-psteps-more${showAllSteps ? " open" : ""}`}
+                onClick={() => setShowAllSteps((v) => !v)}
+              >
+                {showAllSteps ? "Ver menos" : "Ver todos"} <ChevronDown size={15} />
+              </button>
+            </div>
           </div>
 
           {/* Vantagens */}

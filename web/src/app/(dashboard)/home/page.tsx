@@ -1,10 +1,12 @@
 "use client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
 import {
-  Shield, ChevronRight, ArrowRight, Zap, MapPin,
-  Star, CheckCircle, MessageCircle, Search,
+  Shield, ChevronRight, ChevronDown, ArrowRight, Zap, MapPin,
+  Star, CheckCircle, MessageCircle, Search, Navigation,
+  KeyRound, LifeBuoy, FileText,
   Sparkles, Wind, Wrench, Monitor, Leaf,
   Package, Scissors, Car, Paintbrush, HardHat, Lock, Users,
 } from "lucide-react";
@@ -29,10 +31,19 @@ const CATS = [
   { Icon: Lock,       label: "Segurança",     desc: "Sistemas e monitorização",     color: "#818cf8" },
 ];
 
+// ── PASSO A PASSO ────────────────────────────────────────────────────────────
+// 3 sempre visíveis + 5 atrás de "Ver todos" (8 no total). Estrutura de
+// card idêntica à anterior (número, ícone, título, descrição) — só o
+// conteúdo e a quantidade mudaram. `num` é gerado pelo índice.
 const STEPS = [
-  { Icon: Search,        color: "#1D9E75", bg: "#0b2a20", num: "01", title: "Pesquisa",        desc: "Encontra prestadores verificados perto de ti por categoria ou localização." },
-  { Icon: MessageCircle, color: "#378ADD", bg: "#071830", num: "02", title: "Contacta e paga", desc: "Fala pelo chat, acerta o orçamento e paga com total segurança." },
-  { Icon: CheckCircle,   color: "#EF9F27", bg: "#271a05", num: "03", title: "Confirma",        desc: "Confirma o serviço concluído e o pagamento é libertado ao prestador." },
+  { Icon: Search,        color: "#1D9E75", bg: "#0b2a20", title: "Pesquisa",                    desc: "Encontra prestadores verificados por categoria, nome ou localização no mapa." },
+  { Icon: FileText,      color: "#60a5fa", bg: "#0a1a2e", title: "Pede o serviço",               desc: "Descreve o que precisas, propõe um orçamento e envia o pedido ao prestador escolhido." },
+  { Icon: Shield,        color: "#378ADD", bg: "#071830", title: "Combina e paga em segurança",  desc: "Acorda o preço pelo chat, paga por transferência e o dinheiro fica protegido até confirmares o serviço." },
+  { Icon: Navigation,    color: "#EF9F27", bg: "#271a05", title: "Acompanha em tempo real",      desc: "Vê o prestador a chegar no mapa, com distância e tempo estimado, assim que ele aceitar o pedido." },
+  { Icon: KeyRound,      color: "#8B5CF6", bg: "#1a1030", title: "Confirma com PIN",             desc: "No local, dás um código único ao prestador para confirmares que o serviço começou de forma segura." },
+  { Icon: Star,          color: "#EF9F27", bg: "#271a05", title: "Avalia o serviço",             desc: "No fim, confirma a conclusão e deixa uma avaliação para ajudar outros clientes." },
+  { Icon: MessageCircle, color: "#378ADD", bg: "#071830", title: "Fala sempre pelo chat",        desc: "Todas as combinações ficam registadas na app, para tua proteção em caso de dúvida." },
+  { Icon: LifeBuoy,      color: "#D4537E", bg: "#2a0f1a", title: "Resolve disputas com apoio",   desc: "Se algo correr mal, a nossa equipa está disponível para mediar e resolver." },
 ];
 
 const FEATS = [
@@ -46,6 +57,9 @@ const HERO = "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&
 
 export default function HomePage() {
   const router = useRouter();
+  const [showAllSteps, setShowAllSteps] = useState(false);
+
+  const visibleSteps = showAllSteps ? STEPS : STEPS.slice(0, 3);
 
   return (
     <>
@@ -137,15 +151,6 @@ export default function HomePage() {
         .sec-link:hover{opacity:0.7}
 
         /* ── Categories ── */
-        /* Card neutro (fundo/borda/texto sem cor) — a cor da categoria só
-           aparece em dois sítios discretos: (1) o chip do ícone pequeno,
-           com fundo e borda na cor da categoria a baixa opacidade e o
-           ícone em si na cor cheia; (2) o ícone gigante atrás, estilo
-           marca de água, quase invisível. Sem gradiente colorido a cobrir
-           o card e sem texto colorido — evita o efeito "arco-íris" quando
-           várias categorias aparecem lado a lado. Tamanho do card
-           inalterado. Grid responsiva (4→3→2→1 colunas nos media queries
-           abaixo) inalterada. */
         .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
         .cat{
           display:flex;align-items:center;gap:14px;
@@ -175,10 +180,6 @@ export default function HomePage() {
         .cat-desc{
           font-size:11px;color:#5a6a7a;line-height:1.4;margin:0;
         }
-        /* Ícone gigante de fundo, estilo marca de água — atrás do texto
-           (z-index 1, abaixo do cat-body que está em z-index 2), cortado
-           pela borda do card via overflow:hidden no .cat. Opacidade bem
-           baixa para não competir com o chip nem com o texto. */
         .cat-ghost{
           position:absolute;right:-14px;bottom:-18px;z-index:1;
           pointer-events:none;color:var(--cat-color);opacity:0.06;
@@ -192,6 +193,17 @@ export default function HomePage() {
           width:48px;height:48px;border-radius:14px;
           display:flex;align-items:center;justify-content:center;margin-bottom:14px;
         }
+        .steps-more-wrap{display:flex;justify-content:center;margin-top:18px}
+        .btn-steps-more{
+          display:inline-flex;align-items:center;gap:6px;
+          padding:10px 20px;border-radius:10px;
+          background:rgba(29,158,117,0.08);border:1px solid rgba(29,158,117,0.24);
+          color:#1D9E75;font-size:13px;font-weight:600;
+          cursor:pointer;font-family:inherit;transition:all 0.16s ease;
+        }
+        .btn-steps-more:hover{background:rgba(29,158,117,0.16)}
+        .btn-steps-more svg{transition:transform 0.2s ease}
+        .btn-steps-more.open svg{transform:rotate(180deg)}
 
         /* ── Features ── */
         .feats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -344,15 +356,15 @@ export default function HomePage() {
             <div className="sec">
               <div style={{ marginBottom:22 }}>
                 <h2 style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>Como funciona</h2>
-                <p style={{ fontSize:13, color:"#4a6a6a" }}>3 passos simples para contratar</p>
+                <p style={{ fontSize:13, color:"#4a6a6a" }}>Do pedido à conclusão, passo a passo</p>
               </div>
               <div className="steps">
-                {STEPS.map((s, i) => {
+                {visibleSteps.map((s, i) => {
                   const Icon = s.Icon;
                   return (
-                    <div className="step" key={i}>
+                    <div className="step" key={s.title}>
                       <p style={{ fontSize:11, fontWeight:800, color:s.color, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14 }}>
-                        Passo {s.num}
+                        Passo {String(i + 1).padStart(2, "0")}
                       </p>
                       <div className="step-ico" style={{ background:s.bg, border:`1px solid ${s.color}28` }}>
                         <Icon size={24} style={{ color:s.color }} />
@@ -362,6 +374,14 @@ export default function HomePage() {
                     </div>
                   );
                 })}
+              </div>
+              <div className="steps-more-wrap">
+                <button
+                  className={`btn-steps-more${showAllSteps ? " open" : ""}`}
+                  onClick={() => setShowAllSteps((v) => !v)}
+                >
+                  {showAllSteps ? "Ver menos" : "Ver todos"} <ChevronDown size={15} />
+                </button>
               </div>
             </div>
 
