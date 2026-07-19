@@ -7,6 +7,8 @@ import {
   Search, Filter, Briefcase, FileText,
   Wifi, WifiOff, Loader2, X, RefreshCw,
   Package, CheckCircle, Building2,
+  Sparkles, Wind, Wrench, Zap, Monitor, Leaf,
+  Scissors, Car, Paintbrush, HardHat, Lock,
 } from "lucide-react";
 import { getToken } from "@/lib/auth.api";
 import { chatApi } from "@/lib/chat.api";
@@ -16,11 +18,23 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 const CATS  = ["Todos","Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Segurança"];
 const SORTS = ["Mais próximo","Melhor avaliação","Menor preço"];
-const CAT_EMOJI: Record<string,string> = {
-  "Limpeza":"🧹","Climatização":"❄️","Canalização":"🔧","Eletricista":"⚡",
-  "TI & Redes":"💻","Jardinagem":"🌿","Mudanças":"📦","Beleza":"💆",
-  "Automóvel":"🚗","Pintura":"🎨","Construção":"🏗️","Segurança":"🔐",
+
+// Ícones e cores exactamente iguais à categories page — única source of truth
+const CAT_ICON: Record<string, { Icon: any; color: string }> = {
+  "Limpeza":      { Icon: Sparkles,   color: "#1D9E75" },
+  "Climatização": { Icon: Wind,       color: "#38bdf8" },
+  "Canalização":  { Icon: Wrench,     color: "#a78bfa" },
+  "Eletricista":  { Icon: Zap,        color: "#fbbf24" },
+  "TI & Redes":   { Icon: Monitor,    color: "#60a5fa" },
+  "Jardinagem":   { Icon: Leaf,       color: "#34d399" },
+  "Mudanças":     { Icon: Package,    color: "#fb923c" },
+  "Beleza":       { Icon: Scissors,   color: "#f472b6" },
+  "Automóvel":    { Icon: Car,        color: "#93c5fd" },
+  "Pintura":      { Icon: Paintbrush, color: "#e879f9" },
+  "Construção":   { Icon: HardHat,    color: "#fb923c" },
+  "Segurança":    { Icon: Lock,       color: "#818cf8" },
 };
+const DEFAULT_CAT_ICON = { Icon: Wrench, color: "#6a7a8a" };
 
 const COMPANY_CATEGORY_KEYWORDS: Record<string, string[]> = {
   "TI & Redes":   ["ti", "tecnologia", "technology", "tech", "redes", "software", "informatica", "digital", "it", "sistemas", "tic"],
@@ -369,6 +383,7 @@ function SearchInner() {
                   const sol        = solicitStates[item.key] ?? "idle";
                   const isCompany  = isCompanyCard(item);
                   const isCatalog  = item.source === "catalog";
+                  const { Icon: CatIcon, color: catColor } = CAT_ICON[item.category ?? ""] ?? DEFAULT_CAT_ICON;
 
                   return (
                     <div
@@ -382,13 +397,13 @@ function SearchInner() {
                           background: isCompany ? "#071830" : (item.isOnline ? "#0b2a2a" : "#1a2535"),
                           border: isCompany ? "1px solid #378ADD30" : "none",
                           display:"flex", alignItems:"center", justifyContent:"center",
-                          fontSize:22, overflow:"hidden",
+                          overflow:"hidden",
                         }}>
                           {item.providerAvatar
                             ? <img src={item.providerAvatar} alt={item.providerName} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                             : isCompany
                               ? <Building2 size={22} style={{color:"#378ADD"}}/>
-                              : (CAT_EMOJI[item.category ?? ""] ?? "🔧")
+                              : <CatIcon size={22} style={{color:catColor}}/>
                           }
                           {!isCompany && (
                             <div style={{

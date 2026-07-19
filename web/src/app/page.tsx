@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Zap, Shield, Star, MapPin, CheckCircle,
-  ArrowRight, Eye, EyeOff, Loader2,
+  ArrowRight, Eye, EyeOff, Loader2, User, Wrench,
 } from "lucide-react";
 import { authApi, saveSession } from "@/lib/auth.api";
 
@@ -197,7 +197,9 @@ export default function EntryPage() {
                 <p style={{fontSize:11,fontWeight:600,color:"#3a4a5a",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:12}}>Criar nova conta</p>
                 <div className="role-grid">
                   <button className="role-btn green" onClick={()=>reset("signup-client")}>
-                    <div style={{width:48,height:48,borderRadius:14,background:"#0b2a2a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>👤</div>
+                    <div style={{width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#1D9E7530,#0b2a2a)",boxShadow:"0 4px 16px #1D9E7525",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <User size={23} style={{color:"#1D9E75"}}/>
+                    </div>
                     <div style={{textAlign:"center"}}>
                       <p style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:3}}>Sou Cliente</p>
                       <p style={{fontSize:11,color:"#4a6a6a"}}>Quero contratar</p>
@@ -205,7 +207,9 @@ export default function EntryPage() {
                     <ArrowRight size={14} style={{color:"#1D9E75"}}/>
                   </button>
                   <button className="role-btn amber" onClick={()=>reset("signup-provider")}>
-                    <div style={{width:48,height:48,borderRadius:14,background:"#2a1e08",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🔧</div>
+                    <div style={{width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#EF9F2730,#2a1e08)",boxShadow:"0 4px 16px #EF9F2725",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <Wrench size={23} style={{color:"#EF9F27"}}/>
+                    </div>
                     <div style={{textAlign:"center"}}>
                       <p style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:3}}>Sou Prestador</p>
                       <p style={{fontSize:11,color:"#4a6a6a"}}>Quero oferecer</p>
@@ -234,8 +238,8 @@ export default function EntryPage() {
               <>
                 <button className="back-btn" onClick={()=>reset("entry")}>← Voltar</button>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24}}>
-                  <div style={{width:40,height:40,borderRadius:12,background:"#1d9e7520",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <span style={{fontSize:20}}>👤</span>
+                  <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#1D9E7535,#1d9e7515)",boxShadow:"0 3px 12px #1D9E7520",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <User size={20} style={{color:"#1D9E75"}}/>
                   </div>
                   <div>
                     <h2 style={{fontSize:20,fontWeight:700,color:"#e2e8f0"}}>Entrar como Cliente</h2>
@@ -270,8 +274,8 @@ export default function EntryPage() {
               <>
                 <button className="back-btn" onClick={()=>reset("entry")}>← Voltar</button>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24}}>
-                  <div style={{width:40,height:40,borderRadius:12,background:"#EF9F2720",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <span style={{fontSize:20}}>🔧</span>
+                  <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#EF9F2735,#EF9F2715)",boxShadow:"0 3px 12px #EF9F2720",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <Wrench size={20} style={{color:"#EF9F27"}}/>
                   </div>
                   <div>
                     <h2 style={{fontSize:20,fontWeight:700,color:"#e2e8f0"}}>Entrar como Prestador</h2>
@@ -306,8 +310,8 @@ export default function EntryPage() {
               <>
                 <button className="back-btn" onClick={()=>step===1?reset("entry"):setStep(1)}>← {step===1?"Voltar":"Passo anterior"}</button>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                  <div style={{width:40,height:40,borderRadius:12,background:"#1d9e7520",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <span style={{fontSize:20}}>👤</span>
+                  <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#1D9E7535,#1d9e7515)",boxShadow:"0 3px 12px #1D9E7520",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <User size={20} style={{color:"#1D9E75"}}/>
                   </div>
                   <div>
                     <h2 style={{fontSize:20,fontWeight:700,color:"#e2e8f0"}}>Criar conta de Cliente</h2>
@@ -365,8 +369,8 @@ export default function EntryPage() {
               <>
                 <button className="back-btn" onClick={()=>step===1?reset("entry"):setStep(s=>s-1)}>← {step===1?"Voltar":"Passo anterior"}</button>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                  <div style={{width:40,height:40,borderRadius:12,background:"#EF9F2720",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <span style={{fontSize:20}}>🔧</span>
+                  <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#EF9F2735,#EF9F2715)",boxShadow:"0 3px 12px #EF9F2720",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <Wrench size={20} style={{color:"#EF9F27"}}/>
                   </div>
                   <div>
                     <h2 style={{fontSize:20,fontWeight:700,color:"#e2e8f0"}}>Criar perfil de Prestador</h2>
