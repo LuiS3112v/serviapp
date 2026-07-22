@@ -16,7 +16,7 @@ import {
 // produto. Cada tom tem um par [texto/ícone, fundo suave] extraído de uma
 // paleta consistente (estilo Stripe/Linear/Revolut), usada com propósito:
 // cada secção e cada categoria ganha a sua própria personalidade cromática.
-const TONES = {
+const TONES: Record<string, { text: string; bg: string }> = {
   emerald: { text: "#0E7A5F", bg: "#E3F5EE" },
   sky:     { text: "#0284C7", bg: "#E0F2FE" },
   teal:    { text: "#0D9488", bg: "#D9F5F0" },
@@ -33,7 +33,7 @@ const TONES = {
 
 // Converte hex em rgba (para sombras e bordas tingidas por tom, com a
 // opacidade certa em vez de cinzentos planos).
-function rgba(hex, alpha) {
+function rgba(hex: string, alpha: number) {
   const clean = hex.replace("#", "");
   const bigint = parseInt(clean, 16);
   const r = (bigint >> 16) & 255;
@@ -42,7 +42,7 @@ function rgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function toneVars(toneKey) {
+function toneVars(toneKey: string) {
   const t = TONES[toneKey] || TONES.emerald;
   return {
     "--accent": t.text,
@@ -455,7 +455,7 @@ export default function HomePage() {
                     const Icon = s.Icon;
                     const t = TONES[s.tone];
                     return (
-                      <div className="step-card" key={s.title} style={toneVars(s.tone)}>
+                      <div className="step-card" key={s.title} style={toneVars(s.tone) as React.CSSProperties}>
                         <div className="step-badge">{String(i + 1).padStart(2, "0")}</div>
                         <div className="step-card-ico" style={{ background: t.bg }}>
                           <Icon size={22} color={t.text} />
@@ -491,7 +491,7 @@ export default function HomePage() {
                   const Icon = f.Icon;
                   const t = TONES[f.tone];
                   return (
-                    <div key={i} className="feat-strip-card" style={toneVars(f.tone)}>
+                    <div key={i} className="feat-strip-card" style={toneVars(f.tone) as React.CSSProperties}>
                       <div className="feat-strip-ico" style={{ background: t.bg }}>
                         <Icon size={19} color={t.text} />
                       </div>
