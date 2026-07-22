@@ -11,262 +11,342 @@ import {
   Package, Scissors, Car, Paintbrush, HardHat, Lock, Users,
 } from "lucide-react";
 
+// ── DESIGN SYSTEM: COLOR TOKENS ─────────────────────────────────────────────
+// Emerald continua a ser a cor de marca, mas deixa de ser a única cor do
+// produto. Cada tom tem um par [texto/ícone, fundo suave] extraído de uma
+// paleta consistente (estilo Stripe/Linear/Revolut), usada com propósito:
+// cada secção e cada categoria ganha a sua própria personalidade cromática.
+const TONES = {
+  emerald: { text: "#0E7A5F", bg: "#E3F5EE" },
+  sky:     { text: "#0284C7", bg: "#E0F2FE" },
+  teal:    { text: "#0D9488", bg: "#D9F5F0" },
+  amber:   { text: "#B45309", bg: "#FEF3C7" },
+  indigo:  { text: "#4F46E5", bg: "#E5E4FF" },
+  lime:    { text: "#65A30D", bg: "#ECFCCB" },
+  cyan:    { text: "#0891B2", bg: "#CFFAFE" },
+  rose:    { text: "#E11D48", bg: "#FFE4E7" },
+  blue:    { text: "#2563EB", bg: "#DBEAFE" },
+  violet:  { text: "#7C3AED", bg: "#EDE7FE" },
+  orange:  { text: "#C2410C", bg: "#FFEDD5" },
+  slate:   { text: "#475569", bg: "#F1F5F9" },
+};
+
+// Converte hex em rgba (para sombras e bordas tingidas por tom, com a
+// opacidade certa em vez de cinzentos planos).
+function rgba(hex, alpha) {
+  const clean = hex.replace("#", "");
+  const bigint = parseInt(clean, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function toneVars(toneKey) {
+  const t = TONES[toneKey] || TONES.emerald;
+  return {
+    "--accent": t.text,
+    "--accent-bg": t.bg,
+    "--accent-ring": rgba(t.text, 0.16),
+    "--accent-border": rgba(t.text, 0.34),
+  };
+}
+
 // ── CATEGORIAS ──────────────────────────────────────────────────────────────
-// ÚNICA mudança neste ficheiro: card neutro (fundo/borda/texto sem cor), com
-// a cor da categoria confinada ao chip do ícone pequeno (fundo + borda a
-// baixa opacidade, ícone em cor cheia) e ao ícone gigante de fundo tipo
-// marca de água (opacity bem baixa). Tamanho do card mantido.
+// Mesmos 12 itens, mesma forma de dados e mesma rota de clique do ficheiro
+// original — agora cada categoria recebe o seu próprio tom de marca.
 const CATS = [
-  { Icon: Sparkles,   label: "Limpeza",       desc: "Casas, escritórios e mais",    color: "#1D9E75" },
-  { Icon: Wind,       label: "Climatização",  desc: "Instalação e manutenção",      color: "#38bdf8" },
-  { Icon: Wrench,     label: "Canalização",   desc: "Reparações e instalações",     color: "#a78bfa" },
-  { Icon: Zap,        label: "Eletricista",   desc: "Instalações e reparações",     color: "#fbbf24" },
-  { Icon: Monitor,    label: "TI & Redes",    desc: "Suporte e redes informáticas", color: "#60a5fa" },
-  { Icon: Leaf,       label: "Jardinagem",    desc: "Manutenção de jardins",        color: "#34d399" },
-  { Icon: Package,    label: "Mudanças",      desc: "Transporte e mudanças",        color: "#fb923c" },
-  { Icon: Scissors,   label: "Beleza",        desc: "Cabeleireiro e estética",      color: "#f472b6" },
-  { Icon: Car,        label: "Automóvel",     desc: "Reparação e manutenção",       color: "#93c5fd" },
-  { Icon: Paintbrush, label: "Pintura",       desc: "Interior e exterior",          color: "#e879f9" },
-  { Icon: HardHat,    label: "Construção",    desc: "Obras e remodelações",         color: "#fb923c" },
-  { Icon: Lock,       label: "Segurança",     desc: "Sistemas e monitorização",     color: "#818cf8" },
+  { Icon: Sparkles,   label: "Limpeza",       desc: "Casas, escritórios e mais",    tone: "emerald" },
+  { Icon: Wind,       label: "Climatização",  desc: "Instalação e manutenção",      tone: "sky" },
+  { Icon: Wrench,     label: "Canalização",   desc: "Reparações e instalações",     tone: "teal" },
+  { Icon: Zap,        label: "Eletricista",   desc: "Instalações e reparações",     tone: "amber" },
+  { Icon: Monitor,    label: "TI & Redes",    desc: "Suporte e redes informáticas", tone: "indigo" },
+  { Icon: Leaf,       label: "Jardinagem",    desc: "Manutenção de jardins",        tone: "lime" },
+  { Icon: Package,    label: "Mudanças",      desc: "Transporte e mudanças",        tone: "cyan" },
+  { Icon: Scissors,   label: "Beleza",        desc: "Cabeleireiro e estética",      tone: "rose" },
+  { Icon: Car,        label: "Automóvel",     desc: "Reparação e manutenção",       tone: "blue" },
+  { Icon: Paintbrush, label: "Pintura",       desc: "Interior e exterior",          tone: "violet" },
+  { Icon: HardHat,    label: "Construção",    desc: "Obras e remodelações",         tone: "orange" },
+  { Icon: Lock,       label: "Segurança",     desc: "Sistemas e monitorização",     tone: "slate" },
 ];
 
 // ── PASSO A PASSO ────────────────────────────────────────────────────────────
-// 3 sempre visíveis + 5 atrás de "Ver todos" (8 no total). Estrutura de
-// card idêntica à anterior (número, ícone, título, descrição) — só o
-// conteúdo e a quantidade mudaram. `num` é gerado pelo índice.
+// Mesmos 8 passos e mesma lógica (3 sempre visíveis + "Ver todos" revela os
+// restantes 5). Personalidade da secção: família azul, com pontos de cor
+// semânticos (amber na avaliação, violeta no apoio).
 const STEPS = [
-  { Icon: Search,        color: "#1D9E75", bg: "#0b2a20", title: "Pesquisa",                    desc: "Encontra prestadores verificados por categoria, nome ou localização no mapa." },
-  { Icon: FileText,      color: "#60a5fa", bg: "#0a1a2e", title: "Pede o serviço",               desc: "Descreve o que precisas, propõe um orçamento e envia o pedido ao prestador escolhido." },
-  { Icon: Shield,        color: "#378ADD", bg: "#071830", title: "Combina e paga em segurança",  desc: "Acorda o preço pelo chat, paga por transferência e o dinheiro fica protegido até confirmares o serviço." },
-  { Icon: Navigation,    color: "#EF9F27", bg: "#271a05", title: "Acompanha em tempo real",      desc: "Vê o prestador a chegar no mapa, com distância e tempo estimado, assim que ele aceitar o pedido." },
-  { Icon: KeyRound,      color: "#8B5CF6", bg: "#1a1030", title: "Confirma com PIN",             desc: "No local, dás um código único ao prestador para confirmares que o serviço começou de forma segura." },
-  { Icon: Star,          color: "#EF9F27", bg: "#271a05", title: "Avalia o serviço",             desc: "No fim, confirma a conclusão e deixa uma avaliação para ajudar outros clientes." },
-  { Icon: MessageCircle, color: "#378ADD", bg: "#071830", title: "Fala sempre pelo chat",        desc: "Todas as combinações ficam registadas na app, para tua proteção em caso de dúvida." },
-  { Icon: LifeBuoy,      color: "#D4537E", bg: "#2a0f1a", title: "Resolve disputas com apoio",   desc: "Se algo correr mal, a nossa equipa está disponível para mediar e resolver." },
+  { Icon: Search,        title: "Pesquisa",                    desc: "Encontra prestadores verificados por categoria, nome ou localização no mapa.", tone: "sky" },
+  { Icon: FileText,      title: "Pede o serviço",               desc: "Descreve o que precisas, propõe um orçamento e envia o pedido ao prestador escolhido.", tone: "blue" },
+  { Icon: Shield,        title: "Combina e paga em segurança",  desc: "Acorda o preço pelo chat, paga por transferência e o dinheiro fica protegido até confirmares o serviço.", tone: "indigo" },
+  { Icon: Navigation,    title: "Acompanha em tempo real",      desc: "Vê o prestador a chegar no mapa, com distância e tempo estimado, assim que ele aceitar o pedido.", tone: "cyan" },
+  { Icon: KeyRound,      title: "Confirma com PIN",             desc: "No local, dás um código único ao prestador para confirmares que o serviço começou de forma segura.", tone: "sky" },
+  { Icon: Star,          title: "Avalia o serviço",             desc: "No fim, confirma a conclusão e deixa uma avaliação para ajudar outros clientes.", tone: "amber" },
+  { Icon: MessageCircle, title: "Fala sempre pelo chat",        desc: "Todas as combinações ficam registadas na app, para tua proteção em caso de dúvida.", tone: "blue" },
+  { Icon: LifeBuoy,      title: "Resolve disputas com apoio",   desc: "Se algo correr mal, a nossa equipa está disponível para mediar e resolver.", tone: "violet" },
 ];
 
 const FEATS = [
-  { Icon: Shield,   color: "#1D9E75", title: "Pagamento protegido",    desc: "Valor retido e só libertado quando confirmas a conclusão." },
-  { Icon: Star,     color: "#EF9F27", title: "Prestadores verificados", desc: "Todos passam por verificação de identidade antes de serem aceites." },
-  { Icon: MapPin,   color: "#378ADD", title: "Geolocalização",          desc: "Prestadores no teu raio com tempo estimado de chegada." },
-  { Icon: Zap,      color: "#D4537E", title: "Resposta rápida",         desc: "Os melhores prestadores respondem em minutos pelo chat." },
+  { Icon: Shield,   title: "Pagamento protegido",     desc: "Valor retido e só libertado quando confirmas a conclusão.", tone: "emerald" },
+  { Icon: Star,     title: "Prestadores verificados", desc: "Todos passam por verificação de identidade antes de serem aceites.", tone: "violet" },
+  { Icon: MapPin,   title: "Geolocalização",          desc: "Prestadores no teu raio com tempo estimado de chegada.", tone: "sky" },
+  { Icon: Zap,      title: "Resposta rápida",         desc: "Os melhores prestadores respondem em minutos pelo chat.", tone: "amber" },
 ];
 
-const HERO = "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=900&auto=format&fit=crop";
+// Estatísticas do hero — cada uma com o seu próprio tom, para serem
+// imediatamente distinguíveis em vez de repetirem a mesma cor.
+const STATS = [
+  { value: "500+", label: "Prestadores",      tone: "emerald" },
+  { value: "12",   label: "Categorias",       tone: "blue" },
+  { value: "4.9★", label: "Avaliação média",  tone: "amber" },
+];
+
+// Imagem real com fallback garantido: se a Unsplash falhar, cai para um
+// painel com ícone — nunca fica um espaço vazio.
+const HERO = "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1200&auto=format&fit=crop";
 
 export default function HomePage() {
   const router = useRouter();
   const [showAllSteps, setShowAllSteps] = useState(false);
+  const [heroImgOk, setHeroImgOk] = useState(true);
 
   const visibleSteps = showAllSteps ? STEPS : STEPS.slice(0, 3);
 
   return (
     <>
       <style>{`
-        .hw{display:flex;min-height:100vh;background:#0d1117}
+        .hw{display:flex;min-height:100vh;background:#F8FAFC}
         .hm{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
-        .hi{padding:32px;display:flex;flex-direction:column;gap:28px}
+        .hi{padding:32px;display:flex;flex-direction:column;gap:64px;max-width:1240px}
 
-        /* ── Hero ── */
-        .h-hero{
-          position:relative;border-radius:24px;overflow:hidden;
-          min-height:440px;display:flex;align-items:stretch;
-          background:linear-gradient(135deg,#071e1e 0%,#0a2525 100%);
-          border:1px solid rgba(29,158,117,0.18);
+        @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+        .fade-up{animation:fadeUp 0.6s cubic-bezier(.16,1,.3,1) both}
+
+        /* ═══════════ HERO ═══════════ */
+        .h-hero{position:relative}
+        .h-hero-media{
+          position:relative;border-radius:28px;overflow:hidden;height:360px;
+          background:#E2E8F0;
         }
-        .h-hero-img{
-          position:absolute;top:0;right:0;width:55%;height:100%;
-          object-fit:cover;object-position:center top;
+        .h-hero-media img{width:100%;height:100%;object-fit:cover;display:block}
+        .h-hero-fallback{
+          width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+          background:linear-gradient(150deg,#0E7A5F,#4F46E5);
         }
-        .h-hero-ov{
+        .h-hero-tint{
           position:absolute;inset:0;
-          background:linear-gradient(to right,#071e1e 38%,rgba(7,30,30,0.9) 55%,rgba(7,30,30,0.15) 100%);
+          background:
+            radial-gradient(70% 90% at 100% 0%, rgba(79,70,229,0.30) 0%, rgba(79,70,229,0) 55%),
+            linear-gradient(180deg, rgba(15,26,22,0.10) 0%, rgba(15,26,22,0.42) 60%, rgba(10,20,17,0.66) 100%);
         }
-        .h-hero-body{
-          position:relative;z-index:2;
-          padding:52px 56px;
-          display:flex;flex-direction:column;justify-content:center;
-          max-width:580px;
+        .h-hero-text{
+          position:absolute;left:48px;top:48px;right:48px;z-index:2;max-width:560px;
         }
-        .h-badge{
-          display:inline-flex;align-items:center;gap:8px;
-          padding:6px 14px;border-radius:99px;
-          background:rgba(29,158,117,0.1);border:1px solid rgba(29,158,117,0.28);
-          margin-bottom:24px;width:fit-content;
+        .h-eyebrow{
+          display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;
+          background:rgba(255,255,255,0.14);backdrop-filter:blur(8px);
+          border:1px solid rgba(255,255,255,0.22);margin-bottom:18px;
         }
-        .h-dot{
-          width:7px;height:7px;border-radius:50%;background:#1D9E75;
-          box-shadow:0 0 8px #1D9E75;
-          animation:hdot 2.2s ease-in-out infinite;
-        }
-        @keyframes hdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+        .h-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#4ADE94}
         .h-title{
-          font-size:44px;font-weight:800;color:#f1f5f9;
-          line-height:1.08;margin-bottom:20px;letter-spacing:-0.02em;
+          font-size:40px;font-weight:800;color:#FFFFFF;line-height:1.12;
+          letter-spacing:-0.025em;margin-bottom:14px;text-shadow:0 2px 24px rgba(0,0,0,0.22);
         }
-        .h-title-g{
-          background:linear-gradient(135deg,#1D9E75 0%,#4ade80 100%);
-          -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+        .h-title span{
+          background:linear-gradient(90deg,#7EF0C4,#A5B4FC);
+          -webkit-background-clip:text;background-clip:text;color:transparent;
+          -webkit-text-fill-color:transparent;
         }
-        .h-sub{font-size:16px;color:rgba(148,170,180,0.88);line-height:1.75;margin-bottom:36px;max-width:440px}
-        .h-btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-        .btn-green{
-          display:inline-flex;align-items:center;gap:8px;
-          padding:14px 26px;border-radius:12px;border:none;
-          background:linear-gradient(135deg,#1D9E75,#16876a);
-          color:white;font-size:15px;font-weight:700;
-          cursor:pointer;font-family:inherit;white-space:nowrap;
-          box-shadow:0 4px 20px rgba(29,158,117,0.35);
-          transition:all 0.2s ease;
-        }
-        .btn-green:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(29,158,117,0.5)}
-        .btn-ghost{
-          display:inline-flex;align-items:center;gap:8px;
-          padding:14px 26px;border-radius:12px;
-          background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
-          color:#8a9ab0;font-size:15px;font-weight:500;
-          cursor:pointer;font-family:inherit;white-space:nowrap;
-          transition:all 0.2s ease;
-        }
-        .btn-ghost:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.22);color:#e2e8f0}
-        .h-stats{
-          position:absolute;bottom:28px;right:28px;
-          display:flex;gap:12px;z-index:2;
-        }
-        .h-stat{
-          padding:14px 20px;border-radius:16px;
-          background:rgba(4,14,14,0.88);backdrop-filter:blur(12px);
-          border:1px solid rgba(29,158,117,0.18);
-          text-align:center;min-width:88px;
-        }
+        .h-sub{font-size:15.5px;color:rgba(255,255,255,0.88);line-height:1.65;max-width:420px}
 
-        /* ── Section ── */
-        .sec{background:#0f1923;border:1px solid #1a2535;border-radius:20px;padding:28px}
-        .sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+        /* Cartão de busca flutuante — sobreposto ao rodapé da imagem */
+        .h-search-card{
+          position:relative;z-index:3;margin-top:-46px;margin-left:48px;margin-right:48px;
+          background:#FFFFFF;border-radius:20px;padding:20px 22px;
+          border:1px solid rgba(79,70,229,0.10);
+          box-shadow:0 16px 40px rgba(15,26,22,0.14),0 2px 8px rgba(15,26,22,0.06);
+          display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+        }
+        .h-search-icowrap{
+          width:44px;height:44px;border-radius:13px;flex-shrink:0;
+          background:#E0F2FE;display:flex;align-items:center;justify-content:center;
+        }
+        .h-search-copy{flex:1;min-width:180px}
+        .h-search-copy p:first-child{font-size:14px;font-weight:700;color:#1F2A28;margin-bottom:2px}
+        .h-search-copy p:last-child{font-size:12.5px;color:#6B7770}
+        .btn-search{
+          display:inline-flex;align-items:center;gap:8px;padding:13px 22px;border-radius:13px;border:none;
+          background:#0E7A5F;color:#fff;font-size:14px;font-weight:700;cursor:pointer;
+          font-family:inherit;white-space:nowrap;transition:all 0.18s;
+          box-shadow:0 4px 14px rgba(14,122,95,0.28);
+        }
+        .btn-search:hover{background:#0A5F4A;transform:translateY(-1px);box-shadow:0 6px 20px rgba(14,122,95,0.36)}
+        .btn-provider-link{
+          display:inline-flex;align-items:center;gap:6px;padding:13px 18px;border-radius:13px;
+          background:#FBFAFF;border:1px solid #E3E1F7;color:#1F2A28;font-size:13.5px;font-weight:600;
+          cursor:pointer;font-family:inherit;transition:all .18s;white-space:nowrap;
+        }
+        .btn-provider-link:hover{border-color:#4F46E5;color:#4F46E5;background:#EEF0FF}
+
+        /* Estatísticas sob o cartão de busca */
+        .h-stats-row{display:flex;gap:32px;margin-top:34px;padding-left:8px}
+        .h-stat b{font-size:24px;font-weight:800;display:block;line-height:1}
+        .h-stat span{font-size:12px;color:#6B7770;margin-top:5px;display:block}
+
+        /* ═══════════ SECTION HEADERS ═══════════ */
+        .sec-hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:26px;gap:16px}
+        .sec-eyebrow{font-size:11.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;display:block}
+        .sec-eyebrow.tone-emerald{color:#0E7A5F}
+        .sec-eyebrow.tone-blue{color:#2563EB}
+        .sec-eyebrow.tone-violet{color:#7C3AED}
+        .sec-title{font-size:24px;font-weight:800;color:#1F2A28;letter-spacing:-0.02em}
+        .sec-sub{font-size:14px;color:#6B7770;margin-top:5px}
         .sec-link{
-          display:flex;align-items:center;gap:4px;font-size:13px;color:#1D9E75;
-          background:none;border:none;cursor:pointer;font-family:inherit;
+          display:flex;align-items:center;gap:4px;font-size:13.5px;font-weight:700;color:#0E7A5F;
+          background:#E3F5EE;border:none;cursor:pointer;font-family:inherit;padding:9px 16px;
+          border-radius:10px;transition:all .18s;flex-shrink:0;
         }
-        .sec-link:hover{opacity:0.7}
+        .sec-link:hover{background:#D3EEE3}
 
-        /* ── Categories ── */
-        .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-        .cat{
-          display:flex;align-items:center;gap:14px;
-          padding:20px;border-radius:14px;
-          background:#0d1117;
-          border:1px solid #1a2535;
-          cursor:pointer;text-align:left;
-          transition:all 0.22s ease;position:relative;overflow:hidden;
+        /* ═══════════ CATEGORIES: cartões totalmente brancos ═══════════
+           Antes cada card tinha uma barra de cor de 3px no topo (::before)
+           e um "glow" colorido no canto, imitando a cor da categoria.
+           Isso foi removido: o card fica branco, com a borda e a sombra
+           de hover neutras. A cor da categoria fica só no ícone. */
+        .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+        .cat-card{
+          position:relative;overflow:hidden;border-radius:18px;padding:22px 18px;
+          background:#FFFFFF;border:1px solid #ECE9DF;cursor:pointer;text-align:left;
+          transition:all 0.22s cubic-bezier(.16,1,.3,1);
         }
-        .cat:hover{transform:translateY(-3px);box-shadow:0 6px 22px rgba(0,0,0,0.35)}
-        .cat-ico{
-          position:relative;z-index:2;
-          width:46px;height:46px;border-radius:12px;
-          display:flex;align-items:center;justify-content:center;
-          flex-shrink:0;transition:transform 0.2s;
-          background:rgba(255,255,255,0.04);
-          background:color-mix(in srgb, var(--cat-color) 14%, transparent);
-          border:1px solid rgba(255,255,255,0.12);
-          border:1px solid color-mix(in srgb, var(--cat-color) 35%, transparent);
+        .cat-card:hover{
+          transform:translateY(-4px);
+          box-shadow:0 14px 28px rgba(15,23,42,0.10);
+          border-color:#CBD5E1;
         }
-        .cat:hover .cat-ico{transform:scale(1.08)}
-        .cat-body{position:relative;z-index:2;flex:1;min-width:0}
-        .cat-label{
-          font-size:14px;font-weight:700;color:#e2e8f0;
-          margin:0 0 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        .cat-card-ico{
+          position:relative;z-index:1;width:44px;height:44px;border-radius:12px;
+          display:flex;align-items:center;justify-content:center;margin-bottom:14px;
+          transition:transform .2s;
         }
-        .cat-desc{
-          font-size:11px;color:#5a6a7a;line-height:1.4;margin:0;
-        }
-        .cat-ghost{
-          position:absolute;right:-14px;bottom:-18px;z-index:1;
-          pointer-events:none;color:var(--cat-color);opacity:0.06;
-          transform:rotate(-12deg);
-        }
+        .cat-card:hover .cat-card-ico{transform:scale(1.08) rotate(-4deg)}
+        .cat-card-label{position:relative;z-index:1;font-size:14.5px;font-weight:700;color:#1F2A28;margin-bottom:3px}
+        .cat-card-desc{position:relative;z-index:1;font-size:11.5px;color:#8A948E;line-height:1.4}
 
-        /* ── Steps ── */
-        .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-        .step{padding:24px;border-radius:16px;background:#0d1117;border:1px solid #1a2535}
-        .step-ico{
-          width:48px;height:48px;border-radius:14px;
+        /* ═══════════ COMO FUNCIONA: cartões conectados ═══════════ */
+        .steps-rail{position:relative}
+        .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;position:relative;z-index:1}
+        .step-card{
+          background:#FFFFFF;border:1px solid #ECE9DF;border-radius:18px;padding:24px 20px;
+          transition:all 0.2s;
+        }
+        .step-card:hover{
+          border-color:var(--accent-border, #BFDBFE);
+          box-shadow:0 10px 24px var(--accent-ring, rgba(37,99,235,0.12));
+          transform:translateY(-3px);
+        }
+        .step-badge{
+          display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+          border-radius:9px;background:#1F2A28;color:#fff;font-size:12px;font-weight:800;margin-bottom:16px;
+        }
+        .step-card-ico{
+          width:46px;height:46px;border-radius:13px;
           display:flex;align-items:center;justify-content:center;margin-bottom:14px;
         }
-        .steps-more-wrap{display:flex;justify-content:center;margin-top:18px}
+        .step-card h3{font-size:15px;font-weight:700;color:#1F2A28;margin-bottom:7px}
+        .step-card p{font-size:13px;color:#6B7770;line-height:1.6}
+
+        .steps-more-wrap{display:flex;justify-content:center;margin-top:22px}
         .btn-steps-more{
-          display:inline-flex;align-items:center;gap:6px;
-          padding:10px 20px;border-radius:10px;
-          background:rgba(29,158,117,0.08);border:1px solid rgba(29,158,117,0.24);
-          color:#1D9E75;font-size:13px;font-weight:600;
-          cursor:pointer;font-family:inherit;transition:all 0.16s ease;
+          display:inline-flex;align-items:center;gap:6px;padding:11px 22px;border-radius:11px;
+          background:#1F2A28;border:none;color:#fff;font-size:13.5px;font-weight:700;
+          cursor:pointer;font-family:inherit;transition:all 0.18s ease;
         }
-        .btn-steps-more:hover{background:rgba(29,158,117,0.16)}
+        .btn-steps-more:hover{background:#4338CA;box-shadow:0 8px 20px rgba(67,56,202,0.32)}
         .btn-steps-more svg{transition:transform 0.2s ease}
         .btn-steps-more.open svg{transform:rotate(180deg)}
 
-        /* ── Features ── */
-        .feats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-        .feat{padding:22px;border-radius:16px;transition:transform 0.2s}
-        .feat:hover{transform:translateY(-2px)}
-        .feat-ico{
-          width:42px;height:42px;border-radius:11px;
+        /* ═══════════ VANTAGENS: faixa compacta ═══════════ */
+        .feats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+        .feat-strip-card{
+          background:#FFFFFF;border:1px solid #ECE9DF;border-radius:16px;padding:20px;
+          transition:all .2s;
+        }
+        .feat-strip-card:hover{
+          transform:translateY(-3px);
+          box-shadow:0 10px 22px var(--accent-ring, rgba(14,122,95,0.12));
+          border-color:var(--accent-border, #BEE3D3);
+        }
+        .feat-strip-ico{
+          width:38px;height:38px;border-radius:11px;
           display:flex;align-items:center;justify-content:center;margin-bottom:14px;
         }
+        .feat-strip-card h3{font-size:13.5px;font-weight:700;color:#1F2A28;margin-bottom:5px}
+        .feat-strip-card p{font-size:11.5px;color:#8A948E;line-height:1.55}
 
-        /* ── Provider CTA ── */
-        .pcta{
-          border-radius:20px;padding:24px 32px;
-          background:linear-gradient(135deg,rgba(239,159,39,0.08),rgba(239,159,39,0.02));
-          border:1px solid rgba(239,159,39,0.18);
-          display:flex;align-items:center;justify-content:space-between;gap:20px;
+        /* ═══════════ CTA PRESTADOR: banner full-width ═══════════ */
+        .pcta-banner{
+          border-radius:24px;padding:40px 44px;position:relative;overflow:hidden;
+          background:
+            radial-gradient(45% 70% at 0% 100%, rgba(124,58,237,0.20) 0%, transparent 65%),
+            linear-gradient(135deg, #1F2A28 0%, #161B22 55%, #1E1B3A 100%);
+          display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap;
         }
-        .pcta-ico{
-          width:46px;height:46px;border-radius:12px;
-          background:rgba(239,159,39,0.12);border:1px solid rgba(239,159,39,0.25);
-          display:flex;align-items:center;justify-content:center;flex-shrink:0;
+        .pcta-glow{
+          position:absolute;top:-80px;right:-40px;width:260px;height:260px;border-radius:50%;
+          background:radial-gradient(circle,rgba(217,119,6,0.35),transparent 70%);
         }
+        .pcta-copy{position:relative;z-index:1;max-width:460px}
+        .pcta-eyebrow{
+          display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;
+          letter-spacing:0.1em;text-transform:uppercase;color:#FCD34D;margin-bottom:12px;
+        }
+        .pcta-copy h2{font-size:24px;font-weight:800;color:#fff;margin-bottom:8px;letter-spacing:-0.01em}
+        .pcta-copy p{font-size:14px;color:rgba(255,255,255,0.68);line-height:1.6}
         .btn-amber{
-          padding:12px 22px;border-radius:10px;
-          background:linear-gradient(135deg,#EF9F27,#d4870a);
-          color:#0d1117;font-size:14px;font-weight:700;
-          cursor:pointer;border:none;font-family:inherit;white-space:nowrap;
-          box-shadow:0 4px 14px rgba(239,159,39,0.3);
-          transition:all 0.2s;flex-shrink:0;
+          position:relative;z-index:1;flex-shrink:0;
+          padding:15px 28px;border-radius:13px;background:#D97706;color:#fff;
+          font-size:14.5px;font-weight:700;cursor:pointer;border:none;font-family:inherit;
+          white-space:nowrap;box-shadow:0 6px 18px rgba(217,119,6,0.32);
+          transition:all 0.2s;display:inline-flex;align-items:center;gap:8px;
         }
-        .btn-amber:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(239,159,39,0.48)}
+        .btn-amber:hover{background:#B45F04;transform:translateY(-2px);box-shadow:0 8px 24px rgba(217,119,6,0.4)}
 
-        /* ── Responsive ── */
-        @media(max-width:1200px){.cats{grid-template-columns:repeat(3,1fr)}}
+        /* ═══════════ RESPONSIVE ═══════════ */
+        @media(max-width:1200px){
+          .cat-grid{grid-template-columns:repeat(3,1fr)}
+          .feats-strip{grid-template-columns:repeat(2,1fr)}
+        }
         @media(max-width:1024px){
           .hm{margin-left:0}
-          .hi{padding:80px 20px 28px}
-          .h-hero-img{width:44%}
-          .h-hero-body{padding:36px 36px;max-width:68%}
-          .cats{grid-template-columns:repeat(3,1fr)}
+          .hi{padding:80px 20px 40px;gap:48px}
+          .h-hero-media{height:300px}
+          .h-hero-text{left:32px;right:32px;top:32px}
+          .h-search-card{margin-left:24px;margin-right:24px;margin-top:-34px}
+          .steps-grid{grid-template-columns:repeat(2,1fr)}
         }
         @media(max-width:768px){
-          .hi{padding:72px 16px 24px;gap:20px}
-          .h-title{font-size:30px}
-          .h-hero-body{max-width:100%;padding:28px 24px}
-          .h-hero{flex-direction:column;min-height:auto}
-          .h-hero-img{display:block;position:relative;width:100%;height:220px;object-fit:cover;object-position:center top}
-          .h-hero-ov{background:linear-gradient(to bottom,rgba(7,30,30,0.05) 0%,rgba(7,30,30,0.55) 40%,#071e1e 65%)}
-          .h-stats{position:static;flex-wrap:wrap;padding:4px 24px 24px;gap:8px}
-          .cats{grid-template-columns:repeat(2,1fr)}
-          .steps{grid-template-columns:1fr}
-          .feats{grid-template-columns:1fr}
-          .pcta{flex-direction:column;text-align:center}
-          .pcta-ico{margin:0 auto}
+          .hi{padding:72px 16px 32px;gap:40px}
+          .h-title{font-size:28px}
+          .h-hero-media{height:266px}
+          .h-hero-text{left:24px;right:24px;top:24px}
+          .h-search-card{
+            margin-left:16px;margin-right:16px;margin-top:-18px;flex-direction:column;align-items:stretch;text-align:center;
+          }
+          .h-search-copy{text-align:center}
+          .h-stats-row{gap:22px;justify-content:center;padding-left:0}
+          .cat-grid{grid-template-columns:repeat(2,1fr)}
+          .steps-grid{grid-template-columns:1fr}
+          .feats-strip{grid-template-columns:1fr}
+          .sec-hdr{flex-direction:column;align-items:flex-start}
+          .pcta-banner{flex-direction:column;text-align:center;align-items:center;padding:36px 28px}
+          .pcta-copy{text-align:center}
         }
         @media(max-width:480px){
-          .hi{padding:68px 12px 20px}
-          .h-stat{min-width:72px;padding:12px 14px}
-          .h-stats{gap:6px;padding:4px 16px 20px}
-        }
-        @media(max-width:360px){
-          .cats{grid-template-columns:1fr}
-          .h-title{font-size:26px}
+          .hi{padding:68px 12px 28px}
+          .h-hero-media{height:292px}
+          .h-search-card{margin-top:-14px}
+          .cat-grid{grid-template-columns:1fr 1fr}
+          .h-stats-row{flex-wrap:wrap}
         }
       `}</style>
 
@@ -277,149 +357,166 @@ export default function HomePage() {
           <main className="hi">
 
             {/* ═══ HERO ═══ */}
-            <section className="h-hero">
-              <img className="h-hero-img" src={HERO} alt="Prestador profissional a trabalhar" loading="lazy" />
-              <div className="h-hero-ov" />
-              <div className="h-hero-body">
-                <div className="h-badge">
-                  <span className="h-dot" />
-                  <span style={{ fontSize:11, fontWeight:700, color:"#1D9E75", letterSpacing:"0.14em", textTransform:"uppercase" }}>
-                    Serviapp · Angola
+            <section className="h-hero fade-up">
+              <div className="h-hero-media">
+                {heroImgOk ? (
+                  <img
+                    src={HERO}
+                    alt="Prestador profissional a trabalhar"
+                    loading="lazy"
+                    onError={() => setHeroImgOk(false)}
+                  />
+                ) : (
+                  <div className="h-hero-fallback">
+                    <Wrench size={72} color="rgba(255,255,255,0.9)" />
+                  </div>
+                )}
+                <div className="h-hero-tint" />
+                <div className="h-hero-text">
+                  <span className="h-eyebrow">
+                    <span className="h-eyebrow-dot" />
+                    <span style={{ fontSize:11.5, fontWeight:700, color:"#fff", letterSpacing:"0.08em", textTransform:"uppercase" }}>
+                      Serviapp · Angola
+                    </span>
                   </span>
-                </div>
-                <h1 className="h-title">
-                  Encontra o serviço<br />
-                  <span className="h-title-g">certo, perto de ti.</span>
-                </h1>
-                <p className="h-sub">
-                  Prestadores verificados com geolocalização, avaliações reais e pagamento 100% protegido.
-                </p>
-                <div className="h-btns">
-                  <button className="btn-green" onClick={() => router.push("/search")}>
-                    <Search size={16} /> Encontrar prestador
-                  </button>
-                  <button className="btn-ghost" onClick={() => router.push("/register/provider")}>
-                    Sou prestador <ArrowRight size={16} />
-                  </button>
+                  <h1 className="h-title">Encontra o serviço<br /><span>certo, perto de ti.</span></h1>
+                  <p className="h-sub">Prestadores verificados com geolocalização, avaliações reais e pagamento 100% protegido.</p>
                 </div>
               </div>
-              <div className="h-stats">
-                {[
-                  { value:"500+", label:"Prestadores", color:"#1D9E75" },
-                  { value:"12",   label:"Categorias",  color:"#EF9F27" },
-                  { value:"4.9★", label:"Avaliação",   color:"#378ADD" },
-                ].map((s, i) => (
+
+              <div className="h-search-card">
+                <div className="h-search-icowrap"><Search size={20} color="#0284C7" /></div>
+                <div className="h-search-copy">
+                  <p>Pronto para começar?</p>
+                  <p>Procura entre mais de 500 prestadores verificados</p>
+                </div>
+                <button className="btn-search" onClick={() => router.push("/search")}>
+                  <Search size={16} /> Encontrar prestador
+                </button>
+                <button className="btn-provider-link" onClick={() => router.push("/register/provider")}>
+                  Sou prestador <ArrowRight size={14} />
+                </button>
+              </div>
+
+              <div className="h-stats-row">
+                {STATS.map((s, i) => (
                   <div className="h-stat" key={i}>
-                    <span style={{ fontSize:22, fontWeight:800, color:s.color, display:"block", lineHeight:1 }}>{s.value}</span>
-                    <span style={{ fontSize:11, color:"#4a6a6a", marginTop:6, display:"block" }}>{s.label}</span>
+                    <b style={{ color: TONES[s.tone].text }}>{s.value}</b>
+                    <span>{s.label}</span>
                   </div>
                 ))}
               </div>
             </section>
 
-            {/* ═══ CATEGORIES ═══ */}
-            <div className="sec">
+            {/* ═══ CATEGORIAS ═══ */}
+            <section className="fade-up">
               <div className="sec-hdr">
                 <div>
-                  <h2 style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>Categorias de serviço</h2>
-                  <p style={{ fontSize:13, color:"#4a6a6a" }}>Escolhe a categoria que precisas</p>
+                  <span className="sec-eyebrow tone-emerald">Categorias</span>
+                  <h2 className="sec-title">Escolhe a categoria que precisas</h2>
+                  <p className="sec-sub">12 especialidades disponíveis em Luanda</p>
                 </div>
                 <button className="sec-link" onClick={() => router.push("/categories")}>
                   Ver todas <ChevronRight size={15} />
                 </button>
               </div>
-              <div className="cats">
+              <div className="cat-grid">
                 {CATS.map((cat, i) => {
                   const Icon = cat.Icon;
+                  const t = TONES[cat.tone];
                   return (
                     <button
                       key={i}
-                      className="cat"
-                      style={{ "--cat-color": cat.color } as React.CSSProperties}
+                      className="cat-card"
                       onClick={() => router.push(`/search?category=${encodeURIComponent(cat.label)}`)}
                     >
-                      <Icon className="cat-ghost" size={88} />
-                      <div className="cat-ico">
-                        <Icon size={22} style={{ color:cat.color }} />
+                      <div className="cat-card-ico" style={{ background: t.bg }}>
+                        <Icon size={21} color={t.text} />
                       </div>
-                      <div className="cat-body">
-                        <p className="cat-label">{cat.label}</p>
-                        <p className="cat-desc">{cat.desc}</p>
-                      </div>
+                      <p className="cat-card-label">{cat.label}</p>
+                      <p className="cat-card-desc">{cat.desc}</p>
                     </button>
                   );
                 })}
               </div>
-            </div>
+            </section>
 
             {/* ═══ COMO FUNCIONA ═══ */}
-            <div className="sec">
-              <div style={{ marginBottom:22 }}>
-                <h2 style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>Como funciona</h2>
-                <p style={{ fontSize:13, color:"#4a6a6a" }}>Do pedido à conclusão, passo a passo</p>
+            <section className="fade-up">
+              <div className="sec-hdr">
+                <div>
+                  <span className="sec-eyebrow tone-blue">Como funciona</span>
+                  <h2 className="sec-title">Do pedido à conclusão, passo a passo</h2>
+                </div>
               </div>
-              <div className="steps">
-                {visibleSteps.map((s, i) => {
-                  const Icon = s.Icon;
-                  return (
-                    <div className="step" key={s.title}>
-                      <p style={{ fontSize:11, fontWeight:800, color:s.color, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:14 }}>
-                        Passo {String(i + 1).padStart(2, "0")}
-                      </p>
-                      <div className="step-ico" style={{ background:s.bg, border:`1px solid ${s.color}28` }}>
-                        <Icon size={24} style={{ color:s.color }} />
+              <div className="steps-rail">
+                <div className="steps-grid">
+                  {visibleSteps.map((s, i) => {
+                    const Icon = s.Icon;
+                    const t = TONES[s.tone];
+                    return (
+                      <div className="step-card" key={s.title} style={toneVars(s.tone)}>
+                        <div className="step-badge">{String(i + 1).padStart(2, "0")}</div>
+                        <div className="step-card-ico" style={{ background: t.bg }}>
+                          <Icon size={22} color={t.text} />
+                        </div>
+                        <h3>{s.title}</h3>
+                        <p>{s.desc}</p>
                       </div>
-                      <h3 style={{ fontSize:15, fontWeight:700, color:"#e2e8f0", marginBottom:8 }}>{s.title}</h3>
-                      <p style={{ fontSize:13, color:"#4a6a6a", lineHeight:1.65 }}>{s.desc}</p>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
               <div className="steps-more-wrap">
                 <button
                   className={`btn-steps-more${showAllSteps ? " open" : ""}`}
                   onClick={() => setShowAllSteps((v) => !v)}
                 >
-                  {showAllSteps ? "Ver menos" : "Ver todos"} <ChevronDown size={15} />
+                  {showAllSteps ? "Ver menos" : "Ver todos os passos"} <ChevronDown size={15} />
                 </button>
               </div>
-            </div>
+            </section>
 
             {/* ═══ VANTAGENS ═══ */}
-            <div className="sec">
-              <div style={{ marginBottom:22 }}>
-                <h2 style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>Porquê a Serviapp?</h2>
-                <p style={{ fontSize:13, color:"#4a6a6a" }}>A plataforma mais segura de Angola</p>
+            <section className="fade-up">
+              <div className="sec-hdr">
+                <div>
+                  <span className="sec-eyebrow tone-violet">Vantagens</span>
+                  <h2 className="sec-title">Porquê a Serviapp?</h2>
+                  <p className="sec-sub">A plataforma mais segura de Angola</p>
+                </div>
               </div>
-              <div className="feats">
+              <div className="feats-strip">
                 {FEATS.map((f, i) => {
                   const Icon = f.Icon;
+                  const t = TONES[f.tone];
                   return (
-                    <div key={i} className="feat" style={{ background:`${f.color}08`, border:`1px solid ${f.color}1e` }}>
-                      <div className="feat-ico" style={{ background:`${f.color}14` }}>
-                        <Icon size={20} style={{ color:f.color }} />
+                    <div key={i} className="feat-strip-card" style={toneVars(f.tone)}>
+                      <div className="feat-strip-ico" style={{ background: t.bg }}>
+                        <Icon size={19} color={t.text} />
                       </div>
-                      <h3 style={{ fontSize:14, fontWeight:700, color:"#e2e8f0", marginBottom:6 }}>{f.title}</h3>
-                      <p style={{ fontSize:12, color:"#4a6a6a", lineHeight:1.6 }}>{f.desc}</p>
+                      <h3>{f.title}</h3>
+                      <p>{f.desc}</p>
                     </div>
                   );
                 })}
               </div>
-            </div>
+            </section>
 
-            {/* ═══ PROVIDER CTA ═══ */}
-            <div className="pcta">
-              <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-                <div className="pcta-ico"><Zap size={22} style={{ color:"#EF9F27" }} /></div>
-                <div>
-                  <p style={{ fontSize:15, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>És prestador?</p>
-                  <p style={{ fontSize:13, color:"#6a5a3a" }}>Regista-te e começa a receber clientes hoje.</p>
+            {/* ═══ CTA PRESTADOR ═══ */}
+            <section className="fade-up">
+              <div className="pcta-banner">
+                <div className="pcta-glow" />
+                <div className="pcta-copy">
+                  <span className="pcta-eyebrow"><Zap size={13} /> Para prestadores</span>
+                  <h2>És prestador?</h2>
+                  <p>Regista-te e começa a receber clientes hoje.</p>
                 </div>
+                <button className="btn-amber" onClick={() => router.push("/register/provider")}>
+                  Criar perfil <ArrowRight size={16} />
+                </button>
               </div>
-              <button className="btn-amber" onClick={() => router.push("/register/provider")}>
-                Criar perfil
-              </button>
-            </div>
+            </section>
 
           </main>
         </div>
