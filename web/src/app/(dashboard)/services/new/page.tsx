@@ -83,13 +83,13 @@ export default function NewServicePage() {
 
   if (success) {
     return (
-      <div style={{minHeight:"100vh",background:"#0d1117",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{minHeight:"100vh",background:"#FFFFFF",display:"flex",alignItems:"center",justifyContent:"center"}}>
         <div style={{textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
-          <div style={{width:64,height:64,borderRadius:20,background:"#1d9e7520",display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <CheckCircle size={32} style={{color:"#1D9E75"}}/>
+          <div style={{width:64,height:64,borderRadius:20,background:"#E3F5EE",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <CheckCircle size={32} style={{color:"#0E7A5F"}}/>
           </div>
-          <p style={{fontSize:18,fontWeight:700,color:"#e2e8f0"}}>Pedido criado com sucesso!</p>
-          <p style={{fontSize:14,color:"#4a6a6a"}}>A redirecionar para os teus serviços...</p>
+          <p style={{fontSize:18,fontWeight:700,color:"#0F172A"}}>Pedido criado com sucesso!</p>
+          <p style={{fontSize:14,color:"#4B5563"}}>A redirecionar para os teus serviços...</p>
         </div>
       </div>
     );
@@ -98,22 +98,22 @@ export default function NewServicePage() {
   return (
     <>
       <style>{`
-        .ns-wrap{display:flex;min-height:100vh;background:#0d1117}
+        .ns-wrap{display:flex;min-height:100vh;background:#FFFFFF}
         .ns-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
         .ns-inner{flex:1;padding:28px 32px;max-width:640px;display:flex;flex-direction:column;gap:0}
-        .ns-input{width:100%;padding:14px 16px;border-radius:12px;background:#131b27;border:1px solid #1a2535;color:#e2e8f0;font-size:14px;outline:none;transition:border 0.2s;margin-bottom:16px;font-family:inherit}
-        .ns-input:focus{border-color:#1D9E75}
-        .ns-input::placeholder{color:#4a5a6a}
+        .ns-input{width:100%;padding:14px 16px;border-radius:12px;background:#F1F5F9;border:1px solid #CBD5E1;color:#111827;font-size:14px;outline:none;transition:border 0.2s;margin-bottom:16px;font-family:inherit}
+        .ns-input:focus{border-color:#0E7A5F}
+        .ns-input::placeholder{color:#94A3B8}
         .cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
-        .cat-opt{padding:10px 6px;border-radius:10px;font-size:12px;cursor:pointer;text-align:center;border:1px solid #1a2535;background:#131b27;color:#6a7a8a;transition:all 0.15s;font-family:inherit}
-        .cat-opt.sel{border-color:#1D9E75;background:#1d9e7515;color:#1D9E75}
-        .cat-opt:hover:not(.sel){border-color:#1d9e7540;color:#c0d0e0}
-        .label{font-size:13px;font-weight:600;color:#6a7a8a;display:block;margin-bottom:6px}
+        .cat-opt{padding:10px 6px;border-radius:10px;font-size:12px;cursor:pointer;text-align:center;border:1px solid #CBD5E1;background:#E2E8F0;color:#475569;transition:all 0.15s;font-family:inherit}
+        .cat-opt.sel{border-color:#0E7A5F;background:#E3F5EE;color:#0E7A5F}
+        .cat-opt:hover:not(.sel){border-color:#0E7A5F60;color:#0F172A}
+        .label{font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px}
         .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-        .submit-btn{width:100%;padding:15px;border-radius:12px;border:none;background:#1D9E75;color:white;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.2s}
+        .submit-btn{width:100%;padding:15px;border-radius:12px;border:none;background:#0E7A5F;color:white;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.2s}
         .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
         .submit-btn:hover:not(:disabled){opacity:0.9}
-        .error-box{background:#E24B4A15;border:1px solid #E24B4A30;border-radius:10px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#E24B4A;margin-bottom:16px;line-height:1.5}
+        .error-box{background:#FEF2F2;border:1px solid #FCA5A5;border-radius:10px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#B91C1C;margin-bottom:16px;line-height:1.5}
         @media(max-width:1024px){.ns-main{margin-left:0}}
         @media(max-width:640px){.ns-inner{padding:70px 16px 20px}.cat-grid{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -124,12 +124,12 @@ export default function NewServicePage() {
         <div className="ns-main">
           <Navbar/>
           <div className="ns-inner">
-            <button onClick={()=>router.back()} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#4a6a6a",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit",padding:0}}>
+            <button onClick={()=>router.back()} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#475569",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit",padding:0}}>
               <ArrowLeft size={15}/> Voltar
             </button>
 
-            <h1 style={{fontSize:22,fontWeight:700,color:"#e2e8f0",marginBottom:4}}>Novo pedido de serviço</h1>
-            <p style={{fontSize:13,color:"#4a6a6a",marginBottom:28}}>Descreve o que precisas e recebe propostas de prestadores verificados</p>
+            <h1 style={{fontSize:22,fontWeight:700,color:"#0F172A",marginBottom:4}}>Novo pedido de serviço</h1>
+            <p style={{fontSize:13,color:"#4B5563",marginBottom:28}}>Descreve o que precisas e recebe propostas de prestadores verificados</p>
 
             {error && (
               <div className="error-box">
@@ -154,7 +154,7 @@ export default function NewServicePage() {
               style={{resize:"none"}} value={form.description} onChange={e=>set("description",e.target.value)}/>
 
             <label className="label">
-              <MapPin size={13} style={{display:"inline",marginRight:4,color:"#1D9E75"}}/>
+              <MapPin size={13} style={{display:"inline",marginRight:4,color:"#0E7A5F"}}/>
               Morada *
             </label>
             <input className="ns-input" placeholder="Rua, número, bairro — Luanda"
@@ -163,14 +163,14 @@ export default function NewServicePage() {
             <div className="row2">
               <div>
                 <label className="label">
-                  <Calendar size={13} style={{display:"inline",marginRight:4,color:"#1D9E75"}}/>
+                  <Calendar size={13} style={{display:"inline",marginRight:4,color:"#0E7A5F"}}/>
                   Data preferida
                 </label>
                 <input className="ns-input" type="date" value={form.date} onChange={e=>set("date",e.target.value)}/>
               </div>
               <div>
                 <label className="label">
-                  <Clock size={13} style={{display:"inline",marginRight:4,color:"#1D9E75"}}/>
+                  <Clock size={13} style={{display:"inline",marginRight:4,color:"#0E7A5F"}}/>
                   Hora preferida
                 </label>
                 <input className="ns-input" type="time" value={form.time} onChange={e=>set("time",e.target.value)}/>

@@ -20,13 +20,13 @@ const STATUS: Record<string, { label: string; color: string; step: number }> = {
   rejected:           { label: "Recusado",                      color: "#E24B4A", step: 0 },
   accepted:           { label: "Aceite — a aguardar pagamento", color: "#378ADD", step: 2 },
   payment_pending:    { label: "A aguardar transferência",      color: "#EF9F27", step: 2 },
-  payment_held:       { label: "Pagamento protegido",           color: "#1D9E75", step: 3 },
+  payment_held:       { label: "Pagamento protegido",           color: "#0E7A5F", step: 3 },
   in_progress:        { label: "Em execução",                   color: "#8B5CF6", step: 4 },
   provider_completed: { label: "A aguardar a tua confirmação",  color: "#EF9F27", step: 5 },
-  completed:          { label: "Concluído",                     color: "#1D9E75", step: 6 },
+  completed:          { label: "Concluído",                     color: "#0E7A5F", step: 6 },
   disputed:           { label: "Em disputa",                    color: "#E24B4A", step: 0 },
   cancelled:          { label: "Cancelado",                     color: "#E24B4A", step: 0 },
-  refunded:           { label: "Reembolsado",                   color: "#1D9E75", step: 0 },
+  refunded:           { label: "Reembolsado",                   color: "#0E7A5F", step: 0 },
 };
 
 const TL_LABELS: Record<string, string> = {
@@ -51,9 +51,9 @@ const TL_LABELS: Record<string, string> = {
 const PAYMENT_STATUS_CFG: Record<string, { label: string; color: string }> = {
   pending:          { label: "Aguarda transferência",        color: "#EF9F27" },
   proof_submitted:  { label: "Comprovativo em validação",    color: "#378ADD" },
-  confirmed:        { label: "Confirmado — protegido",       color: "#1D9E75" },
+  confirmed:        { label: "Confirmado — protegido",       color: "#0E7A5F" },
   pending_payout:   { label: "A processar transferência",    color: "#8B5CF6" },
-  completed:        { label: "Concluído",                    color: "#1D9E75" },
+  completed:        { label: "Concluído",                    color: "#0E7A5F" },
   refunded:         { label: "Reembolsado",                  color: "#E24B4A" },
 };
 
@@ -72,22 +72,22 @@ function ProgressBar({ step }: { step: number }) {
       {steps.map((s,i) => {
         const n = i + 1;
         const done = n < step; const active = n === step;
-        const c = done || active ? "#1D9E75" : "#1a2535";
+        const c = done || active ? "#0E7A5F" : "#CBD5E1";
         return (
           <div key={n} style={{ display:"flex", alignItems:"center", flex:1, minWidth:0 }}>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
               <div style={{ width:26, height:26, borderRadius:"50%", border:`2px solid ${c}`,
-                background: done ? "#1D9E75" : active ? "#1D9E7530" : "#1a2535",
+                background: done ? "#0E7A5F" : active ? "#0E7A5F30" : "#FFFFFF",
                 display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:10, fontWeight:700, color: done ? "white" : active ? "#1D9E75" : "#3a4a5a",
+                fontSize:10, fontWeight:700, color: done ? "white" : active ? "#0E7A5F" : "#94A3B8",
                 transition:"all .3s" }}>
                 {done ? "✓" : n}
               </div>
-              <p style={{ fontSize:9, color: done||active ? "#c0d0e0" : "#3a4a5a",
+              <p style={{ fontSize:9, color: done||active ? "#0F172A" : "#94A3B8",
                 marginTop:3, whiteSpace:"nowrap", fontWeight: active ? 700 : 400 }}>{s}</p>
             </div>
             {i < steps.length-1 && (
-              <div style={{ flex:1, height:2, background: done ? "#1D9E75" : "#1a2535",
+              <div style={{ flex:1, height:2, background: done ? "#0E7A5F" : "#CBD5E1",
                 marginBottom:14, transition:"all .3s" }} />
             )}
           </div>
@@ -101,27 +101,27 @@ function PinModal({ pin, expiresAt, onClose }: { pin: string; expiresAt: string;
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)",
       zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background:"#131b27", border:"1px solid #1a2535",
-        borderRadius:20, padding:32, maxWidth:340, width:"100%", textAlign:"center" }}>
-        <div style={{ width:56, height:56, borderRadius:"50%", background:"#1D9E7520",
-          border:"2px solid #1D9E75", display:"flex", alignItems:"center", justifyContent:"center",
+      <div onClick={e => e.stopPropagation()} style={{ background:"#E2E8F0", border:"1px solid #CBD5E1",
+        borderRadius:20, padding:32, maxWidth:340, width:"100%", textAlign:"center", boxShadow:"0 20px 48px rgba(15,23,42,0.18)" }}>
+        <div style={{ width:56, height:56, borderRadius:"50%", background:"#D9F5F0",
+          border:"2px solid #0E7A5F", display:"flex", alignItems:"center", justifyContent:"center",
           margin:"0 auto 16px" }}>
-          <Key size={24} style={{ color:"#1D9E75" }} />
+          <Key size={24} style={{ color:"#0E7A5F" }} />
         </div>
-        <p style={{ fontSize:16, fontWeight:700, color:"#e2e8f0", marginBottom:6 }}>PIN de início</p>
-        <p style={{ fontSize:13, color:"#4a6a6a", marginBottom:20, lineHeight:1.5 }}>
+        <p style={{ fontSize:16, fontWeight:700, color:"#0F172A", marginBottom:6 }}>PIN de início</p>
+        <p style={{ fontSize:13, color:"#4B5563", marginBottom:20, lineHeight:1.5 }}>
           Fornece este PIN ao prestador quando ele chegar para começar o serviço.
         </p>
-        <div style={{ fontSize:40, fontWeight:900, letterSpacing:10, color:"#1D9E75",
-          background:"#0d1117", borderRadius:14, padding:"16px 24px", marginBottom:12,
-          border:"2px dashed #1D9E7540", fontFamily:"monospace" }}>
+        <div style={{ fontSize:40, fontWeight:900, letterSpacing:10, color:"#0E7A5F",
+          background:"#FFFFFF", borderRadius:14, padding:"16px 24px", marginBottom:12,
+          border:"2px dashed #0E7A5F60", fontFamily:"monospace" }}>
           {pin}
         </div>
-        <p style={{ fontSize:11, color:"#4a5a6a" }}>
+        <p style={{ fontSize:11, color:"#6B7280" }}>
           Válido até {new Date(expiresAt).toLocaleString("pt-PT")}
         </p>
         <button onClick={onClose} style={{ marginTop:20, padding:"10px 28px",
-          borderRadius:10, background:"#1D9E75", color:"white", border:"none",
+          borderRadius:10, background:"#0E7A5F", color:"white", border:"none",
           cursor:"pointer", fontFamily:"inherit", fontWeight:700 }}>
           Fechar
         </button>
@@ -135,26 +135,26 @@ function DisputeModal({ onSubmit, onClose, loading }: { onSubmit: (r:string)=>vo
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)",
       zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background:"#131b27", border:"1px solid #1a2535",
-        borderRadius:20, padding:28, maxWidth:440, width:"100%" }}>
-        <h2 style={{ fontSize:16, fontWeight:700, color:"#e2e8f0", marginBottom:8 }}>Abrir disputa</h2>
-        <p style={{ fontSize:13, color:"#4a6a6a", marginBottom:16, lineHeight:1.5 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background:"#E2E8F0", border:"1px solid #CBD5E1",
+        borderRadius:20, padding:28, maxWidth:440, width:"100%", boxShadow:"0 20px 48px rgba(15,23,42,0.18)" }}>
+        <h2 style={{ fontSize:16, fontWeight:700, color:"#0F172A", marginBottom:8 }}>Abrir disputa</h2>
+        <p style={{ fontSize:13, color:"#4B5563", marginBottom:16, lineHeight:1.5 }}>
           O pagamento ficará bloqueado até resolução pelo administrador.
         </p>
         <textarea value={reason} onChange={e => setReason(e.target.value)}
           style={{ width:"100%", minHeight:100, padding:12, borderRadius:10,
-            background:"#0d1117", border:"1px solid #1a2535", color:"#e2e8f0",
+            background:"#FFFFFF", border:"1px solid #CBD5E1", color:"#111827",
             fontSize:13, resize:"none", outline:"none", fontFamily:"inherit" }}
           placeholder="Descreve o problema com detalhe..." />
         <div style={{ display:"flex", gap:8, marginTop:12 }}>
           <button onClick={onClose} style={{ flex:1, padding:12, borderRadius:10,
-            background:"#1a2535", color:"#8a9ab0", border:"none", cursor:"pointer", fontFamily:"inherit" }}>
+            background:"#FFFFFF", color:"#475569", border:"none", cursor:"pointer", fontFamily:"inherit" }}>
             Cancelar
           </button>
           <button disabled={!reason.trim()||loading} onClick={() => onSubmit(reason)}
             style={{ flex:1, padding:12, borderRadius:10, border:"none",
-              background: reason.trim() ? "#E24B4A" : "#2a1a1a",
-              color: reason.trim() ? "white" : "#5a3a3a",
+              background: reason.trim() ? "#E24B4A" : "#FEE2E2",
+              color: reason.trim() ? "white" : "#FCA5A5",
               cursor: reason.trim() ? "pointer" : "not-allowed",
               fontFamily:"inherit", fontWeight:700,
               display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
@@ -182,24 +182,24 @@ function UploadProofModal({
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)",
       zIndex:250, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background:"#131b27", border:"1px solid #1a2535",
-        borderRadius:20, padding:28, maxWidth:440, width:"100%" }}>
-        <h2 style={{ fontSize:16, fontWeight:700, color:"#e2e8f0", marginBottom:8 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background:"#E2E8F0", border:"1px solid #CBD5E1",
+        borderRadius:20, padding:28, maxWidth:440, width:"100%", boxShadow:"0 20px 48px rgba(15,23,42,0.18)" }}>
+        <h2 style={{ fontSize:16, fontWeight:700, color:"#0F172A", marginBottom:8 }}>
           {hasExisting ? "Substituir comprovativo" : "Enviar comprovativo"}
         </h2>
-        <p style={{ fontSize:13, color:"#4a6a6a", marginBottom:16, lineHeight:1.5 }}>
+        <p style={{ fontSize:13, color:"#4B5563", marginBottom:16, lineHeight:1.5 }}>
           Aceita PDF, PNG, JPG ou JPEG. {hasExisting && "Isto substitui o comprovativo anterior — o histórico é guardado."}
         </p>
 
         <label style={{
           display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-          gap:10, padding:"28px 16px", borderRadius:14, border:"2px dashed #1a2535",
-          background:"#0d1117", cursor:"pointer", marginBottom:16,
+          gap:10, padding:"28px 16px", borderRadius:14, border:"2px dashed #CBD5E1",
+          background:"#FFFFFF", cursor:"pointer", marginBottom:16,
         }}>
           <input type="file" accept=".pdf,.png,.jpg,.jpeg" style={{ display:"none" }}
             onChange={e => setFile(e.target.files?.[0] ?? null)} />
-          <Upload size={24} style={{ color: file ? "#1D9E75" : "#3a4a5a" }} />
-          <p style={{ fontSize:13, color: file ? "#1D9E75" : "#4a6a6a", fontWeight:600, textAlign:"center" }}>
+          <Upload size={24} style={{ color: file ? "#0E7A5F" : "#94A3B8" }} />
+          <p style={{ fontSize:13, color: file ? "#0E7A5F" : "#4B5563", fontWeight:600, textAlign:"center" }}>
             {file ? file.name : "Clica para escolher o ficheiro"}
           </p>
         </label>
@@ -207,7 +207,7 @@ function UploadProofModal({
         {hasExisting && file && (
           <label style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16, cursor:"pointer" }}>
             <input type="checkbox" checked={confirmReplace} onChange={e => setConfirmReplace(e.target.checked)} />
-            <span style={{ fontSize:12, color:"#EF9F27" }}>
+            <span style={{ fontSize:12, color:"#B45309" }}>
               Confirmo que quero substituir o comprovativo anterior
             </span>
           </label>
@@ -215,15 +215,15 @@ function UploadProofModal({
 
         <div style={{ display:"flex", gap:8 }}>
           <button onClick={onClose} style={{ flex:1, padding:12, borderRadius:10,
-            background:"#1a2535", color:"#8a9ab0", border:"none", cursor:"pointer", fontFamily:"inherit" }}>
+            background:"#FFFFFF", color:"#475569", border:"none", cursor:"pointer", fontFamily:"inherit" }}>
             Cancelar
           </button>
           <button
             disabled={!file || uploading || (hasExisting && !confirmReplace)}
             onClick={handleSubmit}
             style={{ flex:1, padding:12, borderRadius:10, border:"none",
-              background: (file && (!hasExisting || confirmReplace)) ? "#1D9E75" : "#1a2535",
-              color: (file && (!hasExisting || confirmReplace)) ? "white" : "#4a5a6a",
+              background: (file && (!hasExisting || confirmReplace)) ? "#0E7A5F" : "#CBD5E1",
+              color: (file && (!hasExisting || confirmReplace)) ? "white" : "#94A3B8",
               cursor: (file && (!hasExisting || confirmReplace)) ? "pointer" : "not-allowed",
               fontFamily:"inherit", fontWeight:700,
               display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
@@ -265,7 +265,7 @@ function PaymentCard({
   return (
     <div className="sd-card">
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-        <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", display:"flex", alignItems:"center", gap:8 }}>
+        <p style={{ fontSize:14, fontWeight:700, color:"#0F172A", display:"flex", alignItems:"center", gap:8 }}>
           <Landmark size={16} style={{ color:"#378ADD" }} /> Pagamento
         </p>
         <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:99,
@@ -275,25 +275,25 @@ function PaymentCard({
       </div>
 
       {bankAccount && (
-        <div style={{ background:"#0d1117", borderRadius:12, padding:16, marginBottom:14 }}>
+        <div style={{ background:"#FFFFFF", borderRadius:12, padding:16, marginBottom:14 }}>
           {[
             { l:"Banco", v: bankAccount.bankName },
             { l:"Titular", v: bankAccount.accountHolder },
           ].map((x, i) => (
             <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0",
-              borderBottom: i < 1 ? "1px solid #1a2535" : "none" }}>
-              <span style={{ fontSize:12, color:"#4a6a6a" }}>{x.l}</span>
-              <span style={{ fontSize:13, color:"#c0d0e0", fontWeight:600 }}>{x.v}</span>
+              borderBottom: i < 1 ? "1px solid #E2E8F0" : "none" }}>
+              <span style={{ fontSize:12, color:"#4B5563" }}>{x.l}</span>
+              <span style={{ fontSize:13, color:"#111827", fontWeight:600 }}>{x.v}</span>
             </div>
           ))}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
-            padding:"10px 0 0", marginTop:6, borderTop:"1px solid #1a2535" }}>
-            <span style={{ fontSize:12, color:"#4a6a6a" }}>IBAN</span>
+            padding:"10px 0 0", marginTop:6, borderTop:"1px solid #E2E8F0" }}>
+            <span style={{ fontSize:12, color:"#4B5563" }}>IBAN</span>
             <button onClick={handleCopyIban} style={{ display:"flex", alignItems:"center", gap:6,
               background:"none", border:"none", cursor:"pointer", color:"#378ADD",
               fontSize:13, fontWeight:700, fontFamily:"monospace" }}>
               {bankAccount.iban}
-              {copied ? <Check size={13} style={{ color:"#1D9E75" }} /> : <Copy size={13} />}
+              {copied ? <Check size={13} style={{ color:"#0E7A5F" }} /> : <Copy size={13} />}
             </button>
           </div>
         </div>
@@ -301,12 +301,12 @@ function PaymentCard({
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>
         {[
-          { l:"Valor bruto", v: fKz(Number(payment.amount)), c:"#c0d0e0" },
+          { l:"Valor bruto", v: fKz(Number(payment.amount)), c:"#111827" },
           { l:`Comissão (${Number(payment.commissionPercentageUsed)}%)`, v: `-${fKz(Number(payment.platformFee))}`, c:"#E24B4A" },
-          { l:"Valor líquido ao prestador", v: fKz(Number(payment.providerAmount)), c:"#1D9E75" },
+          { l:"Valor líquido ao prestador", v: fKz(Number(payment.providerAmount)), c:"#0E7A5F" },
         ].map((x, i) => (
-          <div key={i} style={{ background:"#0d1117", borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
-            <p style={{ fontSize:9, color:"#4a6a6a", marginBottom:3 }}>{x.l}</p>
+          <div key={i} style={{ background:"#FFFFFF", borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
+            <p style={{ fontSize:9, color:"#4B5563", marginBottom:3 }}>{x.l}</p>
             <p style={{ fontSize:12, fontWeight:700, color:x.c }}>{x.v}</p>
           </div>
         ))}
@@ -314,8 +314,8 @@ function PaymentCard({
 
       {canSendProof && (
         <button className="ab" onClick={onSendProof} disabled={sendingProof}
-          style={{ background:"linear-gradient(135deg,#1D9E75,#16876a)", color:"white",
-                   boxShadow:"0 4px 14px rgba(29,158,117,0.3)" }}>
+          style={{ background:"linear-gradient(135deg,#0E7A5F,#0A5F4A)", color:"white",
+                   boxShadow:"0 4px 14px rgba(14,122,95,0.3)" }}>
           <Upload size={15} /> Enviar comprovativo
         </button>
       )}
@@ -327,11 +327,11 @@ function PaymentCard({
             <Eye size={15} /> Ver comprovativo enviado
           </button>
           <button className="ab" onClick={onSendProof} disabled={sendingProof}
-            style={{ background:"#0d1117", color:"#6a7a8a", border:"1px solid #1a2535", fontSize:12 }}>
+            style={{ background:"#FFFFFF", color:"#475569", border:"1px solid #CBD5E1", fontSize:12 }}>
             <RefreshCw size={13} /> Substituir comprovativo
           </button>
           <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px",
-            background:"#378ADD10", borderRadius:10, fontSize:12, color:"#8ab0dd" }}>
+            background:"#378ADD10", borderRadius:10, fontSize:12, color:"#2668b0" }}>
             <Clock size={13} style={{ flexShrink:0 }} />
             A aguardar confirmação do administrador.
           </div>
@@ -340,7 +340,7 @@ function PaymentCard({
 
       {!notYetConfirmed && hasActiveProof && (
         <button className="ab" onClick={onViewProof}
-          style={{ background:"#1D9E7520", color:"#1D9E75", border:"1px solid #1D9E7540" }}>
+          style={{ background:"#0E7A5F20", color:"#0E7A5F", border:"1px solid #0E7A5F40" }}>
           <Eye size={15} /> Ver comprovativo
         </button>
       )}
@@ -352,16 +352,16 @@ function SupportedBanksCard() {
   const banks = ["BAI", "Atlântico", "BFA", "BIC"];
   return (
     <div className="sd-card">
-      <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+      <p style={{ fontSize:14, fontWeight:700, color:"#0F172A", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
         <CreditCard size={16} style={{ color:"#8B5CF6" }} /> Bancos suportados
       </p>
-      <p style={{ fontSize:12, color:"#4a6a6a", lineHeight:1.6, marginBottom:14 }}>
+      <p style={{ fontSize:12, color:"#4B5563", lineHeight:1.6, marginBottom:14 }}>
         Podes transferir a partir de qualquer um destes bancos para a conta da ServiApp.
       </p>
       <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
         {banks.map(b => (
-          <span key={b} style={{ padding:"6px 14px", borderRadius:99, background:"#0d1117",
-            border:"1px solid #1a2535", fontSize:12, fontWeight:600, color:"#c0d0e0" }}>
+          <span key={b} style={{ padding:"6px 14px", borderRadius:99, background:"#FFFFFF",
+            border:"1px solid #CBD5E1", fontSize:12, fontWeight:600, color:"#111827" }}>
             {b}
           </span>
         ))}
@@ -396,7 +396,7 @@ function ReviewCard({
 
   return (
     <div className="sd-card">
-      <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+      <p style={{ fontSize:14, fontWeight:700, color:"#0F172A", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
         <Star size={16} style={{ color:"#EF9F27" }} /> Avaliação do serviço
       </p>
 
@@ -406,22 +406,22 @@ function ReviewCard({
             {[1,2,3,4,5].map(n => (
               <Star key={n} size={20}
                 fill={n <= existingRating! ? "#EF9F27" : "none"}
-                color={n <= existingRating! ? "#EF9F27" : "#2a3a4a"} />
+                color={n <= existingRating! ? "#EF9F27" : "#CBD5E1"} />
             ))}
           </div>
           {existingReview && (
-            <p style={{ fontSize:13, color:"#8a9ab0", lineHeight:1.6, fontStyle:"italic",
-              padding:"12px 14px", background:"#0d1117", borderRadius:10 }}>
+            <p style={{ fontSize:13, color:"#374151", lineHeight:1.6, fontStyle:"italic",
+              padding:"12px 14px", background:"#FFFFFF", borderRadius:10 }}>
               "{existingReview}"
             </p>
           )}
-          <p style={{ fontSize:11, color:"#4a6a6a", marginTop:10 }}>
+          <p style={{ fontSize:11, color:"#4B5563", marginTop:10 }}>
             A tua avaliação já foi enviada ao prestador.
           </p>
         </div>
       ) : (
         <>
-          <p style={{ fontSize:12, color:"#4a6a6a", marginBottom:14, lineHeight:1.5 }}>
+          <p style={{ fontSize:12, color:"#4B5563", marginBottom:14, lineHeight:1.5 }}>
             O prestador marcou o serviço como concluído. Confirma a conclusão em "Outras acções" e deixa aqui a tua avaliação.
           </p>
           <div style={{ display:"flex", gap:6, marginBottom:14, justifyContent:"center" }}>
@@ -435,7 +435,7 @@ function ReviewCard({
               >
                 <Star size={30}
                   fill={n <= (hoverRating || rating) ? "#EF9F27" : "none"}
-                  color={n <= (hoverRating || rating) ? "#EF9F27" : "#2a3a4a"}
+                  color={n <= (hoverRating || rating) ? "#EF9F27" : "#CBD5E1"}
                   style={{ transition:"all 0.1s" }} />
               </button>
             ))}
@@ -445,7 +445,7 @@ function ReviewCard({
             onChange={e => setReviewText(e.target.value)}
             placeholder="Deixa uma mensagem sobre o serviço (opcional)"
             style={{ width:"100%", minHeight:80, padding:12, borderRadius:10,
-              background:"#0d1117", border:"1px solid #1a2535", color:"#e2e8f0",
+              background:"#FFFFFF", border:"1px solid #CBD5E1", color:"#111827",
               fontSize:13, resize:"none", outline:"none", fontFamily:"inherit", marginBottom:12 }}
           />
           <button
@@ -453,8 +453,8 @@ function ReviewCard({
             onClick={() => onSubmit(rating, reviewText.trim())}
             style={{
               width:"100%", padding:12, borderRadius:11, border:"none",
-              background: rating > 0 ? "linear-gradient(135deg,#EF9F27,#d4870a)" : "#1a2535",
-              color: rating > 0 ? "#0d1117" : "#4a5a6a",
+              background: rating > 0 ? "linear-gradient(135deg,#EF9F27,#d4870a)" : "#CBD5E1",
+              color: rating > 0 ? "#0F172A" : "#94A3B8",
               fontSize:14, fontWeight:700, cursor: rating > 0 && !submitting ? "pointer" : "not-allowed",
               display:"flex", alignItems:"center", justifyContent:"center", gap:8, fontFamily:"inherit",
             }}
@@ -579,10 +579,10 @@ export default function ClientServiceDetailPage() {
   };
 
   if (loading) return (
-    <div style={{ display:"flex", minHeight:"100vh", background:"#0d1117" }}>
+    <div style={{ display:"flex", minHeight:"100vh", background:"#FFFFFF" }}>
       <Sidebar />
       <div style={{ flex:1, marginLeft:240, display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <Loader2 size={28} style={{ color:"#1D9E75", animation:"spin 1s linear infinite" }} />
+        <Loader2 size={28} style={{ color:"#0E7A5F", animation:"spin 1s linear infinite" }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>
@@ -603,25 +603,25 @@ export default function ClientServiceDetailPage() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .sd-wrap { display: flex; min-height: 100vh; background: #0d1117; }
+        .sd-wrap { display: flex; min-height: 100vh; background: #FFFFFF; }
         .sd-main { flex: 1; margin-left: 240px; display: flex; flex-direction: column; }
         .sd-body { flex: 1; padding: 28px 32px; display: flex; flex-direction: column;
                    gap: 20px; max-width: 760px; width: 100%; }
-        .sd-card { background: #131b27; border: 1px solid #1a2535;
-                   border-radius: 18px; padding: 24px; }
+        .sd-card { background: #E2E8F0; border: 1px solid #CBD5E1;
+                   border-radius: 18px; padding: 24px; box-shadow: 0 2px 10px rgba(15,23,42,0.06); }
         .ab { display: flex; align-items: center; justify-content: center; gap: 8px;
               padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 700;
               cursor: pointer; font-family: inherit; border: none; transition: all .2s; width: 100%; }
         .ab:disabled { opacity: .5; cursor: not-allowed; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .info-item { background: #0d1117; border-radius: 10px; padding: 10px 14px; }
+        .info-item { background: #FFFFFF; border-radius: 10px; padding: 10px 14px; }
         .tl-wrap { display: flex; flex-direction: column; }
         .tl-item { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
         .tl-item:last-child { padding-bottom: 0; }
         .tl-line { position: absolute; left: 9px; top: 20px; bottom: 0;
-                   width: 1px; background: #1a2535; }
-        .tl-dot  { width: 20px; height: 20px; border-radius: 50%; background: #1D9E7520;
-                   border: 1px solid #1D9E75; display: flex; align-items: center;
+                   width: 1px; background: #94A3B8; }
+        .tl-dot  { width: 20px; height: 20px; border-radius: 50%; background: #0E7A5F;
+                   border: 3px solid #D9F5F0; display: flex; align-items: center;
                    justify-content: center; flex-shrink: 0; z-index: 1; }
         @media(max-width:1024px) { .sd-main { margin-left: 0; } .sd-body { padding: 80px 20px 24px; } }
         @media(max-width:640px)  { .sd-body { padding: 70px 12px 20px; gap: 14px; }
@@ -636,7 +636,7 @@ export default function ClientServiceDetailPage() {
 
             <button onClick={() => router.push("/services")}
               style={{ display:"flex", alignItems:"center", gap:8, background:"none",
-                border:"none", color:"#4a6a6a", cursor:"pointer", fontSize:13,
+                border:"none", color:"#475569", cursor:"pointer", fontSize:13,
                 fontFamily:"inherit", width:"fit-content" }}>
               <ArrowLeft size={15} /> Voltar
             </button>
@@ -645,7 +645,7 @@ export default function ClientServiceDetailPage() {
               <div style={{ display:"flex", alignItems:"flex-start",
                 justifyContent:"space-between", gap:12, marginBottom:16 }}>
                 <div>
-                  <h1 style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", marginBottom:8 }}>
+                  <h1 style={{ fontSize:18, fontWeight:700, color:"#0F172A", marginBottom:8 }}>
                     {service.title}
                   </h1>
                   <span style={{ display:"inline-flex", alignItems:"center", gap:6,
@@ -655,8 +655,8 @@ export default function ClientServiceDetailPage() {
                   </span>
                 </div>
                 <div style={{ textAlign:"right", flexShrink:0 }}>
-                  <p style={{ fontSize:24, fontWeight:800, color:"#1D9E75" }}>{fKz(amount)}</p>
-                  <p style={{ fontSize:11, color:"#4a6a6a", marginTop:2 }}>Valor acordado</p>
+                  <p style={{ fontSize:24, fontWeight:800, color:"#0E7A5F" }}>{fKz(amount)}</p>
+                  <p style={{ fontSize:11, color:"#4B5563", marginTop:2 }}>Valor acordado</p>
                 </div>
               </div>
 
@@ -670,22 +670,22 @@ export default function ClientServiceDetailPage() {
                   { l:"Data",      v: new Date(service.createdAt).toLocaleDateString("pt-PT") },
                 ].map((x,i) => (
                   <div className="info-item" key={i}>
-                    <p style={{ fontSize:11, color:"#4a6a6a", marginBottom:2 }}>{x.l}</p>
-                    <p style={{ fontSize:13, color:"#c0d0e0", fontWeight:600 }}>{x.v}</p>
+                    <p style={{ fontSize:11, color:"#4B5563", marginBottom:2 }}>{x.l}</p>
+                    <p style={{ fontSize:13, color:"#111827", fontWeight:600 }}>{x.v}</p>
                   </div>
                 ))}
               </div>
 
               {service.description && (
-                <p style={{ fontSize:13, color:"#6a7a8a", lineHeight:1.6,
-                  marginTop:14, padding:"12px 14px", background:"#0d1117", borderRadius:10 }}>
+                <p style={{ fontSize:13, color:"#374151", lineHeight:1.6,
+                  marginTop:14, padding:"12px 14px", background:"#FFFFFF", borderRadius:10 }}>
                   {service.description}
                 </p>
               )}
 
               {service.warrantyExpiresAt && (
-                <div style={{ marginTop:12, padding:"10px 14px", background:"#1D9E7510",
-                  border:"1px solid #1D9E7530", borderRadius:10, fontSize:12, color:"#1D9E75" }}>
+                <div style={{ marginTop:12, padding:"10px 14px", background:"#D9F5F0",
+                  border:"1px solid #0E7A5F30", borderRadius:10, fontSize:12, color:"#0E7A5F" }}>
                   ⭐ Garantia válida até {new Date(service.warrantyExpiresAt).toLocaleDateString("pt-PT")}
                 </div>
               )}
@@ -693,12 +693,12 @@ export default function ClientServiceDetailPage() {
 
             {service.status === "accepted" && !payment && (
               <div className="sd-card">
-                <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:14 }}>
+                <p style={{ fontSize:14, fontWeight:700, color:"#0F172A", marginBottom:14 }}>
                   Acções disponíveis
                 </p>
                 <button className="ab" disabled={actL==="pay"}
-                  style={{ background:"linear-gradient(135deg,#1D9E75,#16876a)", color:"white",
-                           boxShadow:"0 4px 14px rgba(29,158,117,0.3)" }}
+                  style={{ background:"linear-gradient(135deg,#0E7A5F,#0A5F4A)", color:"white",
+                           boxShadow:"0 4px 14px rgba(14,122,95,0.3)" }}
                   onClick={handleInitiatePayment}>
                   {actL==="pay" ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/> : <Shield size={15}/>}
                   {actL==="pay" ? "A processar..." : `Ver dados para pagamento de ${fKz(amount)}`}
@@ -720,7 +720,7 @@ export default function ClientServiceDetailPage() {
 
             {!ended && (
               <div className="sd-card">
-                <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:14 }}>
+                <p style={{ fontSize:14, fontWeight:700, color:"#0F172A", marginBottom:14 }}>
                   {payment ? "Outras acções" : "Acções disponíveis"}
                 </p>
                 <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -738,7 +738,7 @@ export default function ClientServiceDetailPage() {
                       </button>
                       {service.servicePin && !service.pinUsed && (
                         <button className="ab"
-                          style={{ background:"#1D9E7520", color:"#1D9E75", border:"1px solid #1D9E7540" }}
+                          style={{ background:"#0E7A5F20", color:"#0E7A5F", border:"1px solid #0E7A5F40" }}
                           onClick={() => setPinData({ pin: service.servicePin, expiresAt: service.pinExpiresAt })}>
                           <Key size={15}/> Ver PIN actual
                         </button>
@@ -750,7 +750,7 @@ export default function ClientServiceDetailPage() {
                     <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px",
                       background:"#8B5CF610", border:"1px solid #8B5CF630", borderRadius:12 }}>
                       <Clock size={18} style={{ color:"#8B5CF6", flexShrink:0 }} />
-                      <p style={{ fontSize:13, color:"#c0a8f0", lineHeight:1.5 }}>
+                      <p style={{ fontSize:13, color:"#5B21B6", lineHeight:1.5 }}>
                         A administração está a processar a transferência para o prestador.
                       </p>
                     </div>
@@ -775,7 +775,7 @@ export default function ClientServiceDetailPage() {
 
                   {["requested","accepted"].includes(service.status) && (
                     <button className="ab" disabled={actL==="cancel"}
-                      style={{ background:"#1a2535", color:"#6a7a8a", border:"1px solid #1a2535" }}
+                      style={{ background:"#FFFFFF", color:"#475569", border:"1px solid #CBD5E1" }}
                       onClick={() => {
                         if (confirm("Tens a certeza que queres cancelar?"))
                           act("cancel", () => servicesDetailApi.cancel(id, "Cancelado pelo cliente"));
@@ -801,24 +801,24 @@ export default function ClientServiceDetailPage() {
 
             {timeline.length > 0 && (
               <div className="sd-card">
-                <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:16 }}>Histórico</p>
+                <p style={{ fontSize:14, fontWeight:700, color:"#0F172A", marginBottom:16 }}>Histórico</p>
                 <div className="tl-wrap">
                   {timeline.map((ev, i) => (
                     <div className="tl-item" key={ev.id}>
                       {i < timeline.length-1 && <span className="tl-line" />}
                       <div className="tl-dot">
-                        <span style={{ fontSize:8, color:"#1D9E75" }}>●</span>
+                        <span style={{ fontSize:8, color:"#FFFFFF" }}>●</span>
                       </div>
                       <div style={{ flex:1, paddingTop:1 }}>
                         <div style={{ display:"flex", justifyContent:"space-between", gap:8 }}>
-                          <p style={{ fontSize:13, fontWeight:600, color:"#c0d0e0" }}>
+                          <p style={{ fontSize:13, fontWeight:600, color:"#0F172A" }}>
                             {TL_LABELS[ev.action] ?? ev.action}
                           </p>
-                          <span style={{ fontSize:11, color:"#3a4a5a", flexShrink:0 }}>
+                          <span style={{ fontSize:11, color:"#94A3B8", flexShrink:0 }}>
                             {ago(ev.createdAt)}
                           </span>
                         </div>
-                        <p style={{ fontSize:12, color:"#4a6a6a", marginTop:2 }}>{ev.description}</p>
+                        <p style={{ fontSize:12, color:"#4B5563", marginTop:2 }}>{ev.description}</p>
                       </div>
                     </div>
                   ))}
