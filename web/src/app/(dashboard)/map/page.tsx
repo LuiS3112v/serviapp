@@ -33,14 +33,21 @@ const RADIUS_OPTIONS = [2, 5, 10, 20];
 // NENHUMA fonte destas regras (só a home/page.tsx as define), por isso
 // o conteúdo (incluindo o mapa) renderizava a partir de x:0, por baixo
 // do sidebar fixo, em vez de começar depois dele.
+//
+// NOTA: adicionado "box-sizing:border-box" a tudo dentro de .hw — sem
+// isto, o padding-top do .hi (usado no mobile para não ficar por baixo
+// da navbar fixa) somava-se à altura da caixa em vez de só empurrar o
+// conteúdo, e isso é que fazia sobrar aquele espaço cinzento depois do
+// mapa no telemóvel.
 const pageLayoutStyles = `
+  .hw, .hw *, .hw *::before, .hw *::after{box-sizing:border-box}
   .hw{display:flex;min-height:100vh;background:#F8FAFC}
   .hm{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
   .hi{flex:1;display:flex;flex-direction:column;min-height:0}
 
   @media(max-width:1024px){
     .hm{margin-left:0}
-    .hi{padding-top:64px}
+    .hi{padding-top:56px}
   }
 `;
 

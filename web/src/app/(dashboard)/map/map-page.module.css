@@ -8,7 +8,9 @@
 
 @media (max-width: 768px) {
   .page {
-    padding: 12px;
+    /* Topo reduzido (era 12px) para "puxar" o título e o mapa
+       um pouco mais para cima no mobile */
+    padding: 6px 12px 12px;
     gap: 12px;
   }
 }
@@ -25,6 +27,9 @@
   font-size: 20px;
   font-weight: 700;
   color: #1F2A28;
+  /* reset da margin default do <h1>, que também contribuía para
+     o espaço em branco por cima do texto */
+  margin: 0;
 }
 
 .titleAccent {
@@ -76,6 +81,9 @@
 .mapWrapper {
   flex: 1;
   min-height: 480px;
+  /* garante que a caixa ocupa sempre 100% do espaço vertical
+     restante dentro de .page, em vez de só depender do flex:1 */
+  height: 100%;
   position: relative;
   border-radius: 18px;
   overflow: hidden;
@@ -175,8 +183,8 @@
 }
 
 /* ── Elementos flutuantes sobre o mapa — busca, categorias, filtro e
-   ativar localização já ficavam em branco, o que agora combina
-   perfeitamente com o novo fundo claro. Mantidos como estavam. ── */
+   ativar localização já ficavam em branco, o que combina bem com o
+   novo fundo claro. Mantidos como estavam. ── */
 
 .floatingSearchBar {
   position: absolute;
