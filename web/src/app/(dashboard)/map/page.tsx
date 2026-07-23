@@ -34,11 +34,13 @@ const RADIUS_OPTIONS = [2, 5, 10, 20];
 // o conteúdo (incluindo o mapa) renderizava a partir de x:0, por baixo
 // do sidebar fixo, em vez de começar depois dele.
 //
-// NOTA: adicionado "box-sizing:border-box" a tudo dentro de .hw — sem
-// isto, o padding-top do .hi (usado no mobile para não ficar por baixo
-// da navbar fixa) somava-se à altura da caixa em vez de só empurrar o
-// conteúdo, e isso é que fazia sobrar aquele espaço cinzento depois do
-// mapa no telemóvel.
+// CORRIGIDO: removido o "padding-top:56px" que existia aqui dentro do
+// media query mobile. Essa regra compensava (a mais) o botão flutuante
+// do sidebar (sb-toggle), mas no mobile a <Navbar/> já renderiza em
+// fluxo normal, com altura própria, logo antes de .hi — o padding extra
+// só duplicava esse espaço e criava o vazio entre a navbar e o título.
+// Sem esta linha, título/subtítulo/mapa sobem para a posição correcta,
+// sem qualquer margin negativa.
 const pageLayoutStyles = `
   .hw, .hw *, .hw *::before, .hw *::after{box-sizing:border-box}
   .hw{display:flex;min-height:100vh;background:#F8FAFC}
@@ -47,7 +49,6 @@ const pageLayoutStyles = `
 
   @media(max-width:1024px){
     .hm{margin-left:0}
-    .hi{padding-top:56px}
   }
 `;
 

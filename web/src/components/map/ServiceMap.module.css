@@ -9,6 +9,20 @@
   background-color: #131b27;
 }
 
+/* Mobile: o cartão do mapa deve acompanhar a altura real do seu
+   wrapper (que no mobile cresce mais do que 480px, porque .page/.hi
+   ocupam 100% da altura disponível do ecrã). Sem isto, sobrava sempre
+   uma faixa cinzenta abaixo do mapa — a diferença entre a altura fixa
+   de 480px e a altura real do wrapper. O "min-height:480px" da regra
+   base acima continua válido aqui (cascata), garantindo que o mapa
+   nunca fica mais baixo que 480px mesmo em ecrãs muito curtos.
+   Desktop (>1024px) não é afectado — mantém os 480px fixos de sempre. */
+@media (max-width: 1024px) {
+  .map-container {
+    height: 100%;
+  }
+}
+
 .leafletRoot {
   width: 100%;
   height: 100%;
