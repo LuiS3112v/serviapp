@@ -23,7 +23,7 @@ export default function RegisterClientPage() {
         .auth-title { font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.01em; }
         .auth-subtitle { font-size: 13px; color: #64748b; margin-top: 2px; }
         .auth-label { font-size: 13px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px; }
-        .auth-input { width: 100%; padding: 14px 16px; border-radius: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; color: #0f172a; font-size: 14px; outline: none; transition: border-color .15s, background .15s; margin-bottom: 16px; font-family: inherit; }
+        .auth-input { width: 100%; padding: 14px 16px; border-radius: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; color: #0f172a; font-size: 16px; outline: none; transition: border-color .15s, background .15s; margin-bottom: 16px; font-family: inherit; }
         .auth-input:focus { border-color: #2563eb; background: #fff; }
         .auth-input::placeholder { color: #94a3b8; }
         .auth-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; }

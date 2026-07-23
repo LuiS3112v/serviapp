@@ -58,7 +58,7 @@ export default function LoginPage() {
         .auth-type-opt.active-provider { background: #fff; color: #EF9F27; box-shadow: 0 3px 10px rgba(15,23,42,0.08); }
         .auth-label { font-size: 13px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px; }
         .input-wrap { position: relative; margin-bottom: 16px; }
-        .auth-input { width: 100%; padding: 14px 16px; border-radius: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; color: #0f172a; font-size: 14px; outline: none; transition: border-color .15s, background .15s; }
+        .auth-input { width: 100%; padding: 14px 16px; border-radius: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; color: #0f172a; font-size: 16px; outline: none; transition: border-color .15s, background .15s; }
         .auth-input:focus { border-color: var(--accent); background: #fff; }
         .auth-input::placeholder { color: #94a3b8; }
         .auth-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; }
