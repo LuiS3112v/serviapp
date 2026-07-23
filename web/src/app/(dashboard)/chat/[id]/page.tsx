@@ -2,7 +2,7 @@
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
-import { ArrowLeft, Send, Shield, AlertTriangle, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Shield, AlertTriangle, Loader2, MessageCircle } from "lucide-react";
 import { chatApi, ChatMessage, ChatRoom } from "@/lib/chat.api";
 import { getToken } from "@/lib/auth.api";
 import { connectSocket } from "@/lib/socket";
@@ -170,12 +170,12 @@ function ChatInner() {
   return (
     <>
       <style>{`
-        .chatd-wrap{display:flex;min-height:100vh;background:#0d1117}
+        .chatd-wrap{display:flex;min-height:100vh;background:#f8fafc}
         .chatd-main{flex:1;margin-left:240px;display:flex;flex-direction:column;max-height:100vh}
         .chatd-header{
           flex-shrink:0;display:flex;align-items:center;gap:14px;
           padding:0 24px;height:65px;
-          background:#080e1a;border-bottom:1px solid #1a2535;
+          background:#ffffff;border-bottom:1px solid #eef1f5;
         }
         .chatd-msgs{
           flex:1;padding:20px 24px;
@@ -183,51 +183,51 @@ function ChatInner() {
           overflow-y:auto;scroll-behavior:smooth;
         }
         .chatd-msgs::-webkit-scrollbar{width:4px}
-        .chatd-msgs::-webkit-scrollbar-thumb{background:#1a2535;border-radius:4px}
+        .chatd-msgs::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:4px}
         .chatd-input-area{
           flex-shrink:0;display:flex;align-items:center;gap:10px;
-          padding:14px 24px;background:#080e1a;border-top:1px solid #1a2535;
+          padding:14px 24px;background:#ffffff;border-top:1px solid #eef1f5;
         }
-        /* Own message: right side, green */
+        /* Own message: right side, blue */
         .msg-me{
           max-width:68%;padding:10px 14px;border-radius:14px;
           font-size:14px;line-height:1.55;word-break:break-word;
-          background:#1D9E75;color:white;
+          background:#2563eb;color:white;
           align-self:flex-end;border-bottom-right-radius:4px;
         }
-        /* Other's message: left side, dark */
+        /* Other's message: left side, light gray (contraste reforçado, estilo Insta) */
         .msg-other{
           max-width:68%;padding:10px 14px;border-radius:14px;
           font-size:14px;line-height:1.55;word-break:break-word;
-          background:#131b27;color:#c0d0e0;
+          background:#e4e9f0;color:#1e293b;
           align-self:flex-start;border-bottom-left-radius:4px;
         }
         /* Optimistic: slightly translucent until confirmed */
         .msg-me-opt{ opacity:0.75; }
         .msg-time{font-size:10px;opacity:0.55;margin-top:4px}
         .blocked-msg{
-          background:#E24B4A15;border:1px solid #E24B4A30;
+          background:#fef2f2;border:1px solid #fecaca;
           border-radius:10px;padding:8px 12px;
           display:flex;align-items:center;gap:8px;
           align-self:flex-start;max-width:80%;
         }
         .c-input{
           flex:1;padding:12px 16px;border-radius:12px;
-          background:#131b27;border:1px solid #1a2535;
-          color:#e2e8f0;font-size:14px;outline:none;
-          font-family:inherit;transition:border 0.2s;
+          background:#f8fafc;border:1.5px solid #e2e8f0;
+          color:#0f172a;font-size:14px;outline:none;
+          font-family:inherit;transition:border 0.2s, background 0.2s;
         }
-        .c-input:focus{border-color:#1D9E75}
-        .c-input::placeholder{color:#4a5a6a}
+        .c-input:focus{border-color:#2563eb; background:#fff}
+        .c-input::placeholder{color:#94a3b8}
         .c-send{
           flex-shrink:0;width:42px;height:42px;border-radius:12px;
-          background:#1D9E75;border:none;cursor:pointer;
+          background:#2563eb;border:none;cursor:pointer;
           display:flex;align-items:center;justify-content:center;
           transition:opacity 0.2s;
         }
         .c-send:disabled{opacity:0.5;cursor:not-allowed}
-        .typing-dot{width:6px;height:6px;border-radius:50%;background:#4a6a6a;animation:tdot 1.2s infinite}
-        .sk{background:#1a2535;border-radius:8px;animation:sk 1.5s infinite}
+        .typing-dot{width:6px;height:6px;border-radius:50%;background:#94a3b8;animation:tdot 1.2s infinite}
+        .sk{background:#e2e8f0;border-radius:8px;animation:sk 1.5s infinite}
         @keyframes sk{0%,100%{opacity:1}50%{opacity:0.4}}
         @keyframes tdot{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -250,7 +250,7 @@ function ChatInner() {
           <div className="chatd-header">
             <button
               onClick={() => router.back()}
-              style={{ background:"none",border:"none",cursor:"pointer",color:"#6a7a8a",display:"flex",padding:4 }}
+              style={{ background:"none",border:"none",cursor:"pointer",color:"#64748b",display:"flex",padding:4 }}
             >
               <ArrowLeft size={20}/>
             </button>
@@ -259,9 +259,9 @@ function ChatInner() {
               ? <div className="sk" style={{ width:40,height:40,borderRadius:"50%",flexShrink:0 }}/>
               : (
                 <div style={{
-                  width:40,height:40,borderRadius:"50%",background:"#1a3a2a",
+                  width:40,height:40,borderRadius:"50%",background:"#eff6ff",
                   display:"flex",alignItems:"center",justifyContent:"center",
-                  fontSize:16,fontWeight:700,color:"#1D9E75",flexShrink:0,overflow:"hidden",
+                  fontSize:16,fontWeight:700,color:"#2563eb",flexShrink:0,overflow:"hidden",
                 }}>
                   {other?.avatarUrl
                     ? <img src={other.avatarUrl} style={{ width:"100%",height:"100%",objectFit:"cover" }} alt=""/>
@@ -273,20 +273,20 @@ function ChatInner() {
             <div style={{ flex:1,minWidth:0 }}>
               {loading
                 ? <div className="sk" style={{ width:120,height:14,marginBottom:4 }}/>
-                : <p style={{ fontSize:15,fontWeight:700,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                : <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                     {other?.fullName ?? "—"}
                   </p>
               }
-              <p style={{ fontSize:11,color:"#4a6a6a",marginTop:2 }}>Prestador</p>
+              <p style={{ fontSize:11,color:"#94a3b8",marginTop:2 }}>Prestador</p>
             </div>
 
             <div style={{
               display:"flex",alignItems:"center",gap:6,
               padding:"6px 12px",borderRadius:8,
-              background:"#0b2424",border:"1px solid #1d9e7525",flexShrink:0,
+              background:"#f0faf6",border:"1px solid #bbf7e8",flexShrink:0,
             }}>
               <Shield size={13} style={{ color:"#1D9E75" }}/>
-              <span style={{ fontSize:11,color:"#1D9E75",fontWeight:600 }}>Protegida</span>
+              <span style={{ fontSize:11,color:"#0f766e",fontWeight:600 }}>Protegida</span>
             </div>
           </div>
 
@@ -306,14 +306,16 @@ function ChatInner() {
                 justifyContent:"center",flex:1,gap:14,textAlign:"center",
               }}>
                 <div style={{
-                  width:56,height:56,borderRadius:16,background:"#131b27",
-                  border:"1px solid #1a2535",display:"flex",alignItems:"center",
-                  justifyContent:"center",fontSize:26,
-                }}>💬</div>
-                <p style={{ fontSize:14,fontWeight:600,color:"#c0d0e0" }}>
+                  width:56,height:56,borderRadius:16,background:"#ffffff",
+                  border:"1px solid #eef1f5",display:"flex",alignItems:"center",
+                  justifyContent:"center",
+                }}>
+                  <MessageCircle size={26} style={{ color:"#94a3b8" }}/>
+                </div>
+                <p style={{ fontSize:14,fontWeight:600,color:"#334155" }}>
                   {other ? `Inicia uma conversa com ${other.fullName}` : "Inicia a conversa"}
                 </p>
-                <p style={{ fontSize:12,color:"#4a6a6a",lineHeight:1.6 }}>
+                <p style={{ fontSize:12,color:"#64748b",lineHeight:1.6 }}>
                   Escreve uma mensagem para começar.
                 </p>
               </div>
@@ -328,10 +330,10 @@ function ChatInner() {
 
               if (m.isBlocked) return (
                 <div className="blocked-msg" key={m.id}>
-                  <AlertTriangle size={14} style={{ color:"#E24B4A",flexShrink:0 }}/>
+                  <AlertTriangle size={14} style={{ color:"#dc2626",flexShrink:0 }}/>
                   <div>
-                    <p style={{ fontSize:12,fontWeight:600,color:"#E24B4A" }}>Mensagem bloqueada</p>
-                    <p style={{ fontSize:11,color:"#6a3a3a" }}>Partilha de contactos externos não é permitida.</p>
+                    <p style={{ fontSize:12,fontWeight:600,color:"#dc2626" }}>Mensagem bloqueada</p>
+                    <p style={{ fontSize:11,color:"#b91c1c" }}>Partilha de contactos externos não é permitida.</p>
                   </div>
                 </div>
               );
@@ -354,7 +356,7 @@ function ChatInner() {
             {typing && (
               <div style={{
                 display:"flex",alignItems:"center",gap:6,
-                padding:"8px 14px",background:"#131b27",
+                padding:"8px 14px",background:"#f1f5f9",
                 borderRadius:14,alignSelf:"flex-start",borderBottomLeftRadius:4,
               }}>
                 {[0,1,2].map(i => <div key={i} className="typing-dot" style={{ animationDelay:`${i*0.2}s` }}/>)}
@@ -388,8 +390,8 @@ function ChatInner() {
 export default function ChatDetailPage() {
   return (
     <Suspense fallback={
-      <div style={{ display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#0d1117",gap:12 }}>
-        <Loader2 size={24} style={{ color:"#1D9E75",animation:"spin 1s linear infinite" }}/>
+      <div style={{ display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#f8fafc",gap:12 }}>
+        <Loader2 size={24} style={{ color:"#2563eb",animation:"spin 1s linear infinite" }}/>
         <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       </div>
     }>

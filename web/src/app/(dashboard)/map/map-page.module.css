@@ -24,19 +24,23 @@
 .title {
   font-size: 20px;
   font-weight: 700;
-  color: #e2e8f0;
+  color: #1F2A28;
+}
+
+.titleAccent {
+  color: #0E7A5F;
 }
 
 .subtitle {
   font-size: 13px;
-  color: #8a9ab0;
+  color: #6B7770;
   margin-top: 2px;
 }
 
 .viewToggle {
   display: flex;
-  background-color: #131b27;
-  border: 1px solid #1a2535;
+  background-color: #F1F5F9;
+  border: 1px solid #E2E8F0;
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
@@ -47,7 +51,7 @@
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: #8a9ab0;
+  color: #64748B;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -55,17 +59,17 @@
 }
 
 .viewToggleButtonActive {
-  background-color: #1D9E75;
+  background-color: #0E7A5F;
   color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(14, 122, 95, 0.28);
 }
 
 .locationDeniedMessage {
   padding: 10px 14px;
   border-radius: 10px;
-  background-color: rgba(226, 75, 74, 0.1);
-  border: 1px solid rgba(226, 75, 74, 0.3);
-  color: #f0a8a7;
+  background-color: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #B91C1C;
   font-size: 12px;
 }
 
@@ -73,6 +77,10 @@
   flex: 1;
   min-height: 480px;
   position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background-color: #E2E8F0;
+  border: 1px solid #E2E8F0;
 }
 
 .listWrapper {
@@ -90,15 +98,15 @@
   gap: 12px;
   padding: 14px;
   border-radius: 12px;
-  border: 1px solid #1a2535;
-  background-color: #131b27;
+  border: 1px solid #ECE9DF;
+  background-color: #ffffff;
   cursor: pointer;
   transition: border-color 0.16s ease, background-color 0.16s ease;
 }
 
 .listCard:hover {
   border-color: #EF9F27;
-  background-color: #171f2d;
+  background-color: #FFF7ED;
 }
 
 .listCardAvatar {
@@ -130,7 +138,7 @@
 .listCardName {
   font-size: 14px;
   font-weight: 700;
-  color: #e2e8f0;
+  color: #1F2A28;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -138,7 +146,7 @@
 
 .listCardMeta {
   font-size: 12px;
-  color: #8a9ab0;
+  color: #6B7770;
   margin-top: 2px;
 }
 
@@ -157,19 +165,18 @@
   gap: 8px;
   padding: 60px 20px;
   text-align: center;
-  color: #4a5a6a;
+  color: #9CA3AF;
 }
 
 .emptyStateTitle {
   font-size: 14px;
   font-weight: 600;
-  color: #8a9ab0;
+  color: #6B7770;
 }
 
 /* ── Elementos flutuantes sobre o mapa — busca, categorias, filtro e
-   ativar localização ficam em branco (pedido explícito), o resto dos
-   elementos flutuantes (banners, card do prestador) mantém-se em vidro
-   escuro, definido nos outros ficheiros. ── */
+   ativar localização já ficavam em branco, o que agora combina
+   perfeitamente com o novo fundo claro. Mantidos como estavam. ── */
 
 .floatingSearchBar {
   position: absolute;
@@ -206,7 +213,7 @@
 }
 
 .searchInput:focus {
-  border-color: #1D9E75;
+  border-color: #0E7A5F;
 }
 
 .searchIcon {
@@ -252,7 +259,7 @@
   overflow-y: hidden;
   padding-bottom: 6px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(29, 158, 117, 0.5) transparent;
+  scrollbar-color: rgba(14, 122, 95, 0.5) transparent;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
@@ -268,7 +275,7 @@
 }
 
 .floatingCategoryScroll::-webkit-scrollbar-thumb {
-  background-color: rgba(29, 158, 117, 0.5);
+  background-color: rgba(14, 122, 95, 0.5);
   border-radius: 999px;
 }
 
@@ -288,8 +295,8 @@
 }
 
 .categoryChipActive {
-  border-color: #1D9E75;
-  background-color: #1D9E75;
+  border-color: #0E7A5F;
+  background-color: #0E7A5F;
   color: #ffffff;
 }
 
@@ -370,7 +377,7 @@
 }
 
 .toggleSwitchOn {
-  background-color: #1D9E75;
+  background-color: #0E7A5F;
 }
 
 .toggleSwitchKnob {

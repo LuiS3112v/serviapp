@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Upload } from "lucide-react";
+import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Upload, Loader2 } from "lucide-react";
+import { authApi, saveSession } from "@/lib/auth.api";
 
 const categories = [
   "Limpeza", "Climatização", "Canalização", "Eletricista",
@@ -16,6 +17,47 @@ export default function RegisterProviderPage() {
   const [show, setShow] = useState(false);
   const [selectedCat, setSelectedCat] = useState("");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", bio: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // ── Novo: só para permitir escolher os ficheiros do BI e da selfie ──
+  const [biFile, setBiFile] = useState<File | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const biInputRef = useRef<HTMLInputElement>(null);
+  const selfieInputRef = useRef<HTMLInputElement>(null);
+
+  // Cria a conta ao sair do Passo 2 — já temos tudo que o RegisterDto exige.
+  // O Passo 3 (upload KYC) precisa de sessão válida, por isso o registo
+  // tem de acontecer antes de lá chegar.
+  const handleContinueFromStep2 = async () => {
+    setError("");
+
+    if (form.password.length < 6) {
+      setError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    if (!selectedCat) {
+      setError("Seleciona uma categoria de serviço.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await authApi.register({
+        fullName: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: "provider",
+        phone: form.phone.trim() || undefined,
+      });
+      saveSession(data);
+      setStep(3);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao criar conta. Tenta novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -35,8 +77,10 @@ export default function RegisterProviderPage() {
         .auth-input::placeholder { color: #94a3b8; }
         .auth-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; }
         .auth-eye:hover { color: #475569; }
-        .auth-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg,#EF9F27,#f5b955); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(239,159,39,0.25); font-family: inherit; }
+        .auth-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg,#EF9F27,#f5b955); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(239,159,39,0.25); font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .auth-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(239,159,39,0.32); }
+        .auth-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+        .auth-error { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #b91c1c; margin-bottom: 16px; }
         .progress-bar { height: 5px; border-radius: 99px; background: #eef1f5; margin-bottom: 26px; overflow: hidden; }
         .progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg,#EF9F27,#f5b955); transition: width 0.3s; }
         .cat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 20px; }
@@ -45,6 +89,7 @@ export default function RegisterProviderPage() {
         .cat-opt.sel { border-color: #EF9F27; background: #fef3e2; color: #b96f0f; }
         .upload-area { border: 2px dashed #e2e8f0; border-radius: 14px; padding: 26px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; margin-bottom: 16px; transition: border-color .2s, background .2s; background: #f8fafc; }
         .upload-area:hover { border-color: #EF9F27; background: #fffbf3; }
+        .upload-area.has-file { border-style: solid; border-color: #1D9E75; background: #f0faf6; }
         .auth-perks { border-radius: 14px; padding: 15px 16px; margin-bottom: 20px; }
         .auth-perk-row { display: flex; align-items: center; gap: 8px; }
         .auth-footer-text { text-align: center; font-size: 13px; color: #64748b; margin-top: 20px; }
@@ -74,6 +119,8 @@ export default function RegisterProviderPage() {
             <div className="progress-bar">
               <div className="progress-fill" style={{ width: `${(step / 3) * 100}%` }} />
             </div>
+
+            {error && <div className="auth-error">{error}</div>}
 
             {/* ── Passo 1: Dados de acesso ─────────────────────────────── */}
             {step === 1 && (
@@ -129,7 +176,12 @@ export default function RegisterProviderPage() {
                 <label className="auth-label">Preço hora (Kz)</label>
                 <input className="auth-input" type="number" placeholder="Ex: 5000" />
 
-                <button className="auth-btn" onClick={() => setStep(3)}>Continuar →</button>
+                <button className="auth-btn" disabled={loading} onClick={handleContinueFromStep2}>
+                  {loading
+                    ? <><Loader2 size={16} className="animate-spin" /> A criar conta...</>
+                    : "Continuar →"
+                  }
+                </button>
               </div>
             )}
 
@@ -141,16 +193,46 @@ export default function RegisterProviderPage() {
                   Para garantir a segurança dos clientes, precisamos verificar a tua identidade.
                 </p>
 
-                <div className="upload-area">
-                  <Upload size={22} style={{ color: "#94a3b8" }} />
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Bilhete de identidade</p>
-                  <p style={{ fontSize: 12, color: "#94a3b8" }}>Frente e verso — JPG, PNG ou PDF</p>
+                {/* Inputs escondidos, acionados pelo clique nos cartões */}
+                <input
+                  ref={biInputRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  style={{ display: "none" }}
+                  onChange={(e) => setBiFile(e.target.files?.[0] || null)}
+                />
+                <input
+                  ref={selfieInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => setSelfieFile(e.target.files?.[0] || null)}
+                />
+
+                <div
+                  className={`upload-area${biFile ? " has-file" : ""}`}
+                  onClick={() => biInputRef.current?.click()}
+                >
+                  <Upload size={22} style={{ color: biFile ? "#1D9E75" : "#94a3b8" }} />
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
+                    {biFile ? biFile.name : "Bilhete de identidade"}
+                  </p>
+                  <p style={{ fontSize: 12, color: "#94a3b8" }}>
+                    {biFile ? "Ficheiro selecionado — clica para trocar" : "Frente e verso — JPG, PNG ou PDF"}
+                  </p>
                 </div>
 
-                <div className="upload-area">
-                  <Upload size={22} style={{ color: "#94a3b8" }} />
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Selfie com o BI</p>
-                  <p style={{ fontSize: 12, color: "#94a3b8" }}>Segura o documento junto ao rosto</p>
+                <div
+                  className={`upload-area${selfieFile ? " has-file" : ""}`}
+                  onClick={() => selfieInputRef.current?.click()}
+                >
+                  <Upload size={22} style={{ color: selfieFile ? "#1D9E75" : "#94a3b8" }} />
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
+                    {selfieFile ? selfieFile.name : "Selfie com o BI"}
+                  </p>
+                  <p style={{ fontSize: 12, color: "#94a3b8" }}>
+                    {selfieFile ? "Ficheiro selecionado — clica para trocar" : "Segura o documento junto ao rosto"}
+                  </p>
                 </div>
 
                 <div className="auth-perks" style={{ background: "#fef3e2", border: "1px solid #fcd9a1" }}>
@@ -166,7 +248,7 @@ export default function RegisterProviderPage() {
                   ))}
                 </div>
 
-                <button className="auth-btn" onClick={() => router.push("/home")}>
+                <button className="auth-btn" onClick={() => router.push("/provider-home")}>
                   Submeter e aguardar aprovação →
                 </button>
               </div>

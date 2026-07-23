@@ -135,7 +135,7 @@ export class NotificationsService {
   async notifyKycApproved(userId: string) {
     await this.create({
       userId, type: NotificationType.KYC_APPROVED,
-      title: '✅ Verificação aprovada!',
+      title: 'Verificação aprovada!',
       body: 'O teu perfil está activo e visível para clientes.',
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider-home',
@@ -145,7 +145,7 @@ export class NotificationsService {
   async notifyKycRejected(userId: string, reason: string) {
     await this.create({
       userId, type: NotificationType.KYC_REJECTED,
-      title: '❌ Verificação rejeitada',
+      title: 'Verificação rejeitada',
       body: `Motivo: ${reason}. Podes submeter novamente.`,
       priority: NotificationPriority.HIGH,
       metadata: { reason },
@@ -156,7 +156,7 @@ export class NotificationsService {
   async notifyServiceAccepted(clientId: string, providerId: string) {
     await this.create({
       userId: clientId, type: NotificationType.SERVICE_ACCEPTED,
-      title: '🎉 Pedido aceite!',
+      title: 'Pedido aceite!',
       body: 'Um prestador aceitou o teu pedido de serviço.',
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
@@ -166,7 +166,7 @@ export class NotificationsService {
   async notifyServiceStarted(clientId: string, providerId: string) {
     await this.create({
       userId: clientId, type: NotificationType.SERVICE_STARTED,
-      title: '🚀 Serviço iniciado',
+      title: 'Serviço iniciado',
       body: 'O prestador começou a trabalhar no teu pedido.',
       priority: NotificationPriority.MEDIUM,
       actionUrl: '/services',
@@ -176,7 +176,7 @@ export class NotificationsService {
   async notifyServiceCompleted(clientId: string, providerId: string) {
     await this.create({
       userId: clientId, type: NotificationType.SERVICE_COMPLETED,
-      title: '✅ Serviço concluído',
+      title: 'Serviço concluído',
       body: 'O serviço foi marcado como concluído. Confirma para avaliar.',
       priority: NotificationPriority.CRITICAL,
       actionUrl: '/services',
@@ -186,7 +186,7 @@ export class NotificationsService {
   async notifyPayment(userId: string, amount: number, description: string) {
     await this.create({
       userId, type: NotificationType.PAYMENT,
-      title: '💳 Pagamento processado',
+      title: 'Pagamento processado',
       body: `${amount.toLocaleString('pt-PT')} Kz — ${description}`,
       priority: NotificationPriority.HIGH,
       metadata: { amount },
@@ -197,7 +197,7 @@ export class NotificationsService {
   async notifyWallet(userId: string, amount: number, type: 'credit' | 'debit') {
     await this.create({
       userId, type: NotificationType.WALLET,
-      title: type === 'credit' ? '💰 Saldo recebido' : '💸 Saldo debitado',
+      title: type === 'credit' ? 'Saldo recebido' : 'Saldo debitado',
       body: `${type === 'credit' ? '+' : '-'}${amount.toLocaleString('pt-PT')} Kz na tua wallet.`,
       priority: NotificationPriority.MEDIUM,
       actionUrl: '/wallet',
@@ -207,7 +207,7 @@ export class NotificationsService {
   async notifyServiceProposed(clientId: string, providerName: string, proposedPrice: number) {
     await this.create({
       userId: clientId, type: NotificationType.SERVICE_ACCEPTED,
-      title: '💬 Nova proposta de preço',
+      title: 'Nova proposta de preço',
       body: `${providerName} propôs ${proposedPrice.toLocaleString('pt-PT')} Kz para o teu pedido.`,
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
@@ -217,7 +217,7 @@ export class NotificationsService {
   async notifyProposalAccepted(providerId: string, agreedPrice: number) {
     await this.create({
       userId: providerId, type: NotificationType.SERVICE_ACCEPTED,
-      title: '✅ Proposta aceite!',
+      title: 'Proposta aceite!',
       body: `O cliente aceitou a tua proposta de ${agreedPrice.toLocaleString('pt-PT')} Kz.`,
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider/services',
@@ -227,7 +227,7 @@ export class NotificationsService {
   async notifyProposalRejected(providerId: string) {
     await this.create({
       userId: providerId, type: NotificationType.SYSTEM,
-      title: '❌ Proposta recusada',
+      title: 'Proposta recusada',
       body: 'O cliente recusou a tua proposta. O pedido voltou a estar disponível.',
       priority: NotificationPriority.MEDIUM,
       actionUrl: '/provider/services',
@@ -237,7 +237,7 @@ export class NotificationsService {
   async notifyServiceRequested(providerId: string, clientName: string, serviceTitle: string) {
     await this.create({
       userId: providerId, type: NotificationType.SYSTEM,
-      title: '🔔 Nova solicitação de serviço',
+      title: 'Nova solicitação de serviço',
       body: `${clientName} solicitou o teu serviço "${serviceTitle}".`,
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider/services',
@@ -259,7 +259,7 @@ export class NotificationsService {
     }
     await this.create({
       userId: inviteeUserId, type: NotificationType.SYSTEM,
-      title: '🏢 Convite para equipa',
+      title: 'Convite para equipa',
       body: `${companyName} convidou-te para fazeres parte da equipa.`,
       priority: NotificationPriority.HIGH,
       metadata: { companyName, isCompanyInvite: true },
@@ -285,7 +285,7 @@ export class NotificationsService {
     await this.create({
       userId: inviteeUserId,
       type: NotificationType.SYSTEM,
-      title: '🏢 Convite para equipa',
+      title: 'Convite para equipa',
       body: `${companyName} convidou-te para fazeres parte da equipa.`,
       priority: NotificationPriority.HIGH,
       metadata: { companyName, isCompanyInvite: true, invitationId },
@@ -296,7 +296,7 @@ export class NotificationsService {
   async notifyInvitationAccepted(ownerId: string, newEmployeeUserId: string) {
     await this.create({
       userId: ownerId, type: NotificationType.SYSTEM,
-      title: '✅ Convite aceite',
+      title: 'Convite aceite',
       body: 'Um novo membro juntou-se à tua equipa.',
       priority: NotificationPriority.MEDIUM,
       actionUrl: '/provider/company',
@@ -306,7 +306,7 @@ export class NotificationsService {
   async notifyCompanyKycApproved(ownerId: string) {
     await this.create({
       userId: ownerId, type: NotificationType.KYC_APPROVED,
-      title: '✅ Empresa verificada!',
+      title: 'Empresa verificada!',
       body: 'A tua empresa está verificada e visível para clientes.',
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider/company',
@@ -316,7 +316,7 @@ export class NotificationsService {
   async notifyCompanyKycRejected(ownerId: string, reason: string) {
     await this.create({
       userId: ownerId, type: NotificationType.KYC_REJECTED,
-      title: '❌ Verificação de empresa rejeitada',
+      title: 'Verificação de empresa rejeitada',
       body: `Motivo: ${reason}. Podes submeter novamente.`,
       priority: NotificationPriority.HIGH,
       metadata: { reason },
@@ -335,7 +335,7 @@ export class NotificationsService {
   async notifyClientBankDetailsAvailable(clientId: string, amount: number) {
     await this.create({
       userId: clientId, type: NotificationType.PAYMENT,
-      title: '🏦 Dados bancários disponíveis',
+      title: 'Dados bancários disponíveis',
       body: `Transfere ${amount.toLocaleString('pt-PT')} Kz e envia o comprovativo para avançar com o serviço.`,
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
@@ -345,7 +345,7 @@ export class NotificationsService {
   async notifyClientPaymentConfirmed(clientId: string) {
     await this.create({
       userId: clientId, type: NotificationType.PAYMENT,
-      title: '🔒 Pagamento confirmado',
+      title: 'Pagamento confirmado',
       body: 'O teu pagamento foi confirmado e está protegido. Já podes gerar o PIN de início.',
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
@@ -355,7 +355,7 @@ export class NotificationsService {
   async notifyClientProofRejected(clientId: string, reason: string) {
     await this.create({
       userId: clientId, type: NotificationType.SYSTEM,
-      title: '❌ Comprovativo rejeitado',
+      title: 'Comprovativo rejeitado',
       body: `Motivo: ${reason}. Envia um novo comprovativo para continuar.`,
       priority: NotificationPriority.HIGH,
       metadata: { reason },
@@ -368,7 +368,7 @@ export class NotificationsService {
   async notifyProviderProofSubmitted(providerId: string) {
     await this.create({
       userId: providerId, type: NotificationType.SYSTEM,
-      title: '📎 Comprovativo enviado',
+      title: 'Comprovativo enviado',
       body: 'O cliente enviou o comprovativo de pagamento. Está a ser validado pela equipa.',
       priority: NotificationPriority.MEDIUM,
       actionUrl: '/provider/services',
@@ -378,7 +378,7 @@ export class NotificationsService {
   async notifyProviderPaymentConfirmed(providerId: string) {
     await this.create({
       userId: providerId, type: NotificationType.PAYMENT,
-      title: '🔒 Pagamento confirmado',
+      title: 'Pagamento confirmado',
       body: 'O pagamento do cliente foi confirmado. O serviço pode avançar assim que o PIN for validado.',
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider/services',
@@ -388,7 +388,7 @@ export class NotificationsService {
   async notifyProviderPayoutDone(providerId: string, amount: number) {
     await this.create({
       userId: providerId, type: NotificationType.WALLET,
-      title: '🎉 Pagamento concluído',
+      title: 'Pagamento concluído',
       body: `${amount.toLocaleString('pt-PT')} Kz foi transferido para a tua conta e creditado na tua wallet.`,
       priority: NotificationPriority.CRITICAL,
       metadata: { amount },
@@ -400,7 +400,7 @@ export class NotificationsService {
 
   async notifyAdminNewProof(paymentId: string) {
     await this.notifyAllAdmins(
-      '📎 Novo comprovativo recebido',
+      'Novo comprovativo recebido',
       'Um cliente enviou um comprovativo de pagamento. Verifica e confirma.',
       '/admin/payments',
     );
@@ -408,7 +408,7 @@ export class NotificationsService {
 
   async notifyAdminPayoutPending(serviceId: string) {
     await this.notifyAllAdmins(
-      '💸 Transferência pendente',
+      'Transferência pendente',
       'Um serviço foi concluído e confirmado — falta transferir o valor ao prestador.',
       '/admin/payments',
     );
@@ -416,7 +416,7 @@ export class NotificationsService {
 
   async notifyAdminRefundNeeded(serviceId: string) {
     await this.notifyAllAdmins(
-      '↩️ Reembolso necessário',
+      'Reembolso necessário',
       'Um serviço com pagamento confirmado foi cancelado — é necessário reembolsar o cliente manualmente.',
       '/admin/payments',
     );
@@ -428,7 +428,7 @@ export class NotificationsService {
     await this.create({
       userId: clientId,
       type: NotificationType.SYSTEM,
-      title: favoredClient ? '✅ Disputa resolvida a teu favor' : 'ℹ️ Disputa resolvida',
+      title: favoredClient ? 'Disputa resolvida a teu favor' : 'Disputa resolvida',
       body: resolution,
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
@@ -439,7 +439,7 @@ export class NotificationsService {
     await this.create({
       userId: providerId,
       type: NotificationType.SYSTEM,
-      title: favoredProvider ? '✅ Disputa resolvida a teu favor' : 'ℹ️ Disputa resolvida',
+      title: favoredProvider ? 'Disputa resolvida a teu favor' : 'Disputa resolvida',
       body: resolution,
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider/services',

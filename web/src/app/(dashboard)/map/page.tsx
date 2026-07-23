@@ -34,7 +34,7 @@ const RADIUS_OPTIONS = [2, 5, 10, 20];
 // o conteúdo (incluindo o mapa) renderizava a partir de x:0, por baixo
 // do sidebar fixo, em vez de começar depois dele.
 const pageLayoutStyles = `
-  .hw{display:flex;min-height:100vh;background:#0d1117}
+  .hw{display:flex;min-height:100vh;background:#F8FAFC}
   .hm{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
   .hi{flex:1;display:flex;flex-direction:column;min-height:0}
 
@@ -237,7 +237,7 @@ export default function MapPage() {
         <div className="hm">
           <Navbar />
           <main className="hi" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 size={28} style={{ color: '#EF9F27', animation: 'spin 0.9s linear infinite' }} />
+            <Loader2 size={28} style={{ color: '#0E7A5F', animation: 'spin 0.9s linear infinite' }} />
           </main>
         </div>
       </div>
@@ -283,7 +283,7 @@ export default function MapPage() {
           <div className={styles.page}>
             <div className={styles.header}>
               <div>
-                <h1 className={styles.title}>Encontrar prestadores</h1>
+                <h1 className={styles.title}>Encontrar <span className={styles.titleAccent}>prestadores</span></h1>
                 <p className={styles.subtitle}>Descobre profissionais disponíveis perto de ti</p>
               </div>
               <div className={styles.viewToggle}>

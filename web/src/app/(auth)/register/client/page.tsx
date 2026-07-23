@@ -2,13 +2,42 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Loader2 } from "lucide-react";
+import { authApi, saveSession } from "@/lib/auth.api";
 
 export default function RegisterClientPage() {
   const router = useRouter();
   const [show, setShow] = useState(false);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    setError("");
+
+    if (form.password.length < 6) {
+      setError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await authApi.register({
+        fullName: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: "client",
+        phone: form.phone.trim() || undefined,
+      });
+      saveSession(data);
+      router.push("/home");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao criar conta. Tenta novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -28,8 +57,10 @@ export default function RegisterClientPage() {
         .auth-input::placeholder { color: #94a3b8; }
         .auth-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; }
         .auth-eye:hover { color: #475569; }
-        .auth-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg,#2563eb,#3b82f6); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(37,99,235,0.25); font-family: inherit; }
+        .auth-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg,#2563eb,#3b82f6); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(37,99,235,0.25); font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .auth-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(37,99,235,0.3); }
+        .auth-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+        .auth-error { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #b91c1c; margin-bottom: 16px; }
         .progress-bar { height: 5px; border-radius: 99px; background: #eef1f5; margin-bottom: 26px; overflow: hidden; }
         .progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg,#2563eb,#3b82f6); transition: width 0.3s; }
         .auth-perks { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 14px; padding: 15px 16px; margin-bottom: 20px; }
@@ -56,6 +87,8 @@ export default function RegisterClientPage() {
             <div className="progress-bar">
               <div className="progress-fill" style={{ width: step === 1 ? "50%" : "100%" }} />
             </div>
+
+            {error && <div className="auth-error">{error}</div>}
 
             {step === 1 ? (
               <div>
@@ -96,7 +129,12 @@ export default function RegisterClientPage() {
                   ))}
                 </div>
 
-                <button className="auth-btn" onClick={() => router.push("/home")}>Criar conta →</button>
+                <button className="auth-btn" disabled={loading} onClick={handleSubmit}>
+                  {loading
+                    ? <><Loader2 size={16} className="animate-spin" /> A criar conta...</>
+                    : "Criar conta →"
+                  }
+                </button>
 
                 <p style={{ textAlign: "center", fontSize: 12, color: "#94a3b8", marginTop: 16, lineHeight: 1.6 }}>
                   Ao criar conta aceitas os nossos{" "}

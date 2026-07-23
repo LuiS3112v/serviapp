@@ -10,12 +10,12 @@ import {
 } from "lucide-react";
 
 const PAYMENT_STATUS_CFG: Record<string, { label: string; color: string }> = {
-  pending:          { label: "Aguarda transferência",     color: "#EF9F27" },
-  proof_submitted:  { label: "Comprovativo em validação",  color: "#378ADD" },
-  confirmed:        { label: "Protegido",                  color: "#1D9E75" },
-  pending_payout:   { label: "A transferir ao prestador",  color: "#8B5CF6" },
-  completed:        { label: "Concluído",                  color: "#1D9E75" },
-  refunded:         { label: "Reembolsado",                color: "#E24B4A" },
+  pending:          { label: "Aguarda transferência",     color: "#B45309" },
+  proof_submitted:  { label: "Comprovativo em validação",  color: "#2563EB" },
+  confirmed:        { label: "Protegido",                  color: "#0E7A5F" },
+  pending_payout:   { label: "A transferir ao prestador",  color: "#7C3AED" },
+  completed:        { label: "Concluído",                  color: "#0E7A5F" },
+  refunded:         { label: "Reembolsado",                color: "#DC2626" },
 };
 
 function fKz(v: number) { return new Intl.NumberFormat("pt-PT").format(v) + " Kz"; }
@@ -69,13 +69,32 @@ export default function ClientPaymentsHistoryPage() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .wl-wrap  { display: flex; min-height: 100vh; background: #0d1117; }
+        .wl-wrap  { display: flex; min-height: 100vh; background: #F8FAFC; }
         .wl-main  { flex: 1; margin-left: 240px; display: flex; flex-direction: column; min-width: 0; }
         .wl-body  { flex: 1; padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; max-width: 820px; width: 100%; }
-        .wl-hero  { background: linear-gradient(135deg, #071e1e 0%, #0a2a20 100%);
-                    border: 1px solid rgba(29,158,117,0.22); border-radius: 20px; padding: 28px 32px; }
-        .wl-card  { background: #131b27; border: 1px solid #1a2535; border-radius: 18px; padding: 20px; cursor: pointer; transition: border-color .15s; }
-        .wl-card:hover { border-color: #1D9E7550; }
+
+        .wl-hero {
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(135deg, #0E7A5F 0%, #0A5F4A 55%, #164E63 100%);
+          border: 1px solid rgba(14,122,95,0.25);
+          border-radius: 20px;
+          padding: 28px 32px;
+          box-shadow: 0 14px 32px rgba(14,122,95,0.22);
+        }
+        .wl-hero-glow {
+          position: absolute;
+          top: -60px;
+          right: -40px;
+          width: 220px;
+          height: 220px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(217,119,6,0.30), transparent 70%);
+          pointer-events: none;
+        }
+
+        .wl-card  { background: #FFFFFF; border: 1px solid #ECE9DF; border-radius: 18px; padding: 20px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+        .wl-card:hover { border-color: #0E7A5F50; box-shadow: 0 10px 24px rgba(15,23,42,0.08); transform: translateY(-2px); }
         @media(max-width:1024px) { .wl-main { margin-left: 0; } .wl-body { padding: 80px 20px 24px; } }
         @media(max-width:640px)  { .wl-body { padding: 70px 12px 20px; gap: 14px; } .wl-hero { padding: 20px; } }
       `}</style>
@@ -88,69 +107,76 @@ export default function ClientPaymentsHistoryPage() {
 
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
               <div>
-                <h1 style={{ fontSize:22, fontWeight:700, color:"#e2e8f0", marginBottom:3 }}>Pagamentos</h1>
-                <p style={{ fontSize:13, color:"#4a6a6a" }}>Histórico de transferências para serviços contratados</p>
+                <h1 style={{ fontSize:22, fontWeight:700, color:"#1F2A28", marginBottom:3 }}>Pagamentos</h1>
+                <p style={{ fontSize:13, color:"#6B7770" }}>Histórico de transferências para serviços contratados</p>
               </div>
               <button onClick={handleRefresh} disabled={loading}
                 style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px",
-                         borderRadius:12, border:"1px solid #1a2535", background:"#131b27",
-                         color:"#6a7a8a", fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+                         borderRadius:12, border:"1px solid #ECE9DF", background:"#FFFFFF",
+                         color:"#475569", fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                 <RefreshCw size={13} style={{ animation: loading||refreshing ? "spin 1s linear infinite" : "none" }} />
                 Actualizar
               </button>
             </div>
 
             <div className="wl-hero">
-              <p style={{ fontSize:11, fontWeight:700, color:"#4a9a7a", textTransform:"uppercase",
-                letterSpacing:".1em", marginBottom:8 }}>
-                Total pago em serviços concluídos
-              </p>
-              {loading
-                ? <div style={{ width:200, height:38, borderRadius:8, background:"#1a2535" }} />
-                : <p style={{ fontSize:36, fontWeight:800, color:"#1D9E75" }}>{fKz(totalPaid)}</p>
-              }
-              <p style={{ fontSize:12, color:"#4a6a6a", marginTop:12 }}>
-                Todos os pagamentos são feitos por transferência bancária directa e ficam protegidos até confirmares a conclusão do serviço.
-              </p>
+              <div className="wl-hero-glow" />
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <p style={{
+                  fontSize: 11, fontWeight: 700, color: "#7EF0C4",
+                  textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 8,
+                  display: "flex", alignItems: "center", gap: 6,
+                }}>
+                  <WalletIcon size={13} />
+                  Total pago em serviços concluídos
+                </p>
+                {loading
+                  ? <div style={{ width: 200, height: 38, borderRadius: 8, background: "rgba(255,255,255,0.18)" }} />
+                  : <p style={{ fontSize: 36, fontWeight: 800, color: "#FFFFFF" }}>{fKz(totalPaid)}</p>
+                }
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.78)", marginTop: 12, maxWidth: 440 }}>
+                  Todos os pagamentos são feitos por transferência bancária directa e ficam protegidos até confirmares a conclusão do serviço.
+                </p>
+              </div>
             </div>
 
             {loading ? (
               <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"60px 20px" }}>
-                <Loader2 size={26} style={{ color:"#1D9E75", animation:"spin 1s linear infinite" }} />
+                <Loader2 size={26} style={{ color:"#0E7A5F", animation:"spin 1s linear infinite" }} />
               </div>
             ) : services.length === 0 ? (
               <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                padding:"60px 20px", gap:14, textAlign:"center", background:"#131b27",
-                border:"1px solid #1a2535", borderRadius:16 }}>
-                <WalletIcon size={30} style={{ color:"#2a3a4a" }} />
-                <p style={{ fontSize:15, fontWeight:700, color:"#c0d0e0" }}>Sem pagamentos ainda</p>
-                <p style={{ fontSize:13, color:"#4a6a6a" }}>Assim que um prestador aceitar um pedido teu, o pagamento aparece aqui.</p>
+                padding:"60px 20px", gap:14, textAlign:"center", background:"#FFFFFF",
+                border:"1px solid #ECE9DF", borderRadius:16 }}>
+                <WalletIcon size={30} style={{ color:"#CBD5E1" }} />
+                <p style={{ fontSize:15, fontWeight:700, color:"#1F2A28" }}>Sem pagamentos ainda</p>
+                <p style={{ fontSize:13, color:"#6B7770" }}>Assim que um prestador aceitar um pedido teu, o pagamento aparece aqui.</p>
               </div>
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
                 {services.map(s => {
-                  const cfg = PAYMENT_STATUS_CFG[s.paymentStatus] ?? { label: "—", color: "#6a7a8a" };
+                  const cfg = PAYMENT_STATUS_CFG[s.paymentStatus] ?? { label: "—", color: "#64748B" };
                   return (
                     <div className="wl-card" key={s.id} onClick={() => router.push(`/services/${s.id}`)}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, flexWrap:"wrap" }}>
-                            <p style={{ fontSize:14, fontWeight:700, color:"#e2e8f0" }}>{s.title}</p>
+                            <p style={{ fontSize:14, fontWeight:700, color:"#1F2A28" }}>{s.title}</p>
                             <span style={{ fontSize:11, fontWeight:700, padding:"2px 9px", borderRadius:99,
-                              background:`${cfg.color}20`, color:cfg.color }}>
+                              background:`${cfg.color}18`, color:cfg.color }}>
                               {cfg.label}
                             </span>
                           </div>
-                          <p style={{ fontSize:12, color:"#6a7a8a" }}>
+                          <p style={{ fontSize:12, color:"#6B7770" }}>
                             {s.provider?.fullName ?? "—"} · {s.category}
                           </p>
-                          <p style={{ fontSize:11, color:"#3a4a5a", marginTop:4 }}>{fDate(s.createdAt)}</p>
+                          <p style={{ fontSize:11, color:"#94A3B8", marginTop:4 }}>{fDate(s.createdAt)}</p>
                         </div>
                         <div style={{ textAlign:"right", flexShrink:0 }}>
-                          <p style={{ fontSize:16, fontWeight:700, color:"#1D9E75" }}>
+                          <p style={{ fontSize:16, fontWeight:700, color:"#0E7A5F" }}>
                             {fKz(Number(s.agreedPrice ?? s.budget))}
                           </p>
-                          <ChevronRight size={16} style={{ color:"#2a3a4a", marginTop:8 }} />
+                          <ChevronRight size={16} style={{ color:"#CBD5E1", marginTop:8 }} />
                         </div>
                       </div>
                     </div>

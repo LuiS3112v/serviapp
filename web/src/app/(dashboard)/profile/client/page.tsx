@@ -58,24 +58,24 @@ export default function ClientProfilePage() {
   return (
     <>
       <style>{`
-        .prof-wrap{display:flex;min-height:100vh;background:#0d1117}
+        .prof-wrap{display:flex;min-height:100vh;background:#f8fafc}
         .prof-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
         .prof-inner{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:20px;max-width:700px}
-        .prof-card{background:#131b27;border:1px solid #1a2535;border-radius:20px;padding:24px}
-        .info-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #1a2535}
+        .prof-card{background:#ffffff;border:1px solid #eef1f5;border-radius:20px;padding:24px;box-shadow:0 2px 12px rgba(15,23,42,0.04)}
+        .info-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #eef1f5}
         .info-row:last-child{border-bottom:none}
         .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-        .stat-card{background:#0d1117;border:1px solid #1a2535;border-radius:12px;padding:16px;text-align:center}
-        .edit-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:12px;border:1px solid #1a2535;background:#131b27;color:#8a9ab0;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s}
-        .edit-btn:hover{border-color:#1D9E75;color:#1D9E75}
-        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:24px}
-        .modal-card{background:#131b27;border:1px solid #1a2535;border-radius:20px;padding:28px;width:100%;max-width:440px}
-        .modal-input{width:100%;padding:13px 16px;border-radius:12px;background:#0d1117;border:1px solid #1a2535;color:#e2e8f0;font-size:14px;outline:none;transition:border 0.2s;margin-bottom:14px;font-family:inherit}
-        .modal-input:focus{border-color:#1D9E75}
-        .modal-input::placeholder{color:#4a5a6a}
-        .save-btn{width:100%;padding:14px;border-radius:12px;border:none;background:#1D9E75;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
+        .stat-card{background:#ffffff;border:1px solid #eef1f5;border-radius:12px;padding:16px;text-align:center;box-shadow:0 2px 12px rgba(15,23,42,0.04)}
+        .edit-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:12px;border:1px solid #e2e8f0;background:#ffffff;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s}
+        .edit-btn:hover{border-color:#2563eb;color:#2563eb}
+        .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:24px}
+        .modal-card{background:#ffffff;border:1px solid #eef1f5;border-radius:20px;padding:28px;width:100%;max-width:440px;box-shadow:0 20px 50px rgba(15,23,42,0.14)}
+        .modal-input{width:100%;padding:13px 16px;border-radius:12px;background:#f8fafc;border:1.5px solid #e2e8f0;color:#0f172a;font-size:14px;outline:none;transition:border 0.2s;margin-bottom:14px;font-family:inherit}
+        .modal-input:focus{border-color:#2563eb;background:#fff}
+        .modal-input::placeholder{color:#94a3b8}
+        .save-btn{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#2563eb,#3b82f6);color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 20px rgba(37,99,235,0.25)}
         .save-btn:disabled{opacity:0.6;cursor:not-allowed}
-        .skeleton{background:#1a2535;border-radius:8px;animation:pulse 1.5s infinite}
+        .skeleton{background:#e2e8f0;border-radius:8px;animation:pulse 1.5s infinite}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
         @media(max-width:1024px){.prof-main{margin-left:0}}
         @media(max-width:640px){.prof-inner{padding:70px 16px 20px}.stat-grid{grid-template-columns:1fr 1fr}}
@@ -90,31 +90,31 @@ export default function ClientProfilePage() {
             {/* Título */}
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
               <div>
-                <h1 style={{ fontSize:22,fontWeight:700,color:"#e2e8f0",marginBottom:4 }}>O meu perfil</h1>
-                <p style={{ fontSize:13,color:"#4a6a6a" }}>Gere as tuas informações pessoais</p>
+                <h1 style={{ fontSize:22,fontWeight:700,color:"#0f172a",marginBottom:4 }}>O meu perfil</h1>
+                <p style={{ fontSize:13,color:"#64748b" }}>Gere as tuas informações pessoais</p>
               </div>
               <button className="edit-btn" onClick={openEdit}><Edit size={14}/> Editar</button>
             </div>
 
             {/* Card com info */}
             <div className="prof-card">
-              <div style={{ display:"flex",alignItems:"center",gap:16,marginBottom:24,paddingBottom:24,borderBottom:"1px solid #1a2535" }}>
-                <div style={{ width:72,height:72,borderRadius:"50%",background:"#1a3a2a",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                  <User size={32} style={{ color:"#1D9E75" }}/>
+              <div style={{ display:"flex",alignItems:"center",gap:16,marginBottom:24,paddingBottom:24,borderBottom:"1px solid #eef1f5" }}>
+                <div style={{ width:72,height:72,borderRadius:"50%",background:"#eff6ff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                  <User size={32} style={{ color:"#2563eb" }}/>
                 </div>
                 <div>
                   {loading
                     ? <div className="skeleton" style={{ width:160,height:20,marginBottom:8 }}/>
-                    : <p style={{ fontSize:18,fontWeight:700,color:"#e2e8f0",marginBottom:4 }}>{user?.fullName ?? "—"}</p>}
-                  <span style={{ fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:99,background:"#1d9e7520",color:"#1D9E75",border:"1px solid #1d9e7540" }}>
+                    : <p style={{ fontSize:18,fontWeight:700,color:"#0f172a",marginBottom:4 }}>{user?.fullName ?? "—"}</p>}
+                  <span style={{ fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:99,background:"#eff6ff",color:"#2563eb",border:"1px solid #dbeafe" }}>
                     Cliente
                   </span>
                 </div>
               </div>
 
               {[
-                { icon:Mail,   label:"Email",       value:user?.email,           color:"#1D9E75" },
-                { icon:Phone,  label:"Telemóvel",   value:user?.phone||"+244 —", color:"#378ADD" },
+                { icon:Mail,   label:"Email",       value:user?.email,           color:"#2563eb" },
+                { icon:Phone,  label:"Telemóvel",   value:user?.phone||"+244 —", color:"#1D9E75" },
                 { icon:MapPin, label:"Localização", value:"Luanda, Angola",       color:"#EF9F27" },
               ].map((item, i) => {
                 const Icon = item.icon;
@@ -124,10 +124,10 @@ export default function ClientProfilePage() {
                       <Icon size={16} style={{ color:item.color }}/>
                     </div>
                     <div>
-                      <p style={{ fontSize:11,color:"#4a5a6a",marginBottom:2 }}>{item.label}</p>
+                      <p style={{ fontSize:11,color:"#94a3b8",marginBottom:2 }}>{item.label}</p>
                       {loading
                         ? <div className="skeleton" style={{ width:140,height:14 }}/>
-                        : <p style={{ fontSize:14,color:"#c0d0e0" }}>{item.value ?? "—"}</p>}
+                        : <p style={{ fontSize:14,color:"#334155" }}>{item.value ?? "—"}</p>}
                     </div>
                   </div>
                 );
@@ -137,13 +137,13 @@ export default function ClientProfilePage() {
             {/* Stats — campos correctos */}
             <div className="stat-grid">
               {[
-                { label:"Serviços criados", value: loading ? "..." : fmt(stats?.totalCreated ?? 0),                        color:"#1D9E75" },
-                { label:"Concluídos",       value: loading ? "..." : fmt(stats?.totalCompleted ?? 0),                      color:"#EF9F27" },
-                { label:"Total gasto",      value: loading ? "..." : `${fmt(stats?.totalSpent ?? 0)} Kz`,                  color:"#378ADD" },
+                { label:"Serviços criados", value: loading ? "..." : fmt(stats?.totalCreated ?? 0) },
+                { label:"Concluídos",       value: loading ? "..." : fmt(stats?.totalCompleted ?? 0) },
+                { label:"Total gasto",      value: loading ? "..." : `${fmt(stats?.totalSpent ?? 0)} Kz` },
               ].map((s, i) => (
                 <div className="stat-card" key={i}>
-                  <p style={{ fontSize:22,fontWeight:700,color:s.color,marginBottom:4 }}>{s.value}</p>
-                  <p style={{ fontSize:12,color:"#4a6a6a" }}>{s.label}</p>
+                  <p style={{ fontSize:22,fontWeight:700,color:"#0f172a",marginBottom:4 }}>{s.value}</p>
+                  <p style={{ fontSize:12,color:"#64748b" }}>{s.label}</p>
                 </div>
               ))}
             </div>
@@ -159,24 +159,24 @@ export default function ClientProfilePage() {
         <div className="modal-overlay" onClick={() => setEditing(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20 }}>
-              <h2 style={{ fontSize:18,fontWeight:700,color:"#e2e8f0" }}>Editar perfil</h2>
-              <button onClick={() => setEditing(false)} style={{ background:"none",border:"none",cursor:"pointer",color:"#4a6a6a" }}>
+              <h2 style={{ fontSize:18,fontWeight:700,color:"#0f172a" }}>Editar perfil</h2>
+              <button onClick={() => setEditing(false)} style={{ background:"none",border:"none",cursor:"pointer",color:"#64748b" }}>
                 <X size={20}/>
               </button>
             </div>
             {error && (
-              <div style={{ background:"#E24B4A15",border:"1px solid #E24B4A30",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#E24B4A",marginBottom:14 }}>
+              <div style={{ background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#b91c1c",marginBottom:14 }}>
                 {error}
               </div>
             )}
             {success && (
-              <div style={{ background:"#1d9e7520",border:"1px solid #1d9e7540",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#1D9E75",marginBottom:14,display:"flex",alignItems:"center",gap:8 }}>
+              <div style={{ background:"#f0faf6",border:"1px solid #bbf7e8",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#0f766e",marginBottom:14,display:"flex",alignItems:"center",gap:8 }}>
                 <CheckCircle size={14}/> Guardado!
               </div>
             )}
-            <label style={{ fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6 }}>Nome completo</label>
+            <label style={{ fontSize:13,fontWeight:600,color:"#475569",display:"block",marginBottom:6 }}>Nome completo</label>
             <input className="modal-input" value={form.fullName} onChange={e => setForm({ ...form, fullName:e.target.value })} placeholder="O teu nome"/>
-            <label style={{ fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6 }}>Telemóvel</label>
+            <label style={{ fontSize:13,fontWeight:600,color:"#475569",display:"block",marginBottom:6 }}>Telemóvel</label>
             <input className="modal-input" value={form.phone} onChange={e => setForm({ ...form, phone:e.target.value })} placeholder="+244 9XX XXX XXX"/>
             <button className="save-btn" disabled={saving} onClick={handleSave}>
               {saving ? <><Loader2 size={15}/>A guardar...</> : "Guardar alterações"}

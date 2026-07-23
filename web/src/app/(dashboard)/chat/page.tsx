@@ -50,7 +50,7 @@ export default function ChatPage() {
           display:flex;
           min-height:100vh;
           min-height:100dvh;           /* dynamic viewport height – iOS Safari */
-          background:#0d1117;
+          background:#f8fafc;
         }
 
         /* ── Main content area ── */
@@ -81,20 +81,21 @@ export default function ChatPage() {
           align-items:center;
           gap:14px;
           padding:14px 16px;
-          background:#131b27;
-          border:1px solid #1a2535;
+          background:#ffffff;
+          border:1px solid #eef1f5;
           border-radius:14px;
           cursor:pointer;
-          transition:border-color 0.15s, background 0.15s;
+          transition:border-color 0.15s, background 0.15s, box-shadow 0.15s;
           -webkit-tap-highlight-color:transparent; /* remove iOS tap flash */
           touch-action:manipulation;
+          box-shadow:0 1px 3px rgba(15,23,42,0.03);
         }
-        .room-card:hover{border-color:#1D9E75}
-        .room-card:active{background:#162030}  /* tactile feedback on mobile */
+        .room-card:hover{border-color:#2563eb; box-shadow:0 4px 14px rgba(15,23,42,0.06)}
+        .room-card:active{background:#f8fafc}  /* tactile feedback on mobile */
 
         /* ── Skeleton ── */
         .skeleton{
-          background:#1a2535;
+          background:#e2e8f0;
           border-radius:8px;
           animation:sk 1.5s infinite;
         }
@@ -115,11 +116,12 @@ export default function ChatPage() {
           gap:10px;
           padding:12px 16px;
           border-radius:12px;
-          background:#131b27;
-          border:1px solid #1a2535;
+          background:#ffffff;
+          border:1px solid #eef1f5;
           transition:border-color 0.15s;
+          box-shadow:0 1px 3px rgba(15,23,42,0.03);
         }
-        .search-box:focus-within{border-color:#2a5a4a}
+        .search-box:focus-within{border-color:#2563eb}
         .search-input{
           flex:1;
           min-width:0;
@@ -127,7 +129,7 @@ export default function ChatPage() {
           border:none;
           outline:none;
           font-size:14px;
-          color:#8a9ab0;
+          color:#0f172a;
           font-family:inherit;
           /* Prevent iOS auto-zoom (font must be ≥16px on focus, or set directly) */
           font-size:max(14px, 16px);
@@ -193,17 +195,17 @@ export default function ChatPage() {
 
             {/* ── Header ── */}
             <div>
-              <h1 style={{fontSize:"clamp(18px,4vw,22px)",fontWeight:700,color:"#e2e8f0",marginBottom:4}}>
+              <h1 style={{fontSize:"clamp(18px,4vw,22px)",fontWeight:700,color:"#0f172a",marginBottom:4}}>
                 Mensagens
               </h1>
-              <p style={{fontSize:13,color:"#4a6a6a"}}>
+              <p style={{fontSize:13,color:"#64748b"}}>
                 {loading ? "A carregar..." : `${rooms.length} conversa${rooms.length!==1?"s":""}`}
               </p>
             </div>
 
             {/* ── Search ── */}
             <div className="search-box">
-              <Search size={15} style={{color:"#4a7070",flexShrink:0}}/>
+              <Search size={15} style={{color:"#94a3b8",flexShrink:0}}/>
               <input
                 className="search-input"
                 placeholder="Pesquisar conversa..."
@@ -219,7 +221,7 @@ export default function ChatPage() {
             {/* ── Content ── */}
             {loading ? (
               [1,2,3].map(i=>(
-                <div key={i} style={{display:"flex",gap:14,padding:14,background:"#131b27",border:"1px solid #1a2535",borderRadius:14}}>
+                <div key={i} style={{display:"flex",gap:14,padding:14,background:"#ffffff",border:"1px solid #eef1f5",borderRadius:14}}>
                   <div className="skeleton" style={{width:46,height:46,borderRadius:"50%",flexShrink:0}}/>
                   <div style={{flex:1,minWidth:0}}>
                     <div className="skeleton" style={{width:"50%",height:13,marginBottom:8}}/>
@@ -233,13 +235,13 @@ export default function ChatPage() {
                 padding:"80px 20px",gap:16,textAlign:"center"
               }}>
                 <div style={{
-                  width:64,height:64,borderRadius:20,background:"#131b27",
-                  border:"1px solid #1a2535",display:"flex",alignItems:"center",justifyContent:"center"
+                  width:64,height:64,borderRadius:20,background:"#ffffff",
+                  border:"1px solid #eef1f5",display:"flex",alignItems:"center",justifyContent:"center"
                 }}>
-                  <MessageCircle size={28} style={{color:"#2a3a4a"}}/>
+                  <MessageCircle size={28} style={{color:"#cbd5e1"}}/>
                 </div>
-                <p style={{fontSize:16,fontWeight:700,color:"#c0d0e0"}}>Sem mensagens ainda</p>
-                <p style={{fontSize:13,color:"#4a6a6a",lineHeight:1.6,maxWidth:320}}>
+                <p style={{fontSize:16,fontWeight:700,color:"#334155"}}>Sem mensagens ainda</p>
+                <p style={{fontSize:13,color:"#64748b",lineHeight:1.6,maxWidth:320}}>
                   {query
                     ? "Nenhuma conversa encontrada."
                     : "As tuas conversas aparecem aqui quando iniciares um chat com um prestador."}
@@ -268,8 +270,8 @@ export default function ChatPage() {
                     <div style={{position:"relative",flexShrink:0}}>
                       <div style={{
                         width:46,height:46,borderRadius:"50%",
-                        background:"#1a3a2a",display:"flex",alignItems:"center",
-                        justifyContent:"center",fontSize:18,fontWeight:700,color:"#1D9E75",
+                        background:"#eff6ff",display:"flex",alignItems:"center",
+                        justifyContent:"center",fontSize:18,fontWeight:700,color:"#2563eb",
                         overflow:"hidden"
                       }}>
                         {other?.avatarUrl
@@ -282,19 +284,19 @@ export default function ChatPage() {
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
                         <p style={{
-                          fontSize:14,fontWeight:unread>0?700:500,color:"#e2e8f0",
+                          fontSize:14,fontWeight:unread>0?700:500,color:"#0f172a",
                           overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                           flex:1,minWidth:0,marginRight:8
                         }}>
                           {other?.fullName ?? "—"}
                         </p>
-                        <span style={{fontSize:11,color:"#3a4a5a",flexShrink:0,whiteSpace:"nowrap"}}>
+                        <span style={{fontSize:11,color:"#94a3b8",flexShrink:0,whiteSpace:"nowrap"}}>
                           {room.lastMessageAt ? timeAgo(room.lastMessageAt) : ""}
                         </span>
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
                         <p style={{
-                          fontSize:13,color:"#4a6a6a",
+                          fontSize:13,color:"#64748b",
                           overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                           flex:1,minWidth:0
                         }}>
@@ -302,7 +304,7 @@ export default function ChatPage() {
                         </p>
                         {unread > 0 && (
                           <span style={{
-                            background:"#1D9E75",color:"white",fontSize:10,fontWeight:700,
+                            background:"#2563eb",color:"white",fontSize:10,fontWeight:700,
                             padding:"2px 7px",borderRadius:99,flexShrink:0
                           }}>
                             {unread}
