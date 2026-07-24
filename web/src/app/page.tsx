@@ -8,6 +8,7 @@ import {
   Snowflake, Laptop, Scissors, Car, Hammer, MapPin, Map, Lock,
   CheckCircle2, Percent, BarChart3, MessageCircle, Building2,
   Globe, Camera, Link2, Navigation, Search,
+  Sprout,
 } from "lucide-react";
 
 /* ─── Hook simples de scroll-reveal (sem dependências novas) ─────── */
@@ -582,12 +583,12 @@ export default function HomePage() {
                     <div className="lp-provider-mock">
                       <div className="lp-mock-header">
                         <div className="lp-mock-avatar">
-                          <Wrench size={18} color="#2563eb" />
+                          <Leaf size={18} color="#EF9F27" />
                           <span className="lp-mock-verified"><ShieldCheck size={10} color="#fff" /></span>
                         </div>
                         <div>
-                          <p className="lp-mock-name">João M.</p>
-                          <p className="lp-mock-role">Eletricista · Luanda</p>
+                          <p className="lp-mock-name">Isaac Costa</p>
+                          <p className="lp-mock-role">Jardineiro · Luanda</p>
                         </div>
                       </div>
                       <div className="lp-mock-bars">

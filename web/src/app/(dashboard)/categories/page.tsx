@@ -13,20 +13,22 @@ import { getToken } from "@/lib/auth.api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-// Cores e ícones exactamente iguais ao homepage — única source of truth
+const ACCENTS = ["#2563eb", "#1D9E75", "#EF9F27"];
+
+// Cores iguais ao homepage — rotação dos mesmos 3 ACCENTS por índice
 const CATEGORIES = [
-  { Icon: Sparkles,   label: "Limpeza",      desc: "Limpeza residencial e comercial",     color: "#1D9E75" },
-  { Icon: Wind,       label: "Climatização", desc: "Instalação e manutenção de AC",        color: "#38bdf8" },
-  { Icon: Wrench,     label: "Canalização",  desc: "Fugas, instalações e reparações",      color: "#a78bfa" },
-  { Icon: Zap,        label: "Eletricista",  desc: "Instalações eléctricas e reparações",  color: "#fbbf24" },
-  { Icon: Monitor,    label: "TI & Redes",   desc: "Suporte técnico e redes",              color: "#60a5fa" },
-  { Icon: Leaf,       label: "Jardinagem",   desc: "Poda, manutenção e paisagismo",        color: "#34d399" },
-  { Icon: Package,    label: "Mudanças",     desc: "Transporte e mudanças de casa",        color: "#fb923c" },
-  { Icon: Scissors,   label: "Beleza",       desc: "Cabeleireiro, manicure e estética",    color: "#f472b6" },
-  { Icon: Car,        label: "Automóvel",    desc: "Mecânica e manutenção auto",           color: "#93c5fd" },
-  { Icon: Paintbrush, label: "Pintura",      desc: "Pintura de interiores e exteriores",   color: "#e879f9" },
-  { Icon: HardHat,    label: "Construção",   desc: "Obras, remodelações e acabamentos",    color: "#fb923c" },
-  { Icon: Lock,       label: "Segurança",    desc: "Vigilância e sistemas de segurança",   color: "#818cf8" },
+  { Icon: Sparkles,   label: "Limpeza",      desc: "Limpeza residencial e comercial",     color: ACCENTS[0] },
+  { Icon: Wind,       label: "Climatização", desc: "Instalação e manutenção de AC",        color: ACCENTS[1] },
+  { Icon: Wrench,     label: "Canalização",  desc: "Fugas, instalações e reparações",      color: ACCENTS[2] },
+  { Icon: Zap,        label: "Eletricista",  desc: "Instalações eléctricas e reparações",  color: ACCENTS[0] },
+  { Icon: Monitor,    label: "TI & Redes",   desc: "Suporte técnico e redes",              color: ACCENTS[1] },
+  { Icon: Leaf,       label: "Jardinagem",   desc: "Poda, manutenção e paisagismo",        color: ACCENTS[2] },
+  { Icon: Package,    label: "Mudanças",     desc: "Transporte e mudanças de casa",        color: ACCENTS[0] },
+  { Icon: Scissors,   label: "Beleza",       desc: "Cabeleireiro, manicure e estética",    color: ACCENTS[1] },
+  { Icon: Car,        label: "Automóvel",    desc: "Mecânica e manutenção auto",           color: ACCENTS[2] },
+  { Icon: Paintbrush, label: "Pintura",      desc: "Pintura de interiores e exteriores",   color: ACCENTS[0] },
+  { Icon: HardHat,    label: "Construção",   desc: "Obras, remodelações e acabamentos",    color: ACCENTS[1] },
+  { Icon: Lock,       label: "Segurança",    desc: "Vigilância e sistemas de segurança",   color: ACCENTS[2] },
 ];
 
 export default function CategoriesPage() {
@@ -55,7 +57,7 @@ export default function CategoriesPage() {
   return (
     <>
       <style>{`
-        .cw{display:flex;min-height:100vh;background:#0d1117}
+        .cw{display:flex;min-height:100vh;background:#f8fafc}
         .cm{flex:1;margin-left:240px;display:flex;flex-direction:column}
         .ci{flex:1;padding:28px 32px}
 
@@ -73,8 +75,9 @@ export default function CategoriesPage() {
           border-radius:14px;
           padding:20px 18px 18px;
           cursor:pointer;
-          background:#0f1825;
-          border:1px solid #1a2535;
+          background:#ffffff;
+          border:1px solid #eef1f5;
+          box-shadow:0 1px 3px rgba(15,23,42,0.04);
           transition:all 0.22s ease;
           display:flex;flex-direction:column;
         }
@@ -83,15 +86,15 @@ export default function CategoriesPage() {
         .ccard::before{
           content:"";position:absolute;inset:0;
           background:linear-gradient(135deg, var(--cc) 0%, transparent 58%);
-          opacity:0.1;pointer-events:none;
+          opacity:0.07;pointer-events:none;
           transition:opacity 0.22s;
         }
         .ccard:hover{
           transform:translateY(-3px);
           border-color:color-mix(in srgb, var(--cc) 40%, transparent);
-          box-shadow:0 6px 22px color-mix(in srgb, var(--cc) 12%, transparent);
+          box-shadow:0 10px 26px color-mix(in srgb, var(--cc) 16%, transparent);
         }
-        .ccard:hover::before{opacity:0.16}
+        .ccard:hover::before{opacity:0.12}
 
         /* Ícone — igual ao .cat-ico do homepage */
         .cico{
@@ -108,34 +111,34 @@ export default function CategoriesPage() {
         /* Ghost watermark — igual ao .cat-ghost do homepage */
         .cghost{
           position:absolute;right:-8px;bottom:-8px;
-          opacity:0.07;pointer-events:none;z-index:0;
+          opacity:0.05;pointer-events:none;z-index:0;
           transition:opacity 0.22s,transform 0.22s;
         }
-        .ccard:hover .cghost{opacity:0.13;transform:scale(1.06) rotate(-5deg)}
+        .ccard:hover .cghost{opacity:0.1;transform:scale(1.06) rotate(-5deg)}
 
         /* Seta top-right */
         .carr{
           position:absolute;top:14px;right:14px;
           width:26px;height:26px;border-radius:8px;
-          background:rgba(255,255,255,0.07);
+          background:rgba(15,23,42,0.05);
           display:flex;align-items:center;justify-content:center;
           transition:background 0.18s;
         }
-        .ccard:hover .carr{background:rgba(255,255,255,0.13)}
+        .ccard:hover .carr{background:rgba(15,23,42,0.09)}
 
         /* Badge de contagem */
         .cbadge{
           display:inline-flex;align-items:center;
           padding:3px 10px;border-radius:99px;
           font-size:11px;font-weight:700;
-          background:rgba(255,255,255,0.07);
-          border:1px solid rgba(255,255,255,0.1);
+          background:color-mix(in srgb, var(--cc) 12%, white);
+          border:1px solid color-mix(in srgb, var(--cc) 28%, transparent);
           margin-top:10px;width:fit-content;
           position:relative;z-index:1;
         }
 
         /* Skeleton */
-        .sk{background:#1a2535;border-radius:6px;animation:sk 1.5s infinite;display:inline-block}
+        .sk{background:#e2e8f0;border-radius:6px;animation:sk 1.5s infinite;display:inline-block}
         @keyframes sk{0%,100%{opacity:1}50%{opacity:0.4}}
 
         /* Responsive */
@@ -153,10 +156,10 @@ export default function CategoriesPage() {
           <div className="ci">
 
             <div style={{ marginBottom: 8 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: "#e2e8f0", marginBottom: 4 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
                 Todas as categorias
               </h1>
-              <p style={{ fontSize: 13, color: "#4a6a6a" }}>
+              <p style={{ fontSize: 13, color: "#64748b" }}>
                 {CATEGORIES.length} categorias ·{" "}
                 {loading
                   ? <span className="sk" style={{ width: 60, height: 12 }} />
@@ -183,7 +186,7 @@ export default function CategoriesPage() {
 
                     {/* Texto */}
                     <p style={{
-                      fontSize: 13, fontWeight: 700, color: "#e2e8f0",
+                      fontSize: 13, fontWeight: 700, color: "#0f172a",
                       marginBottom: 3, lineHeight: 1.2,
                       position: "relative", zIndex: 1,
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -191,7 +194,7 @@ export default function CategoriesPage() {
                       {c.label}
                     </p>
                     <p style={{
-                      fontSize: 11, color: "#4a6a6a", lineHeight: 1.45,
+                      fontSize: 11, color: "#64748b", lineHeight: 1.45,
                       position: "relative", zIndex: 1,
                     }}>
                       {c.desc}
@@ -211,7 +214,7 @@ export default function CategoriesPage() {
 
                     {/* Seta */}
                     <div className="carr">
-                      <ChevronRight size={14} style={{ color: "rgba(255,255,255,0.5)" }} />
+                      <ChevronRight size={14} style={{ color: "rgba(15,23,42,0.4)" }} />
                     </div>
                   </div>
                 );
