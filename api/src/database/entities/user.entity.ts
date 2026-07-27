@@ -38,6 +38,15 @@ export class User {
   isVerified: boolean;
 
   @Column({ default: false })
+  twoFactorEnabled: boolean;
+
+  @Column({ nullable: true, type: 'text' })
+  twoFactorSecret: string | null;
+
+  @Column({ nullable: true, type: 'text' })
+  twoFactorTempSecret: string | null;
+
+  @Column({ default: false })
   profileVisible: boolean;
 
   @Column({ nullable: true })

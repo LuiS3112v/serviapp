@@ -8,6 +8,8 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { User } from '../../database/entities/user.entity';
+import { UserSession } from '../../database/entities/user-session.entity';
+import { SecurityLog, SecurityLogAction } from '../../database/entities/security-log.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { Role } from '../../common/enums/role.enum';
@@ -19,6 +21,16 @@ import { Role } from '../../common/enums/role.enum';
  */
 const REGISTERABLE_ROLES: Role[] = [Role.CLIENT, Role.PROVIDER, Role.COMPANY];
 
+// Tempo de vida de uma sessão. Ajusta se o teu JwtModule usar um expiresIn
+// diferente — idealmente os dois devem ficar alinhados.
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
+
+export interface RequestContext {
+  device: string | null;
+  browser: string | null;
+  ip: string | null;
+}
+
 /**
  * Place this file at: src/modules/auth/auth.service.ts
  */
@@ -27,11 +39,16 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    @InjectRepository(UserSession)
+    private sessionRepo: Repository<UserSession>,
+    @InjectRepository(SecurityLog)
+    private securityLogRepo: Repository<SecurityLog>,
     private jwtService: JwtService,
   ) {}
 
   async register(
     dto: RegisterDto,
+    context: RequestContext,
   ): Promise<{ access_token: string; user: Partial<User> }> {
     const exists = await this.userRepo.findOne({ where: { email: dto.email } });
     if (exists) throw new ConflictException('Email já registado.');
@@ -53,7 +70,8 @@ export class AuthService {
     });
 
     const saved = await this.userRepo.save(user);
-    const token = this.generateToken(saved);
+    const session = await this.createSession(saved.id, context);
+    const token = this.generateToken(saved, session.id);
 
     return {
       access_token: token,
@@ -63,6 +81,7 @@ export class AuthService {
 
   async login(
     dto: LoginDto,
+    context: RequestContext,
   ): Promise<{ access_token: string; user: Partial<User> }> {
     const user = await this.userRepo.findOne({ where: { email: dto.email } });
     if (!user) throw new UnauthorizedException('Credenciais inválidas.');
@@ -70,17 +89,73 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException('Credenciais inválidas.');
 
+    const session = await this.createSession(user.id, context);
+    const token = this.generateToken(user, session.id);
+
+    await this.logEvent(user.id, SecurityLogAction.LOGIN, context);
+
     return {
-      access_token: this.generateToken(user),
+      access_token: token,
       user: this.sanitize(user),
     };
+  }
+
+  async logout(
+    userId: string,
+    sessionId: string | null,
+    context: RequestContext,
+  ): Promise<void> {
+    if (sessionId) {
+      await this.sessionRepo.update({ id: sessionId, userId }, { isRevoked: true });
+    }
+    await this.logEvent(userId, SecurityLogAction.LOGOUT, context);
+  }
+
+  async isSessionValid(sessionId: string): Promise<boolean> {
+    const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
+    if (!session) return false;
+    if (session.isRevoked) return false;
+    if (session.expiresAt && session.expiresAt.getTime() < Date.now()) return false;
+    return true;
+  }
+
+  async touchSession(sessionId: string): Promise<void> {
+    await this.sessionRepo
+      .update({ id: sessionId }, { lastSeen: new Date() })
+      .catch(() => {});
   }
 
   async validateUser(id: string): Promise<User | null> {
     return this.userRepo.findOne({ where: { id } });
   }
 
-  private generateToken(user: User): string {
+  private async createSession(userId: string, context: RequestContext): Promise<UserSession> {
+    const session = this.sessionRepo.create({
+      userId,
+      device: context.device,
+      browser: context.browser,
+      ip: context.ip,
+      expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+    });
+    return this.sessionRepo.save(session);
+  }
+
+  private async logEvent(
+    userId: string,
+    action: SecurityLogAction,
+    context: RequestContext,
+  ): Promise<void> {
+    const log = this.securityLogRepo.create({
+      userId,
+      action,
+      ip: context.ip,
+      device: context.device,
+      browser: context.browser,
+    });
+    await this.securityLogRepo.save(log).catch(() => {});
+  }
+
+  private generateToken(user: User, sessionId: string): string {
     return this.jwtService.sign({
       sub: user.id,
       email: user.email,
@@ -88,6 +163,7 @@ export class AuthService {
       // Guards ALWAYS re-fetch from DB via JwtStrategy — this value is never
       // used as the authoritative role in access decisions.
       role: user.role,
+      sessionId,
     });
   }
 

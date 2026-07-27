@@ -20,6 +20,7 @@ import { PlatformSettingsModule }  from './modules/platform-settings/platform-se
 import { PaymentProofModule }      from './modules/payment-proof/payment-proof.module';
 import { AdminPaymentsModule }     from './modules/admin-payments/admin-payments.module';
 import { ActiveServiceLocationModule } from './modules/active-service-location/active-service-location.module';
+import { SecurityModule }          from './modules/security/security.module';
 
 // ── Entities existentes ───────────────────────────────────────────────────
 import { User }                 from './database/entities/user.entity';
@@ -54,6 +55,10 @@ import { ProviderBankAccount } from './database/entities/provider-bank-account.e
 import { PaymentProof }        from './database/entities/payment-proof.entity';
 import { PlatformSettings }    from './database/entities/platform-settings.entity';
 
+// ── Entities de segurança (2FA, sessões, logs) ────────────────────────────
+import { UserSession } from './database/entities/user-session.entity';
+import { SecurityLog }  from './database/entities/security-log.entity';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -73,6 +78,7 @@ import { PlatformSettings }    from './database/entities/platform-settings.entit
           CompanyGalleryImage, CompanyCertification,
           ServiceTimeline, Payment, Wallet, Transaction, Dispute,
           PlatformBankAccount, ProviderBankAccount, PaymentProof, PlatformSettings,
+          UserSession, SecurityLog,
         ],
         ssl: process.env.NODE_ENV === 'production'
           ? { rejectUnauthorized: false } : false,
@@ -97,6 +103,7 @@ import { PlatformSettings }    from './database/entities/platform-settings.entit
     PaymentProofModule,
     AdminPaymentsModule,
     ActiveServiceLocationModule,
+    SecurityModule,
   ],
 })
 export class AppModule {}

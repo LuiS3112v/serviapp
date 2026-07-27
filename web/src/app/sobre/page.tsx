@@ -275,7 +275,7 @@ export default function SobrePage() {
             <Reveal>
               <div className="lp-eyebrow" style={{ marginLeft: "auto", marginRight: "auto" }}><MapPin size={13} /> Sobre a Serviapp</div>
               <h1 className="lp-about-h1">Ligamos pessoas a <span>profissionais de confiança</span>, em Luanda e, em breve, em todo o país</h1>
-              <p className="lp-about-sub">Somos uma plataforma angolana que facilita encontrar — e ser encontrado por — quem precisa de um serviço bem feito. Aqui explicamos quem somos, como trabalhamos e porque pode confiar em nós.</p>
+              <p className="lp-about-sub">Somos uma plataforma angolana que facilita encontrar e ser encontrado por quem precisa de um serviço bem feito. Aqui explicamos quem somos, como trabalhamos e porque pode confiar em nós.</p>
             </Reveal>
           </div>
         </section>
@@ -288,7 +288,7 @@ export default function SobrePage() {
                 <div className="lp-mission-card">
                   <div className="lp-mission-icon" style={{ background: "#2563eb18" }}><Target size={26} color="#2563eb" /></div>
                   <h3>A nossa missão</h3>
-                  <p>Tornar simples e seguro encontrar um profissional de confiança para qualquer serviço do dia a dia — da canalização à limpeza, da eletricidade à beleza — sem depender só de contactos ou do boca a boca.</p>
+                  <p>Tornar simples e seguro encontrar um profissional de confiança para qualquer serviço do dia a dia da canalização à limpeza, da eletricidade à beleza sem depender só de contactos ou do boca a boca.</p>
                 </div>
               </Reveal>
               <Reveal delay={100}>
