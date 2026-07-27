@@ -8,7 +8,15 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log'],
   });
 
-  // ── CORS ──────────────────────────────────────────────────────────────────
+  // ── Trust proxy ────────────────────────────────────────────────────────────
+  // Obrigatório em Render/Railway/Heroku/qualquer reverse proxy.
+  // Sem isto, req.ip é sempre o IP do proxy — o ThrottlerGuard usa req.ip
+  // como chave do contador, logo sem esta linha todos os utilizadores
+  // partilham o mesmo bucket e o rate limit nunca funciona correctamente.
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
+  // ── CORS ───────────────────────────────────────────────────────────────────
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
     .split(',')
     .map(o => o.trim())
@@ -36,7 +44,7 @@ async function bootstrap() {
   // ── WebSocket ──────────────────────────────────────────────────────────────
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  // ── Listen — 0.0.0.0 obrigatório no Render ────────────────────────────────
+  // ── Listen ─────────────────────────────────────────────────────────────────
   const port = process.env.PORT ?? 3001;
   await app.listen(port, '0.0.0.0');
   console.log(`✅ ServiApp API → http://0.0.0.0:${port}/api`);
