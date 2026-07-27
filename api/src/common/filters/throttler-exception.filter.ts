@@ -6,22 +6,29 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 
-// @Injectable() é obrigatório para que o NestJS consiga instanciar este
-// filtro dentro do contentor de DI quando registado via APP_FILTER no
-// AppModule. Sem @Injectable(), o NestJS não consegue resolver as
-// dependências e o filtro é ignorado silenciosamente em alguns cenários.
 @Injectable()
 @Catch(ThrottlerException)
 export class ThrottlerExceptionFilter implements ExceptionFilter {
   catch(_exception: ThrottlerException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
+
+    const url = request.url;
+
+    let message = 'Demasiadas tentativas. Tenta novamente mais tarde.';
+
+    if (url.includes('/auth/login')) {
+      message = 'Demasiadas tentativas de login. Tenta novamente dentro de 1 hora.';
+    } else if (url.includes('/auth/register')) {
+      message = 'Demasiadas tentativas de registo. Tenta novamente dentro de 10 minutos.';
+    }
 
     response.status(HttpStatus.TOO_MANY_REQUESTS).json({
       statusCode: HttpStatus.TOO_MANY_REQUESTS,
-      message: 'Demasiadas tentativas. Tenta novamente dentro de instantes.',
+      message,
     });
   }
 }
