@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -9,12 +10,13 @@ async function bootstrap() {
   });
 
   // ── Trust proxy ────────────────────────────────────────────────────────────
-  // Obrigatório em Render/Railway/Heroku/qualquer reverse proxy.
-  // Sem isto, req.ip é sempre o IP do proxy — o ThrottlerGuard usa req.ip
-  // como chave do contador, logo sem esta linha todos os utilizadores
-  // partilham o mesmo bucket e o rate limit nunca funciona correctamente.
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', 1);
+
+  // ── Helmet (security headers) ──────────────────────────────────────────────
+  // Esconde X-Powered-By, protege contra XSS, clickjacking, MIME sniffing
+  // e força HTTPS em produção. Deve ficar antes do CORS.
+  app.use(helmet());
 
   // ── CORS ───────────────────────────────────────────────────────────────────
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
