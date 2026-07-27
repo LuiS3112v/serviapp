@@ -50,9 +50,5 @@ export const securityApi = {
   getSecurityHistory: () => api.get<SecurityLogEntry[]>('/users/me/security-history'),
 
   deleteAccount: (password: string, confirmation: string) =>
-    api.request<{ success: boolean }>({
-      method: 'DELETE',
-      url: '/users/me',
-      data: { password, confirmation },
-    }),
+    api.delete<{ success: boolean }>('/users/me', { password, confirmation }),
 };
