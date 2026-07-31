@@ -1,0 +1,118 @@
+import {
+  Home, HardHat, Building2, Sparkles, Sofa, Building,
+  Wrench, ShieldCheck, Snowflake, Droplet, Wind,
+  Droplets, ArrowDownToLine, ShowerHead, Toilet, Waves,
+  Zap, ZapOff, Lightbulb, Plug, PanelsTopLeft, SunMedium,
+  Monitor, Smartphone, Laptop, Wifi, Palette,
+  Scissors as Grass, Trees, Sprout, Timer,
+  Truck, Package, Building as BuildingIcon, Store, Boxes,
+  Scissors, Sparkle, Gem, Brush,
+  Car, BatteryCharging, Search, CircleDot, Sparkles as Wash, Cog,
+  PaintBucket, PaintRoller, Image, SprayCan, Frame,
+  Hammer, Ruler, Fence, PaintbrushVertical,
+  Camera, BellRing, KeyRound, ScanFace,
+} from 'lucide-react';
+
+export interface SubcategoryItem {
+  name: string;
+  icon: any;
+}
+
+export const SUBCATEGORIES: Record<string, SubcategoryItem[]> = {
+  'Limpeza': [
+    { name: 'Limpeza doméstica',      icon: Home },
+    { name: 'Limpeza pós-obra',       icon: HardHat },
+    { name: 'Limpeza de escritórios', icon: Building2 },
+    { name: 'Limpeza de vidros',      icon: Sparkles },
+    { name: 'Limpeza de estofos',     icon: Sofa },
+    { name: 'Limpeza de condomínios', icon: Building },
+  ],
+  'Climatização': [
+    { name: 'Instalação',      icon: Wrench },
+    { name: 'Manutenção',      icon: ShieldCheck },
+    { name: 'Reparação',       icon: Snowflake },
+    { name: 'Limpeza',         icon: Droplet },
+    { name: 'Recarga de gás',  icon: Wind },
+    { name: 'Ventilação',      icon: Wind },
+  ],
+  'Canalização': [
+    { name: 'Reparação de fugas', icon: Droplets },
+    { name: 'Instalação',         icon: Wrench },
+    { name: 'Desentupimentos',    icon: ArrowDownToLine },
+    { name: 'Torneiras',          icon: ShowerHead },
+    { name: 'Sanitas',            icon: Toilet },
+    { name: 'Bombas de água',     icon: Waves },
+  ],
+  'Eletricidade': [
+    { name: 'Instalação elétrica', icon: Plug },
+    { name: 'Reparação elétrica',  icon: Zap },
+    { name: 'Iluminação',          icon: Lightbulb },
+    { name: 'Tomadas',             icon: PanelsTopLeft },
+    { name: 'Quadros elétricos',   icon: ZapOff },
+    { name: 'Energia solar',       icon: SunMedium },
+  ],
+  'TI & Redes': [
+    { name: 'Websites',                    icon: Monitor },
+    { name: 'Aplicações móveis',            icon: Smartphone },
+    { name: 'Reparação de computadores',    icon: Laptop },
+    { name: 'Reparação de telemóveis',      icon: Smartphone },
+    { name: 'Redes Wi-Fi',                  icon: Wifi },
+    { name: 'Design gráfico',               icon: Palette },
+  ],
+  'Jardinagem': [
+    { name: 'Corte de relva',    icon: Grass },
+    { name: 'Paisagismo',        icon: Trees },
+    { name: 'Poda',              icon: Scissors },
+    { name: 'Plantação',         icon: Sprout },
+    { name: 'Sistemas de rega',  icon: Droplet },
+    { name: 'Manutenção',        icon: Timer },
+  ],
+  'Mudanças': [
+    { name: 'Casas',                       icon: Home },
+    { name: 'Apartamentos',                icon: BuildingIcon },
+    { name: 'Escritórios',                 icon: Building2 },
+    { name: 'Lojas',                       icon: Store },
+    { name: 'Transporte de móveis',        icon: Truck },
+    { name: 'Transporte de mercadorias',   icon: Boxes },
+  ],
+  'Beleza': [
+    { name: 'Barbeiro',              icon: Scissors },
+    { name: 'Cabeleireiro',          icon: Sparkle },
+    { name: 'Tranças',               icon: Gem },
+    { name: 'Manicure & Pedicure',   icon: Brush },
+    { name: 'Maquilhagem',           icon: Palette },
+    { name: 'Limpeza facial',        icon: Sparkles },
+  ],
+  'Automóvel': [
+    { name: 'Mecânica geral',    icon: Cog },
+    { name: 'Eletricidade Auto', icon: BatteryCharging },
+    { name: 'Diagnóstico',       icon: Search },
+    { name: 'Pneus',             icon: CircleDot },
+    { name: 'Lavagem',           icon: Wash },
+    { name: 'Venda de peças',    icon: Car },
+  ],
+  'Pintura': [
+    { name: 'Pintura interior',      icon: PaintBucket },
+    { name: 'Pintura exterior',      icon: PaintRoller },
+    { name: 'Pintura decorativa',    icon: Image },
+    { name: 'Murais',                icon: Frame },
+    { name: 'Grafite autorizado',    icon: SprayCan },
+    { name: 'Quadros personalizados',icon: Frame },
+  ],
+  'Construção': [
+    { name: 'Pedreiro',       icon: Hammer },
+    { name: 'Carpinteiro',    icon: Ruler },
+    { name: 'Serralheiro',    icon: Fence },
+    { name: 'Pintor',         icon: PaintbrushVertical },
+    { name: 'Gesseiro',       icon: HardHat },
+    { name: 'Remodelação',    icon: Building },
+  ],
+  'Segurança': [
+    { name: 'Segurança residencial',   icon: ShieldCheck },
+    { name: 'Segurança empresarial',   icon: Building2 },
+    { name: 'Segurança para eventos',  icon: BellRing },
+    { name: 'CCTV',                    icon: Camera },
+    { name: 'Alarmes',                 icon: BellRing },
+    { name: 'Controlo de acessos',     icon: KeyRound },
+  ],
+};

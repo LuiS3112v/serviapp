@@ -4,8 +4,8 @@
  * Key changes vs the old version:
  *
  * 1. saveSession() now writes a cookie (serviapp_token) in addition to localStorage.
- *    This is what Next.js middleware reads — without it, the middleware was
- *    redirecting everyone (including you) away from /admin.
+ *    This is what Next.js proxy (formerly middleware) reads — without it, the
+ *    proxy was redirecting everyone (including you) away from /admin.
  *
  * 2. clearSession() and clearAllSessions() now clear that cookie too.
  *
@@ -77,8 +77,9 @@ const ACTIVE_KEY = "serviapp_active_role";
 // ─── Cookie helpers ────────────────────────────────────────────────────────────
 // The cookie is NOT httpOnly — client JS must be able to clear it on logout.
 // It is NOT used for API auth (that still uses the Bearer token from localStorage).
-// Its sole purpose is to let Next.js middleware (Edge runtime) see that a session
-// exists and check the JWT payload for the role gate on /admin routes.
+// Its sole purpose is to let the Next.js proxy (Node runtime) see that a session
+// exists and check the JWT payload for the role gate on private routes, and to
+// let Server Component layouts (session.server.ts) re-verify that same session.
 
 function setAuthCookie(token: string): void {
   if (typeof document === "undefined") return;
@@ -102,7 +103,7 @@ export function saveSession(data: AuthResponse): void {
   localStorage.setItem(T_KEY(role), data.access_token);
   localStorage.setItem(U_KEY(role), JSON.stringify(data.user));
   localStorage.setItem(ACTIVE_KEY, role);
-  // ← This is the critical fix: write the cookie so middleware can read it
+  // ← This is the critical fix: write the cookie so the proxy can read it
   setAuthCookie(data.access_token);
 }
 
@@ -111,7 +112,7 @@ export function saveSession(data: AuthResponse): void {
  *
  * If the user's role changed (e.g. client → admin after a DB update), this
  * migrates their storage from the old role key to the new one, and updates
- * the cookie so subsequent middleware checks see the correct token.
+ * the cookie so subsequent proxy checks see the correct token.
  */
 export function refreshStoredSession(freshUser: AuthUser): void {
   if (typeof window === "undefined") return;
@@ -133,7 +134,7 @@ export function refreshStoredSession(freshUser: AuthUser): void {
   localStorage.setItem(U_KEY(newRole), JSON.stringify(freshUser));
   localStorage.setItem(ACTIVE_KEY, newRole);
 
-  // Keep the cookie in sync so middleware always has the right token
+  // Keep the cookie in sync so the proxy always has the right token
   setAuthCookie(token);
 }
 

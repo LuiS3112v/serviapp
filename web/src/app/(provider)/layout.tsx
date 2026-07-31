@@ -1,7 +1,23 @@
 import ProviderNavbar from "@/components/layout/ProviderNavbar";
 import ProviderSidebar from "@/components/layout/ProviderSidebar";
+import { requireRole } from "@/lib/session.server";
 
-export default function ProviderLayout({ children }: { children: React.ReactNode }) {
+// ═══════════════════════════════════════════════════════════════════════
+// Layout do grupo (provider) — PROVIDER / COMPANY ONLY
+//
+// Cobre: /provider-home, /provider/*
+//
+// Único acrescento face ao ficheiro original: requireRole() no topo.
+// Todo o resto (estrutura visual, estilos, componentes) é inalterado.
+// ═══════════════════════════════════════════════════════════════════════
+
+export default async function ProviderLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  await requireRole(["provider", "company"]);
+
   return (
     <>
       <style>{`
