@@ -39,11 +39,17 @@ const CLIENT_ROUTES = [
   "/settings",
   "/transactions",
   "/onboarding",
-  "/privacidade",
   "/privacy",
-  "/termos",
   "/terms",
 ];
+// NOTA: /privacidade e /termos (versões PT, usadas no rodapé de páginas
+// públicas como / e /sobre) foram removidas de CLIENT_ROUTES de propósito.
+// São páginas legais e devem ser acessíveis sem login, tal como / e /sobre
+// já são — caso contrário o proxy redirecionava qualquer visitante sem
+// sessão de volta para "/" ao clicar em "Termos de uso" / "Privacidade" no
+// rodapé. /privacy e /terms (versões EN, dentro do dashboard/settings)
+// continuam protegidas, porque são a versão interna da app para quem já
+// está autenticado.
 
 const PROVIDER_ROUTES = ["/provider-home", "/provider"];
 
@@ -106,6 +112,7 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set("auth", "required");
       url.searchParams.set("redirect", pathname);
       const res = NextResponse.redirect(url);
+      // Garante que esta resposta de redirect nunca é cacheada por CDN/browser
       res.headers.set("Cache-Control", "no-store, max-age=0");
       return res;
     }
@@ -211,9 +218,7 @@ export const config = {
     "/settings/:path*",
     "/transactions/:path*",
     "/onboarding/:path*",
-    "/privacidade/:path*",
     "/privacy/:path*",
-    "/termos/:path*",
     "/terms/:path*",
     "/",
     "/login",

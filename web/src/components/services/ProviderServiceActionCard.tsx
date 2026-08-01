@@ -104,6 +104,7 @@ export default function ProviderServiceActionCard({ item, tab, onActionComplete 
   };
 
   const handleProposeQuick = async (value: number) => {
+    if (proposing) return;
     setProposing(true);
     try {
       await subcategoryServicesApi.proposePrice(item.id, value);
@@ -130,10 +131,24 @@ export default function ProviderServiceActionCard({ item, tab, onActionComplete 
 
   return (
     <>
+      <style>{`
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        .psac-card{
+          background:#131b27;
+          border:1px solid #1a2535;
+          border-radius:16px;
+          padding:20px;
+          transition:border-color 0.2s;
+          margin-bottom:12px;
+        }
+        .psac-card:hover{ border-color:#2a3a4a; }
+        .psac-card.is-quick{ border-color:#8B5CF640; cursor:default; }
+        .psac-card.is-clickable{ cursor:pointer; }
+      `}</style>
+
       <div
-        className="ocard"
+        className={`psac-card${isQuick ? " is-quick" : " is-clickable"}`}
         onClick={handleCardClick}
-        style={isQuick ? { cursor: "default", borderColor: "#8B5CF640" } : undefined}
       >
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>

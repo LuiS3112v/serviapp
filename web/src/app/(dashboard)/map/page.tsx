@@ -63,6 +63,16 @@ function getInitials(name: string): string {
   return name.split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 }
 
+// Legenda da fase do serviço ativo, mostrada no cabeçalho da página de
+// acompanhamento. Deriva do mesmo `status` que o ServiceMap já usa
+// internamente para decidir se mostra rota/distância/ETA — aqui é só
+// texto, sem nenhuma lógica de mapa.
+function getActiveServicePhaseLabel(status: string): string {
+  if (status === 'in_progress') return 'Serviço em execução';
+  if (status === 'provider_completed') return 'A aguardar a tua confirmação';
+  return 'Prestador a caminho';
+}
+
 export default function MapPage() {
   const router = useRouter();
 
@@ -264,7 +274,9 @@ export default function MapPage() {
               <div className={styles.header}>
                 <div>
                   <h1 className={styles.title}>Acompanhamento do serviço</h1>
-                  <p className={styles.subtitle}>{activeService.title}</p>
+                  <p className={styles.subtitle}>
+                    {getActiveServicePhaseLabel(activeService.status)} · {activeService.title}
+                  </p>
                 </div>
               </div>
               <div className={styles.mapWrapper}>

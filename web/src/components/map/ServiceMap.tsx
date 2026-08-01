@@ -27,6 +27,15 @@ const MarkerClusterGroup = dynamic(() => import('react-leaflet-cluster'), { ssr:
 
 type MapMode = 'discovery' | 'active-service';
 
+// Estados do Service (ver ServiceStatus enum no backend) em que o
+// prestador ainda está em deslocação até ao cliente — o PIN ainda não
+// foi validado. É nestes estados (e só nestes) que faz sentido mostrar
+// rota, distância e ETA no Active Service Map. Isto é uma classificação
+// puramente de apresentação: nenhum estado novo é gravado em base de
+// dados, ACCEPTED e PAYMENT_HELD continuam a ser os estados reais do
+// serviço — aqui só decidimos como desenhar o mapa consoante eles.
+const ON_THE_WAY_STATUSES = ['accepted', 'payment_held'];
+
 interface ServiceMapProps {
   mode: MapMode;
   discoveryProviders?: (ProviderLocation | ProviderWithDistance)[];
@@ -85,6 +94,13 @@ export function ServiceMap({
   const lastRouteOriginRef = useRef<MapCoordinates | null>(null);
 
   const initialCenter = clientCoordinates ?? defaultMapCenter;
+
+  // Fase derivada do status real do serviço — nunca persistida, só usada
+  // para decidir o que desenhar. "A caminho": mostra rota/distância/ETA.
+  // "Em execução": prestador já chegou, o PIN foi validado — a rota até
+  // ao cliente deixou de fazer sentido, por isso deixa de ser calculada
+  // e desenhada.
+  const isProviderOnTheWay = activeService != null && ON_THE_WAY_STATUSES.includes(activeService.status);
 
   useEffect(() => {
     let isMounted = true;
@@ -170,8 +186,14 @@ export function ServiceMap({
     };
   }, [mode, providerSnapshot]);
 
+  // Rota (e portanto distância/ETA) só é calculada durante a fase de
+  // deslocação. Uma vez validado o PIN e o serviço passa a "em
+  // execução", este efeito deixa de correr — o `route` que já existia
+  // em memória fica congelado, mas isso é inofensivo porque a
+  // renderização da Polyline e do painel de estatísticas, mais abaixo,
+  // também está condicionada a `isProviderOnTheWay`.
   useEffect(() => {
-    if (mode !== 'active-service' || !clientCoordinates || !providerSnapshot || providerStale) {
+    if (mode !== 'active-service' || !isProviderOnTheWay || !clientCoordinates || !providerSnapshot || providerStale) {
       return;
     }
 
@@ -190,7 +212,7 @@ export function ServiceMap({
     lastRouteOriginRef.current = providerCoordinates;
 
     routingProvider.getRoute(providerCoordinates, clientCoordinates).then(setRoute);
-  }, [mode, clientCoordinates, providerSnapshot, providerStale, route]);
+  }, [mode, isProviderOnTheWay, clientCoordinates, providerSnapshot, providerStale, route]);
 
   const discoveryMarkers = useMemo(
     () => buildMarkerCollection(discoveryProviders),
@@ -284,7 +306,7 @@ export function ServiceMap({
           />
         )}
 
-        {mode === 'active-service' && routeLatLng.length > 0 && (
+        {mode === 'active-service' && isProviderOnTheWay && routeLatLng.length > 0 && (
           <Polyline
             positions={routeLatLng}
             pathOptions={{
@@ -333,7 +355,7 @@ export function ServiceMap({
             </div>
           </div>
 
-          {route && providerSnapshot && !providerStale && (
+          {isProviderOnTheWay && route && providerSnapshot && !providerStale && (
             <div className={styles.activeServiceStats}>
               <div className={styles.activeServiceStatItem}>
                 <div className={styles.activeServiceStatValue}>{route.distanceKm.toFixed(1)} km</div>
@@ -385,9 +407,9 @@ function haversinePreviewKm(origin: MapCoordinates, destination: MapCoordinates)
 function formatServiceStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     accepted: 'Prestador a caminho',
-    payment_held: 'Pagamento confirmado',
-    in_progress: 'Serviço em curso',
-    provider_completed: 'Serviço concluído pelo prestador',
+    payment_held: 'Prestador a caminho',
+    in_progress: 'Serviço em execução',
+    provider_completed: 'A aguardar a tua confirmação',
   };
 
   return labels[status] ?? 'A decorrer';

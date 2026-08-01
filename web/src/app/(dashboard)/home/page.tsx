@@ -76,13 +76,14 @@ const CATS = [
 // semânticos (amber na avaliação, violeta no apoio).
 const STEPS = [
   { Icon: Search,        title: "Pesquisa",                    desc: "Encontra prestadores verificados por categoria, nome ou localização no mapa.", tone: "sky" },
-  { Icon: FileText,      title: "Pede o serviço",               desc: "Descreve o que precisas, propõe um orçamento e envia o pedido ao prestador escolhido.", tone: "blue" },
-  { Icon: Shield,        title: "Combina e paga em segurança",  desc: "Acorda o preço pelo chat, paga por transferência e o dinheiro fica protegido até confirmares o serviço.", tone: "indigo" },
-  { Icon: Navigation,    title: "Acompanha em tempo real",      desc: "Vê o prestador a chegar no mapa, com distância e tempo estimado, assim que ele aceitar o pedido.", tone: "cyan" },
-  { Icon: KeyRound,      title: "Confirma com PIN",             desc: "No local, dás um código único ao prestador para confirmares que o serviço começou de forma segura.", tone: "sky" },
-  { Icon: Star,          title: "Avalia o serviço",             desc: "No fim, confirma a conclusão e deixa uma avaliação para ajudar outros clientes.", tone: "amber" },
-  { Icon: MessageCircle, title: "Fala sempre pelo chat",        desc: "Todas as combinações ficam registadas na app, para tua proteção em caso de dúvida.", tone: "blue" },
-  { Icon: LifeBuoy,      title: "Resolve disputas com apoio",   desc: "Se algo correr mal, a nossa equipa está disponível para mediar e resolver.", tone: "violet" },
+  { Icon: FileText,      title: "Serviço Personalizado",       desc: "Descreves o serviço em detalhe, defines o orçamento e envias o pedido diretamente a um prestador específico, que pode aceitá-lo ou propor outro valor.", tone: "blue" },
+  { Icon: Zap,           title: "Serviço Rápido",               desc: "Escolhes a categoria, a subcategoria e indicas a morada vários prestadores da área recebem o pedido e enviam propostas de preço, para escolheres a melhor opção.", tone: "indigo" },
+  { Icon: Shield,        title: "Combina e paga em segurança",  desc: "Acorda o preço pelo chat, paga por transferência e o dinheiro fica protegido até confirmares o serviço.", tone: "cyan" },
+  { Icon: Navigation,    title: "Acompanha em tempo real",      desc: "Vê o prestador a chegar no mapa, com distância e tempo estimado, assim que ele aceitar o pedido.", tone: "sky" },
+  { Icon: KeyRound,      title: "Confirma com PIN",             desc: "No local, dás um código único ao prestador para confirmares que o serviço começou de forma segura.", tone: "amber" },
+  { Icon: Star,          title: "Avalia o serviço",             desc: "No fim, confirma a conclusão e deixa uma avaliação para ajudar outros clientes.", tone: "blue" },
+  { Icon: MessageCircle, title: "Fala sempre pelo chat",        desc: "Todas as combinações ficam registadas na app, para tua proteção em caso de dúvida.", tone: "violet" },
+  { Icon: LifeBuoy,      title: "Resolve disputas com apoio",   desc: "Se algo correr mal, a nossa equipa está disponível para mediar e resolver.", tone: "amber" },
 ];
 
 const FEATS = [

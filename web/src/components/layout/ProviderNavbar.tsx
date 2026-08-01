@@ -2,15 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, MapPin, Loader2, Search, X, ChevronRight } from "lucide-react";
+import { Bell, MapPin, Loader2, Search, X, ChevronRight, Zap } from "lucide-react";
 import { chatApi } from "@/lib/chat.api";
 import { notificationsApi } from "@/lib/notifications.api";
 import { activateLocation, updateLocationSharing, type ProviderLocation } from "@/lib/geolocation.api";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
-import { getToken } from "@/lib/auth.api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+import { getToken, getSession } from "@/lib/auth.api";
+import { servicesApi } from "@/lib/services.api";
+import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
+import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
 
 const CAT_EMOJI: Record<string, string> = {
   "Limpeza":"🧹","Climatização":"❄️","Canalização":"🔧","Eletricista":"⚡",
@@ -56,7 +57,7 @@ export default function ProviderNavbar() {
   const [unreadNotif, setUnreadNotif] = useState(0);
 
   const [query, setQuery]             = useState("");
-  const [results, setResults]         = useState<any[]>([]);
+  const [results, setResults]         = useState<ServiceListItem[]>([]);
   const [searching, setSearching]     = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -114,6 +115,12 @@ export default function ProviderNavbar() {
     return () => document.removeEventListener("mousedown", handle);
   }, []);
 
+  // Pesquisa unificada: serviços normais (Service) + serviços rápidos
+  // (SubcategoryService). Antes só pedia /services/available, por isso
+  // pedidos rápidos nunca apareciam aqui — não eram filtrados, eram
+  // simplesmente nunca pedidos ao backend. Usa o mesmo buildUnifiedList
+  // já usado em /provider/services (tab "Mercado"), em vez de duplicar
+  // lógica de fusão à parte.
   useEffect(() => {
     if (!query.trim()) { setResults([]); setShowResults(false); return; }
     const timer = setTimeout(async () => {
@@ -121,18 +128,24 @@ export default function ProviderNavbar() {
       try {
         const token = getToken();
         if (!token) return;
-        const res = await fetch(`${API_URL}/services/available`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const all: any[] = await res.json();
+
+        const session = getSession();
+
+        const [regular, quick] = await Promise.all([
+          servicesApi.getAvailable().catch(() => []),
+          subcategoryServicesApi.getAvailable().catch(() => []),
+        ]);
+
+        const unified = buildUnifiedList(regular, quick, { forProviderId: session?.id ?? "" });
+
         const q = query.toLowerCase();
-        const filtered = all.filter(s =>
-          s.title?.toLowerCase().includes(q) ||
-          s.category?.toLowerCase().includes(q) ||
-          s.description?.toLowerCase().includes(q) ||
-          s.address?.toLowerCase().includes(q)
+        const filtered = unified.filter(item =>
+          item.title?.toLowerCase().includes(q) ||
+          item.category?.toLowerCase().includes(q) ||
+          item.address?.toLowerCase().includes(q) ||
+          item.description?.toLowerCase().includes(q)
         ).slice(0, 8);
+
         setResults(filtered);
         setShowResults(filtered.length > 0 || query.length > 1);
       } catch { /* silencioso */ }
@@ -140,6 +153,22 @@ export default function ProviderNavbar() {
     }, 300);
     return () => clearTimeout(timer);
   }, [query]);
+
+  // Serviços rápidos ainda não têm página de detalhe própria (o
+  // ProviderServiceActionCard também não navega para eles ao clicar,
+  // só mostra os botões Propor/Recusar inline). Por isso, ao clicar
+  // num resultado rápido, leva à tab "Mercado" onde esse item já
+  // aparece com as acções corretas — em vez de inventar uma rota de
+  // detalhe que não existe.
+  const handleResultClick = useCallback((item: ServiceListItem) => {
+    setShowResults(false);
+    setQuery("");
+    if (item.sourceType === "quick") {
+      router.push("/provider/services?tab=available");
+    } else {
+      router.push(`/provider/services/${item.id}`);
+    }
+  }, [router]);
 
   // Inicia o watchPosition, enviando a posição inicial de imediato e
   // depois só reenviando conforme a distância percorrida desde o
@@ -487,20 +516,28 @@ export default function ProviderNavbar() {
                 <div className="pnav-empty">
                   {searching ? "A pesquisar..." : "Nenhum pedido encontrado"}
                 </div>
-              ) : results.map(s => (
+              ) : results.map(item => (
                 <div
-                  key={s.id}
+                  key={item.id}
                   className="pnav-result"
-                  onClick={() => { setShowResults(false); setQuery(""); router.push(`/provider/services/${s.id}`); }}
+                  onClick={() => handleResultClick(item)}
                 >
                   <div style={{ width:36, height:36, borderRadius:10, background:"#2a1e08", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
-                    {CAT_EMOJI[s.category] ?? "🔧"}
+                    {CAT_EMOJI[item.category] ?? "🔧"}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <p style={{ fontSize:13, fontWeight:600, color:"#e2e8f0", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.title}</p>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <p style={{ fontSize:13, fontWeight:600, color:"#e2e8f0", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</p>
+                      {item.sourceType === "quick" && (
+                        <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:99, background:"#8B5CF620", color:"#a78bfa", border:"1px solid #8B5CF640", flexShrink:0 }}>
+                          <Zap size={9}/> Rápido
+                        </span>
+                      )}
+                    </div>
                     <p style={{ fontSize:11, color:"#4a6a6a" }}>
-                      {s.category} · {Number(s.budget).toLocaleString("pt-PT")} Kz
-                      {s.province ? ` · ${s.province}` : ""}
+                      {item.category}
+                      {item.sourceType !== "quick" && item.budget != null ? ` · ${Number(item.budget).toLocaleString("pt-PT")} Kz` : ""}
+                      {item.address ? ` · ${item.address}` : ""}
                     </p>
                   </div>
                   <ChevronRight size={14} style={{ color:"#3a4a5a", flexShrink:0 }}/>

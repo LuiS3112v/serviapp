@@ -14,6 +14,8 @@ export class SubcategoryServicesController {
     private readonly subService: SubcategoryServicesService,
   ) {}
 
+  // ── Rotas estáticas SEMPRE antes das rotas com parâmetros ──────────
+
   // Cliente cria pedido rápido
   @Post()
   create(
@@ -23,8 +25,18 @@ export class SubcategoryServicesController {
     return this.subService.create(user.id, dto);
   }
 
+  // Mercado do prestador
+  @Get('available')
+  async availableForProvider(
+    @CurrentUser() user: any,
+  ) {
+    console.log('🔵 CONTROLLER USER ID:', user?.id);
+    const result = await this.subService.findAvailableForProvider(user.id);
+    console.log('🔵 CONTROLLER RESULT COUNT:', result.length);
+    return result;
+  }
 
-  // Rotas estáticas primeiro
+  // Serviços do cliente
   @Get('my')
   myServices(
     @CurrentUser() user: any,
@@ -32,20 +44,7 @@ export class SubcategoryServicesController {
     return this.subService.findByClient(user.id);
   }
 
-
-  // Mercado do prestador
-  // FIX:
-  // Antes dependia de user.category que não vinha no JWT.
-  // Agora o service procura as categorias no ProviderCatalog.
-  @Get('available')
-  availableForProvider(
-    @CurrentUser() user: any,
-  ) {
-    return this.subService.findAvailableForProvider(
-      user.id,
-    );
-  }
-
+  // ── Rotas com parâmetros SEMPRE depois das estáticas ───────────────
 
   @Get(':id')
   findOne(
@@ -53,7 +52,6 @@ export class SubcategoryServicesController {
   ) {
     return this.subService.findById(id);
   }
-
 
   // Prestador envia proposta
   @Post(':id/propose')
@@ -69,7 +67,6 @@ export class SubcategoryServicesController {
     );
   }
 
-
   // Prestador dispensa pedido
   @Patch(':id/dismiss')
   dismiss(
@@ -81,7 +78,6 @@ export class SubcategoryServicesController {
       user.id,
     );
   }
-
 
   // Cliente aceita proposta
   @Patch(':id/proposals/:proposalId/accept')
@@ -96,7 +92,6 @@ export class SubcategoryServicesController {
       proposalId,
     );
   }
-
 
   // Cliente cancela
   @Patch(':id/reject')

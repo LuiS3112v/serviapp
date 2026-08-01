@@ -19,23 +19,23 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 const CATS  = ["Todos","Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Segurança"];
 const SORTS = ["Mais próximo","Melhor avaliação","Menor preço"];
 
-// Cores EXATAMENTE iguais às da Homepage inicial: lá, o array `categories`
-// usa ACCENTS = ["#2563eb", "#1D9E75", "#EF9F27"] ciclicamente por índice
-// (categories.map((c,i) => ACCENTS[i % 3])). Replicado aqui na mesma ordem
-// de categorias (Limpeza é índice 0, Climatização índice 1, etc.).
+// Mesma paleta de tons usada na Home Page e na Categories Page (TONES),
+// para que a identidade de cada categoria seja consistente em toda a
+// plataforma. Substitui o ciclo antigo de 3 cores (ACCENTS) por um tom
+// dedicado por categoria.
 const CAT_ICON: Record<string, { Icon: any; color: string }> = {
-  "Limpeza":      { Icon: Sparkles,   color: "#2563eb" }, // homepage idx 0
-  "Climatização": { Icon: Wind,       color: "#1D9E75" }, // homepage idx 1
-  "Canalização":  { Icon: Wrench,     color: "#EF9F27" }, // homepage idx 2
-  "Eletricista":  { Icon: Zap,        color: "#2563eb" }, // homepage idx 3
-  "TI & Redes":   { Icon: Monitor,    color: "#1D9E75" }, // homepage idx 4
-  "Jardinagem":   { Icon: Leaf,       color: "#EF9F27" }, // homepage idx 5
-  "Mudanças":     { Icon: Package,    color: "#2563eb" }, // homepage idx 6
-  "Beleza":       { Icon: Scissors,   color: "#1D9E75" }, // homepage idx 7
-  "Automóvel":    { Icon: Car,        color: "#EF9F27" }, // homepage idx 8
-  "Pintura":      { Icon: Paintbrush, color: "#2563eb" }, // homepage idx 9
-  "Construção":   { Icon: HardHat,    color: "#1D9E75" }, // homepage idx 10
-  "Segurança":    { Icon: Lock,       color: "#EF9F27" }, // homepage idx 11
+  "Limpeza":      { Icon: Sparkles,   color: "#0E7A5F" }, // emerald
+  "Climatização": { Icon: Wind,       color: "#0284C7" }, // sky
+  "Canalização":  { Icon: Wrench,     color: "#0D9488" }, // teal
+  "Eletricista":  { Icon: Zap,        color: "#B45309" }, // amber
+  "TI & Redes":   { Icon: Monitor,    color: "#4F46E5" }, // indigo
+  "Jardinagem":   { Icon: Leaf,       color: "#65A30D" }, // lime
+  "Mudanças":     { Icon: Package,    color: "#0891B2" }, // cyan
+  "Beleza":       { Icon: Scissors,   color: "#E11D48" }, // rose
+  "Automóvel":    { Icon: Car,        color: "#2563EB" }, // blue
+  "Pintura":      { Icon: Paintbrush, color: "#7C3AED" }, // violet
+  "Construção":   { Icon: HardHat,    color: "#C2410C" }, // orange
+  "Segurança":    { Icon: Lock,       color: "#475569" }, // slate
 };
 const DEFAULT_CAT_ICON = { Icon: Wrench, color: "#64748b" };
 

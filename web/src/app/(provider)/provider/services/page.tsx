@@ -1,14 +1,13 @@
 "use client";
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Briefcase, AlertCircle, RefreshCw, Loader2, Filter, X,
 } from "lucide-react";
-import { servicesApi, Service, AvailableFilter } from "@/lib/services.api";
+import { servicesApi, AvailableFilter } from "@/lib/services.api";
 import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
 import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
 import { getToken, getSession } from "@/lib/auth.api";
-import ServiceCard from "@/components/services/ServiceCard";
 import ProviderServiceActionCard from "@/components/services/ProviderServiceActionCard";
 
 const CATEGORIES = ["", "Limpeza", "Climatização", "Canalização", "Eletricista", "TI & Redes", "Jardinagem", "Mudanças", "Beleza", "Automóvel", "Pintura", "Construção", "Segurança"];
@@ -51,56 +50,69 @@ function ProviderServicesInner() {
   const [loading, setLoading]         = useState(true);
   const [refreshing, setRefreshing]   = useState(false);
   const [error, setError]             = useState("");
-  const [refreshKey, setRefreshKey]   = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [filter, setFilter]           = useState<AvailableFilter>({});
+
+  // Usamos ref para cancelar carregamentos desatualizados
+  const loadIdRef = useRef(0);
+
   const isLoggedIn = !!getToken();
   const currentUserId = getSession()?.id ?? "";
 
-  const filterKey = JSON.stringify(filter);
-
-  // ── Colecção única, também na tab "Mercado" — pedidos normais +
-  // pedidos rápidos compatíveis com a categoria do prestador, fundidos
-  // e ordenados pela mesma função que a página do cliente usa. As
-  // outras tabs (Propostas/Aceites/etc.) continuam só com Service
-  // normal, porque um SubcategoryService nunca chega a esses estados —
-  // assim que aceite, já é um Service normal e aparece lá naturalmente.
-  const load = useCallback(async () => {
+  async function load(currentTab: string, currentFilter: AvailableFilter) {
     if (!isLoggedIn) { setLoading(false); return; }
-    setLoading(true); setError("");
+
+    // Cada chamada tem um ID único — se uma chamada mais recente chegar
+    // primeiro, a mais antiga descarta o resultado em vez de sobrescrever.
+    const thisLoadId = ++loadIdRef.current;
+
+    setLoading(true);
+    setError("");
+
     try {
       let unified: ServiceListItem[];
 
-      if (tab === "available") {
+      if (currentTab === "available") {
         const [regular, quick] = await Promise.all([
-          servicesApi.getAvailable(JSON.parse(filterKey)),
-          subcategoryServicesApi.getAvailable().catch(() => []),
+          servicesApi.getAvailable(currentFilter),
+          subcategoryServicesApi.getAvailable(),
         ]);
+
+        // Se já existe uma chamada mais recente em curso, descarta
+        if (thisLoadId !== loadIdRef.current) return;
+
         unified = buildUnifiedList(regular, quick, { forProviderId: currentUserId });
-      } else if (tab === "proposals") {
+
+      } else if (currentTab === "proposals") {
         const data = await servicesApi.getMyProposals();
+        if (thisLoadId !== loadIdRef.current) return;
         unified = buildUnifiedList(data, []);
+
       } else {
         const all = await servicesApi.getProviderServices();
-        const wanted = TAB_STATUSES[tab] ?? [tab];
+        if (thisLoadId !== loadIdRef.current) return;
+        const wanted = TAB_STATUSES[currentTab] ?? [currentTab];
         const filtered = all.filter((s) => wanted.includes(s.status));
         unified = buildUnifiedList(filtered, []);
       }
 
       setItems(unified);
     } catch (e: any) {
+      if (thisLoadId !== loadIdRef.current) return;
       setError(e.message || "Erro ao carregar.");
     } finally {
-      setLoading(false);
+      if (thisLoadId === loadIdRef.current) setLoading(false);
     }
-  }, [tab, isLoggedIn, refreshKey, filterKey, currentUserId]);
+  }
 
-  useEffect(() => { load(); }, [load]);
+  // Carrega sempre que tab ou filter mudam
+  useEffect(() => {
+    load(tab, filter);
+  }, [tab, JSON.stringify(filter)]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setRefreshKey((k) => k + 1);
-    setTimeout(() => setRefreshing(false), 800);
+    load(tab, filter).finally(() => setTimeout(() => setRefreshing(false), 600));
   };
 
   const activeFilters = Object.values(filter).filter(Boolean).length;
@@ -113,6 +125,8 @@ function ProviderServicesInner() {
         .tabs-row::-webkit-scrollbar{display:none}
         .ptab{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;background:#131b27;border:1px solid #1a2535;color:#6a7a8a;transition:all 0.15s;font-family:inherit;white-space:nowrap;flex-shrink:0}
         .ptab.on{background:#EF9F27;border-color:#EF9F27;color:#0d1117}
+        .ocard{background:#131b27;border:1px solid #1a2535;border-radius:16px;padding:20px;transition:all 0.2s;margin-bottom:12px}
+        .ocard:hover{border-color:#2a3a4a}
         .feed{display:flex;flex-direction:column;overflow-y:auto;max-height:calc(100vh - 320px)}
         .feed::-webkit-scrollbar{width:4px}
         .feed::-webkit-scrollbar-thumb{background:#1a2535;border-radius:4px}
@@ -161,7 +175,7 @@ function ProviderServicesInner() {
                 )}
               </button>
             )}
-            <button className="rbtn" disabled={loading || refreshing} onClick={handleRefresh}>
+            <button className="rbtn" disabled={loading} onClick={handleRefresh}>
               <RefreshCw size={14} style={{ animation: loading || refreshing ? "spin 1s linear infinite" : "none" }} />
               {refreshing ? "A actualizar..." : "Actualizar"}
             </button>
@@ -248,7 +262,7 @@ function ProviderServicesInner() {
                 key={item.id}
                 item={item}
                 tab={tab}
-                onActionComplete={() => setRefreshKey((k) => k + 1)}
+                onActionComplete={() => load(tab, filter)}
               />
             ))}
           </div>

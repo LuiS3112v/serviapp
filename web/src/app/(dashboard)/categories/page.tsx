@@ -15,21 +15,24 @@ import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-const ACCENTS = ["#2563eb", "#1D9E75", "#EF9F27"];
-
+// Mesma paleta de tons usada na Home Page (TONES), para que cada
+// categoria mantenha exatamente a mesma identidade visual em toda a
+// plataforma. Só o valor "text" (usado como --cc aqui) é necessário
+// neste ficheiro, já que os cards já geram os tons mais suaves via
+// color-mix() a partir dele.
 const CATEGORIES = [
-  { Icon: Sparkles,   label: "Limpeza",      desc: "Limpeza residencial e comercial",     color: ACCENTS[0] },
-  { Icon: Wind,       label: "Climatização", desc: "Instalação e manutenção de AC",        color: ACCENTS[1] },
-  { Icon: Wrench,     label: "Canalização",  desc: "Fugas, instalações e reparações",      color: ACCENTS[2] },
-  { Icon: Zap,        label: "Eletricidade", desc: "Instalações eléctricas e reparações",  color: ACCENTS[0] },
-  { Icon: Monitor,    label: "TI & Redes",   desc: "Suporte técnico e redes",              color: ACCENTS[1] },
-  { Icon: Leaf,       label: "Jardinagem",   desc: "Poda, manutenção e paisagismo",        color: ACCENTS[2] },
-  { Icon: Package,    label: "Mudanças",     desc: "Transporte e mudanças de casa",        color: ACCENTS[0] },
-  { Icon: Scissors,   label: "Beleza",       desc: "Cabeleireiro, manicure e estética",    color: ACCENTS[1] },
-  { Icon: Car,        label: "Automóvel",    desc: "Mecânica e manutenção auto",           color: ACCENTS[2] },
-  { Icon: Paintbrush, label: "Pintura",      desc: "Pintura de interiores e exteriores",   color: ACCENTS[0] },
-  { Icon: HardHat,    label: "Construção",   desc: "Obras, remodelações e acabamentos",    color: ACCENTS[1] },
-  { Icon: Lock,       label: "Segurança",    desc: "Vigilância e sistemas de segurança",   color: ACCENTS[2] },
+  { Icon: Sparkles,   label: "Limpeza",      desc: "Limpeza residencial e comercial",     color: "#0E7A5F" }, // emerald
+  { Icon: Wind,       label: "Climatização", desc: "Instalação e manutenção de AC",        color: "#0284C7" }, // sky
+  { Icon: Wrench,     label: "Canalização",  desc: "Fugas, instalações e reparações",      color: "#0D9488" }, // teal
+  { Icon: Zap,        label: "Eletricidade", desc: "Instalações eléctricas e reparações",  color: "#B45309" }, // amber
+  { Icon: Monitor,    label: "TI & Redes",   desc: "Suporte técnico e redes",              color: "#4F46E5" }, // indigo
+  { Icon: Leaf,       label: "Jardinagem",   desc: "Poda, manutenção e paisagismo",        color: "#65A30D" }, // lime
+  { Icon: Package,    label: "Mudanças",     desc: "Transporte e mudanças de casa",        color: "#0891B2" }, // cyan
+  { Icon: Scissors,   label: "Beleza",       desc: "Cabeleireiro, manicure e estética",    color: "#E11D48" }, // rose
+  { Icon: Car,        label: "Automóvel",    desc: "Mecânica e manutenção auto",           color: "#2563EB" }, // blue
+  { Icon: Paintbrush, label: "Pintura",      desc: "Pintura de interiores e exteriores",   color: "#7C3AED" }, // violet
+  { Icon: HardHat,    label: "Construção",   desc: "Obras, remodelações e acabamentos",    color: "#C2410C" }, // orange
+  { Icon: Lock,       label: "Segurança",    desc: "Vigilância e sistemas de segurança",   color: "#475569" }, // slate
 ];
 
 function SubcategoriesModal({

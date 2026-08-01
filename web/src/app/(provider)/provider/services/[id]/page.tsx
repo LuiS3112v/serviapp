@@ -44,6 +44,14 @@ const TL: Record<string, string> = {
   DISPUTE_OPENED:          "⚠️ Disputa aberta",
 };
 
+// Estados em que o prestador deve estar a transmitir a sua localização
+// para este serviço: enquanto está a caminho (accepted/payment_held,
+// antes de o PIN ser validado) e enquanto está a executar o trabalho
+// (in_progress). Fora destes estados — requested, rejected,
+// payment_pending, provider_completed, completed, disputed, cancelled,
+// refunded — não faz sentido gastar bateria/dados do prestador com GPS.
+const LOCATION_BROADCAST_STATUSES = ["accepted", "payment_held", "in_progress"];
+
 function fKz(v: number) { return new Intl.NumberFormat("pt-PT").format(v) + " Kz"; }
 function ago(d: string) {
   const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
@@ -111,7 +119,10 @@ export default function ProviderServiceDetailPage() {
   const [priceIn, setPriceIn]   = useState("");
   const [chatL, setChatL]       = useState(false);
 
-  useProviderActiveServiceLocationBroadcast(id, service?.status === "in_progress");
+  useProviderActiveServiceLocationBroadcast(
+    id,
+    LOCATION_BROADCAST_STATUSES.includes(service?.status),
+  );
 
   const load = useCallback(async () => {
     try {
