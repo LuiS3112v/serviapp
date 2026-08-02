@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Edit, Users, Briefcase, Phone, Mail, MapPin, Plus, X, Check,
@@ -9,6 +9,7 @@ import {
   UserPlus, Building2, MessageCircle, Loader2, Building,
 } from "lucide-react";
 import { companyApi } from "@/lib/company.api";
+import { getToken } from "@/lib/auth.api";
 import {
   Company, CompanyStats, TimelineItem, CompanyServiceBadge,
   CompanyEmployee, CompanyInvitation, CompanyPortfolioItem,
@@ -18,6 +19,43 @@ import {
 } from "@/types/company.types";
 
 type TabKey = "overview" | "services" | "team" | "invites" | "portfolio" | "more";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
+// Upload de logo/banner da empresa — reutiliza exactamente os
+// endpoints POST /company/:id/logo e POST /company/:id/banner que já
+// existem em CompaniesController (FileInterceptor + CloudinaryService,
+// os mesmos que já servem a galeria e o portfólio). Chamado
+// directamente por fetch em vez de passar pela wrapper de
+// company.api.ts, porque multipart precisa de FormData sem
+// Content-Type manual — o mesmo motivo pelo qual o InviteModal, mais
+// abaixo neste ficheiro, já faz fetch directo em vez de usar essa
+// wrapper para a pesquisa de utilizadores.
+async function uploadCompanyImage(
+  companyId: string,
+  kind: "logo" | "banner",
+  file: File,
+): Promise<Company> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append(kind, file);
+
+  const res = await fetch(`${API_URL}/company/${companyId}/${kind}`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      Array.isArray(err.message) ? err.message[0] : err.message
+        || `Erro ao enviar ${kind === "logo" ? "logo" : "banner"}.`
+    );
+  }
+
+  return res.json();
+}
 
 const ROLE_LABEL: Record<CompanyEmployeeRole, string> = {
   owner: "Dono",
@@ -86,10 +124,11 @@ function InviteStatusBadge({ status }: { status: CompanyInvitation["status"] }) 
 // Modal: Editar empresa
 // ════════════════════════════════════════════════════════════════════════
 function EditCompanyModal({
-  open, company, onClose, onSave, saving,
+  open, company, onClose, onSave, saving, onImagesUpdated,
 }: {
   open: boolean; company: Company; onClose: () => void;
   onSave: (u: Partial<Company>) => void; saving: boolean;
+  onImagesUpdated: (updated: Company) => void;
 }) {
   const [form, setForm] = useState({
     name: company.name,
@@ -105,6 +144,12 @@ function EditCompanyModal({
     address: company.address ?? "",
     sector: company.sector ?? "",
   });
+
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setForm({
@@ -126,6 +171,34 @@ function EditCompanyModal({
   if (!open) return null;
   const set = (k: keyof typeof form, v: string | number) => setForm(f => ({ ...f, [k]: v }));
 
+  const handleLogoFile = async (file: File | null) => {
+    if (!file) return;
+    setImageError("");
+    setUploadingLogo(true);
+    try {
+      const updated = await uploadCompanyImage(company.id, "logo", file);
+      onImagesUpdated(updated);
+    } catch (e: any) {
+      setImageError(e.message || "Erro ao enviar logo.");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleBannerFile = async (file: File | null) => {
+    if (!file) return;
+    setImageError("");
+    setUploadingBanner(true);
+    try {
+      const updated = await uploadCompanyImage(company.id, "banner", file);
+      onImagesUpdated(updated);
+    } catch (e: any) {
+      setImageError(e.message || "Erro ao enviar banner.");
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={e => e.stopPropagation()}>
@@ -134,6 +207,70 @@ function EditCompanyModal({
           <button className="icon-btn" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="modal-body">
+          {imageError && (
+            <div className="hint" style={{ color: "#E24B4A", background: "#E24B4A15", border: "1px solid #E24B4A30", borderRadius: 10, padding: "8px 12px" }}>
+              {imageError}
+            </div>
+          )}
+
+          <div className="field">
+            <label>Banner da empresa</label>
+            <input
+              ref={bannerInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={e => {
+                const file = e.target.files?.[0] ?? null;
+                e.target.value = "";
+                handleBannerFile(file);
+              }}
+            />
+            <div
+              className="img-pick-banner"
+              onClick={() => bannerInputRef.current?.click()}
+              style={{ backgroundImage: company.bannerUrl ? `url(${company.bannerUrl})` : undefined }}
+            >
+              {uploadingBanner
+                ? <Loader2 size={18} className="spin" />
+                : !company.bannerUrl && <><ImageIcon size={18} /><span>Escolher banner</span></>}
+            </div>
+          </div>
+
+          <div className="field">
+            <label>Logo da empresa</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={e => {
+                  const file = e.target.files?.[0] ?? null;
+                  e.target.value = "";
+                  handleLogoFile(file);
+                }}
+              />
+              <div
+                className="img-pick-logo"
+                onClick={() => logoInputRef.current?.click()}
+                style={{ backgroundImage: company.logoUrl ? `url(${company.logoUrl})` : undefined }}
+              >
+                {uploadingLogo
+                  ? <Loader2 size={16} className="spin" />
+                  : !company.logoUrl && <Building2 size={20} style={{ color: "#4a6a6a" }} />}
+              </div>
+              <button
+                type="button"
+                className="add-btn"
+                disabled={uploadingLogo}
+                onClick={() => logoInputRef.current?.click()}
+              >
+                {uploadingLogo ? "A enviar..." : "Trocar logo"}
+              </button>
+            </div>
+          </div>
+
           <div className="field">
             <label>Nome da empresa</label>
             <input className="input" value={form.name} onChange={e => set("name", e.target.value)} />
@@ -270,7 +407,6 @@ function InviteModal({
             </div>
           </div>
 
-          {/* Resultados da pesquisa */}
           {query.trim().length >= 2 && !selected && (
             <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:200, overflowY:"auto" }}>
               {results.length === 0 && !searching && (
@@ -298,7 +434,6 @@ function InviteModal({
             </div>
           )}
 
-          {/* Utilizador seleccionado */}
           {selected && (
             <>
               <div className="field">
@@ -446,7 +581,23 @@ function CreateCompanyPrompt({ onCreate, creating }: { onCreate: (data: any) => 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
 
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+
   const canSubmit = name.trim() && mainCategory.trim() && email.trim() && phone.trim();
+
+  const pickLogo = (file: File | null) => {
+    setLogoFile(file);
+    setLogoPreview(file ? URL.createObjectURL(file) : null);
+  };
+  const pickBanner = (file: File | null) => {
+    setBannerFile(file);
+    setBannerPreview(file ? URL.createObjectURL(file) : null);
+  };
 
   return (
     <div className="cp-inner">
@@ -457,12 +608,54 @@ function CreateCompanyPrompt({ onCreate, creating }: { onCreate: (data: any) => 
           Preenche os dados essenciais para começares. Podes editar tudo depois.
         </p>
         <div style={{ display:"flex", flexDirection:"column", gap:12, maxWidth:380, margin:"0 auto", textAlign:"left" }}>
+
+          <div className="field">
+            <label>Banner da empresa (opcional)</label>
+            <input
+              ref={bannerInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display:"none" }}
+              onChange={e => pickBanner(e.target.files?.[0] ?? null)}
+            />
+            <div
+              className="img-pick-banner"
+              onClick={() => bannerInputRef.current?.click()}
+              style={{ backgroundImage: bannerPreview ? `url(${bannerPreview})` : undefined }}
+            >
+              {!bannerPreview && <><ImageIcon size={18} /><span>Escolher banner</span></>}
+            </div>
+          </div>
+
+          <div className="field">
+            <label>Logo da empresa (opcional)</label>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display:"none" }}
+                onChange={e => pickLogo(e.target.files?.[0] ?? null)}
+              />
+              <div
+                className="img-pick-logo"
+                onClick={() => logoInputRef.current?.click()}
+                style={{ backgroundImage: logoPreview ? `url(${logoPreview})` : undefined }}
+              >
+                {!logoPreview && <Building2 size={20} style={{ color:"#4a6a6a" }} />}
+              </div>
+              <button type="button" className="add-btn" onClick={() => logoInputRef.current?.click()}>
+                Escolher logo
+              </button>
+            </div>
+          </div>
+
           <div className="field"><label>Nome da empresa</label><input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Construções Silva Lda" /></div>
           <div className="field"><label>Categoria principal</label><input className="input" value={mainCategory} onChange={e => setMainCategory(e.target.value)} placeholder="Ex: Construção" /></div>
           <div className="field"><label>Ano de fundação</label><input className="input" type="number" value={foundedYear} onChange={e => setFoundedYear(Number(e.target.value))} /></div>
           <div className="field"><label>Email</label><input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
           <div className="field"><label>Telefone</label><input className="input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+244 9XX XXX XXX" /></div>
-          <button className="btn-primary" disabled={!canSubmit || creating} onClick={() => onCreate({ name, mainCategory, foundedYear, email, phone })}>
+          <button className="btn-primary" disabled={!canSubmit || creating} onClick={() => onCreate({ name, mainCategory, foundedYear, email, phone, logoFile, bannerFile })}>
             {creating ? <Loader2 size={15} className="spin" /> : <Check size={15} />} Criar empresa
           </button>
         </div>
@@ -574,10 +767,31 @@ export default function CompanyProfilePage() {
   const handleCreateCompany = async (data: any) => {
     setCreating(true);
     try {
-      const created = await companyApi.create(data);
-      setCompany(created);
+      const created = await companyApi.create({
+        name: data.name,
+        mainCategory: data.mainCategory,
+        foundedYear: data.foundedYear,
+        email: data.email,
+        phone: data.phone,
+      });
+
+      let finalCompany = created;
+      try {
+        if (data.logoFile) {
+          finalCompany = await uploadCompanyImage(finalCompany.id, "logo", data.logoFile);
+        }
+        if (data.bannerFile) {
+          finalCompany = await uploadCompanyImage(finalCompany.id, "banner", data.bannerFile);
+        }
+      } catch {
+        // A empresa já foi criada com sucesso — uma falha no upload da
+        // imagem não deve impedir o utilizador de continuar. As imagens
+        // podem sempre ser adicionadas depois em "Editar".
+      }
+
+      setCompany(finalCompany);
       setNotFound(false);
-      await loadAll(created.id);
+      await loadAll(finalCompany.id);
     } catch (e: any) { alert(e.message || "Erro ao criar empresa."); }
     finally { setCreating(false); }
   };
@@ -796,6 +1010,12 @@ export default function CompanyProfilePage() {
         .input:focus{border-color:#378ADD}
         .btn-primary{width:100%;padding:13px;border-radius:11px;background:#378ADD;color:white;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
         .btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+        .add-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:#1d9e7520;color:#1D9E75;border:1px solid #1d9e7540;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+        .add-btn:disabled{opacity:0.5;cursor:not-allowed}
+        .img-pick-banner{width:100%;height:90px;border-radius:12px;background:#0d1117;border:1px dashed #1a2535;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:#4a6a6a;font-size:12px;transition:border-color .2s}
+        .img-pick-banner:hover{border-color:#378ADD}
+        .img-pick-logo{width:64px;height:64px;border-radius:14px;background:#0d1117;border:1px dashed #1a2535;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .2s}
+        .img-pick-logo:hover{border-color:#378ADD}
         @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin 1s linear infinite}
       `}</style>
       <CreateCompanyPrompt onCreate={handleCreateCompany} creating={creating} />
@@ -868,6 +1088,10 @@ export default function CompanyProfilePage() {
         .tl-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1}
         .gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%}
         .section-title{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:15px;font-weight:700;color:#c0d0e0}
+        .img-pick-banner{width:100%;height:90px;border-radius:12px;background:#0d1117;border:1px dashed #1a2535;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:#4a6a6a;font-size:12px;transition:border-color .2s}
+        .img-pick-banner:hover{border-color:#378ADD}
+        .img-pick-logo{width:64px;height:64px;border-radius:14px;background:#0d1117;border:1px dashed #1a2535;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .2s}
+        .img-pick-logo:hover{border-color:#378ADD}
         .spin{animation:spin 1s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
         @media(max-width:768px){.cp-inner{padding:20px 20px}.stat-grid{grid-template-columns:repeat(2,1fr)}.gallery-grid{grid-template-columns:repeat(3,1fr)}}
@@ -888,6 +1112,13 @@ export default function CompanyProfilePage() {
 
         {/* ── Card da empresa ── */}
         <div className="cp-card">
+          <div style={{
+            height:90, borderRadius:"20px 20px 0 0",
+            background: company.bannerUrl
+              ? `url(${company.bannerUrl}) center/cover`
+              : "linear-gradient(135deg,#378ADD15,#1D9E7515)",
+            margin:"-24px -24px 20px",
+          }} />
           <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
             <div style={{ width:72, height:72, borderRadius:16, background:"#1a2232", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
               {company.logoUrl
@@ -1285,7 +1516,14 @@ export default function CompanyProfilePage() {
         </>)}
       </div>
 
-      <EditCompanyModal open={editOpen} company={company} onClose={() => setEditOpen(false)} onSave={handleSaveCompany} saving={savingCompany}/>
+      <EditCompanyModal
+        open={editOpen}
+        company={company}
+        onClose={() => setEditOpen(false)}
+        onSave={handleSaveCompany}
+        saving={savingCompany}
+        onImagesUpdated={(updated) => setCompany(updated)}
+      />
       <InviteModal open={inviteOpen} onClose={() => setInviteOpen(false)} onSend={handleSendInvite} sending={sendingInvite}/>
       <CompanyKycModal open={kycOpen} onClose={() => setKycOpen(false)} onSubmit={handleSubmitKyc} submitting={submittingKyc} defaultProvince={company.province ?? PROVINCES[0]}/>
     </>

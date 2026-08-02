@@ -59,6 +59,10 @@ interface SearchResult {
   providerId:          string;
   providerName:        string;
   providerAvatar?:     string;
+  // Logo da empresa — sempre e só sourced de company.logoUrl (via o
+  // campo companyLogoUrl que o backend agora expõe explicitamente em
+  // /users/providers). Nunca é preenchido a partir de user.avatarUrl.
+  companyLogoUrl?:     string;
   isOnline?:           boolean;
   category?:           string;
   bio?:                string;
@@ -139,17 +143,17 @@ function SearchInner() {
       for (const p of rawProviders) {
         if (p.cardType === "company" || p.isCompany === true) {
           merged.push({
-            key:           `company_${p.companyId ?? p.id}`,
-            providerId:    p.id,
-            providerName:  p.fullName,
-            providerAvatar: p.avatarUrl,
-            isOnline:      false,
-            category:      p.category,
-            bio:           p.bio,
-            source:        "provider",
-            cardType:      "company",
-            isCompany:     true,
-            companyId:     p.companyId,
+            key:            `company_${p.companyId ?? p.id}`,
+            providerId:     p.id,
+            providerName:   p.fullName,
+            companyLogoUrl: p.companyLogoUrl,
+            isOnline:       false,
+            category:       p.category,
+            bio:            p.bio,
+            source:         "provider",
+            cardType:       "company",
+            isCompany:      true,
+            companyId:      p.companyId,
           });
         } else if (!providerIdsWithCatalog.has(p.id)) {
           merged.push({
@@ -391,6 +395,7 @@ function SearchInner() {
                   const isCompany  = isCompanyCard(item);
                   const isCatalog  = item.source === "catalog";
                   const { Icon: CatIcon, color: catColor } = CAT_ICON[item.category ?? ""] ?? DEFAULT_CAT_ICON;
+                  const imageUrl   = isCompany ? item.companyLogoUrl : item.providerAvatar;
 
                   return (
                     <div
@@ -406,8 +411,8 @@ function SearchInner() {
                           display:"flex", alignItems:"center", justifyContent:"center",
                           overflow:"hidden",
                         }}>
-                          {item.providerAvatar
-                            ? <img src={item.providerAvatar} alt={item.providerName} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                          {imageUrl
+                            ? <img src={imageUrl} alt={item.providerName} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                             : isCompany
                               ? <Building2 size={22} style={{color:"#4F46E5"}}/>
                               : <CatIcon size={22} style={{color:catColor}}/>

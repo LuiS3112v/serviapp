@@ -1,17 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import type { CSSProperties } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Zap, Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
 import { authApi, saveSession } from "@/lib/auth.api";
 
+// FIX (build): useSearchParams() exige um <Suspense> boundary no App
+// Router, senão o Next.js falha o build de produção ("should be wrapped
+// in a suspense boundary"). O componente por defeito da página passa a
+// ser só um wrapper com Suspense; todo o conteúdo e lógica que já
+// existiam (incluindo o novo ?type=provider) ficam intactos dentro de
+// LoginPageContent.
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [accountType, setAccountType] = useState<"client" | "provider">("client");
+  // FIX: passa a ler ?type=provider|client da URL para pré-selecionar o
+  // separador certo. Ex.: o botão "Já tens conta? Entrar" no registo do
+  // Provider agora navega para /login?type=provider, evitando que o
+  // utilizador tenha de clicar manualmente em "Sou prestador" depois de
+  // vir desse fluxo. Sem o parâmetro (ex: /login direto), mantém-se o
+  // valor por defeito "client", exatamente como já era antes.
+  const initialType = searchParams.get("type") === "provider" ? "provider" : "client";
+  const [accountType, setAccountType] = useState<"client" | "provider">(initialType);
   const [form, setForm] = useState({ email: "", password: "" });
 
   const accent = accountType === "client" ? "#2563eb" : "#EF9F27";

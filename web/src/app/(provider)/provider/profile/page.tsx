@@ -1,10 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User, Mail, Phone, MapPin, Edit, Shield, Star, Briefcase, CheckCircle, X, Loader2 } from "lucide-react";
+import { User, Mail, Phone, MapPin, Edit, Shield, Star, Briefcase, CheckCircle, X, Loader2, Camera } from "lucide-react";
 import { userApi, getCurrentUser, refreshUserInStorage } from "@/lib/user.api";
 import { servicesApi, ProviderStats } from "@/lib/services.api";
 import { AuthUser } from "@/lib/auth.api";
+import { getToken } from "@/lib/auth.api";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 const CATEGORIES = ["Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Segurança"];
 
@@ -23,6 +26,16 @@ export default function ProviderProfilePage() {
   const [success, setSuccess] = useState(false);
   const [form, setForm]       = useState({ fullName:"", phone:"", category:"" });
 
+  // ── Upload de foto de perfil ──────────────────────────────────────────
+  // A wrapper genérica `api.ts` do projeto força sempre
+  // Content-Type: application/json, o que não serve para multipart. Por
+  // isso este upload usa fetch directo com FormData + Authorization,
+  // exactamente como já é feito noutros pontos do projeto (ex: pesquisa
+  // de utilizadores dentro do InviteModal da página de empresa) quando
+  // o pedido não cabe na wrapper JSON.
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+
   useEffect(() => {
     const cached = getCurrentUser();
     if (cached) { setUser(cached as AuthUser); setLoading(false); }
@@ -38,7 +51,7 @@ export default function ProviderProfilePage() {
 
   const openEdit = () => {
     setForm({ fullName:user?.fullName??"", phone:user?.phone??"", category:(user as any)?.category??"" });
-    setEditing(true); setError(""); setSuccess(false);
+    setEditing(true); setError(""); setSuccess(false); setAvatarError("");
   };
 
   const handleSave = async () => {
@@ -54,6 +67,38 @@ export default function ProviderProfilePage() {
       setError(e.message || "Erro ao guardar.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAvatarChange = async (file: File | null) => {
+    if (!file) return;
+    setAvatarUploading(true);
+    setAvatarError("");
+    try {
+      const token = getToken();
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await fetch(`${API_URL}/users/me/avatar`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(
+          Array.isArray(err.message) ? err.message[0] : err.message || "Erro ao enviar foto."
+        );
+      }
+
+      const updated = await res.json();
+      setUser(updated as AuthUser);
+      refreshUserInStorage(updated as AuthUser);
+    } catch (e: any) {
+      setAvatarError(e.message || "Erro ao enviar foto.");
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -85,6 +130,14 @@ export default function ProviderProfilePage() {
         .save-btn:disabled{opacity:0.6;cursor:not-allowed}
         .skeleton{background:#1a2535;border-radius:8px;animation:pulse 1.5s infinite}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        .avatar-frame{width:72px;height:72px;border-radius:50%;background:#2a1e08;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative}
+        .avatar-frame img{width:100%;height:100%;object-fit:cover}
+        .avatar-upload-wrap{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+        .avatar-upload-frame{width:64px;height:64px;border-radius:50%;background:#0d1117;border:1px solid #1a2535;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative}
+        .avatar-upload-frame img{width:100%;height:100%;object-fit:cover}
+        .avatar-upload-btn{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;border:1px solid #1a2535;background:#0d1117;color:#8a9ab0;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s}
+        .avatar-upload-btn:hover{border-color:#EF9F27;color:#EF9F27}
+        .avatar-upload-btn:disabled{opacity:0.6;cursor:not-allowed}
         @media(max-width:640px){.pp-inner{padding:70px 16px 20px}.cat-grid{grid-template-columns:repeat(2,1fr)}.stat-grid{grid-template-columns:1fr 1fr}.stat-value{font-size:17px}}
         @media(max-width:360px){.stat-value{font-size:16px}}
       `}</style>
@@ -100,8 +153,10 @@ export default function ProviderProfilePage() {
 
         <div className="pp-card">
           <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20,paddingBottom:20,borderBottom:"1px solid #1a2535"}}>
-            <div style={{width:72,height:72,borderRadius:"50%",background:"#2a1e08",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <User size={32} style={{color:"#EF9F27"}}/>
+            <div className="avatar-frame">
+              {userAny?.avatarUrl
+                ? <img src={userAny.avatarUrl} alt={user?.fullName ?? ""} />
+                : <User size={32} style={{color:"#EF9F27"}}/>}
             </div>
             <div>
               {loading ? <div className="skeleton" style={{width:160,height:20,marginBottom:8}}/> :
@@ -177,6 +232,34 @@ export default function ProviderProfilePage() {
             </div>
             {error && <div style={{background:"#E24B4A15",border:"1px solid #E24B4A30",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#E24B4A",marginBottom:14}}>{error}</div>}
             {success && <div style={{background:"#EF9F2720",border:"1px solid #EF9F2740",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#EF9F27",marginBottom:14,display:"flex",alignItems:"center",gap:8}}><CheckCircle size={14}/> Guardado!</div>}
+
+            {/* ── Foto de perfil ── */}
+            <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:8}}>Foto de perfil</label>
+            {avatarError && <div style={{background:"#E24B4A15",border:"1px solid #E24B4A30",borderRadius:10,padding:"8px 12px",fontSize:12,color:"#E24B4A",marginBottom:10}}>{avatarError}</div>}
+            <div className="avatar-upload-wrap">
+              <div className="avatar-upload-frame">
+                {userAny?.avatarUrl
+                  ? <img src={userAny.avatarUrl} alt="" />
+                  : <User size={26} style={{color:"#4a5a6a"}}/>}
+              </div>
+              <label className="avatar-upload-btn">
+                {avatarUploading
+                  ? <><Loader2 size={13} style={{animation:"spin 1s linear infinite"}}/> A enviar...</>
+                  : <><Camera size={13}/> {userAny?.avatarUrl ? "Trocar foto" : "Escolher foto"}</>}
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  disabled={avatarUploading}
+                  onChange={e => {
+                    const file = e.target.files?.[0] ?? null;
+                    e.target.value = "";
+                    handleAvatarChange(file);
+                  }}
+                />
+              </label>
+            </div>
+
             <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6}}>Nome completo</label>
             <input className="modal-input" value={form.fullName} onChange={e=>setForm({...form,fullName:e.target.value})} placeholder="O teu nome"/>
             <label style={{fontSize:13,fontWeight:600,color:"#6a7a8a",display:"block",marginBottom:6}}>Telemóvel</label>

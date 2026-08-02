@@ -61,6 +61,14 @@ export class User {
   @Column({ nullable: true })
   avatarUrl: string;
 
+  // Id do ficheiro no Cloudinary correspondente a avatarUrl — espelha o
+  // padrão já usado em Company (logoPublicId/bannerPublicId), para
+  // permitir gestão/remoção futura do ficheiro. Requer ALTER TABLE
+  // manual em produção, já que synchronize está desligado fora de
+  // desenvolvimento.
+  @Column({ nullable: true })
+  avatarPublicId: string;
+
   @Column({ nullable: true })
   bio: string;
 

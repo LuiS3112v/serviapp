@@ -3,7 +3,10 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Upload, Loader2 } from "lucide-react";
-import { authApi, saveSession } from "@/lib/auth.api";
+import { authApi, saveSession, getToken, clearSession } from "@/lib/auth.api";
+import { refreshUserInStorage } from "@/lib/user.api";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 const categories = [
   "Limpeza", "Climatização", "Canalização", "Eletricista",
@@ -20,15 +23,71 @@ export default function RegisterProviderPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // FIX (bug #6): a conta é criada em handleContinueFromStep2. Se o
+  // utilizador recuar do Passo 3 para o Passo 2 (para mudar categoria/bio,
+  // por exemplo) e avançar outra vez, sem este estado o código tentava
+  // chamar authApi.register() uma segunda vez com o mesmo email — o
+  // backend rejeita por email duplicado e o utilizador só via um erro
+  // genérico sem perceber que a conta já existia. Agora, assim que a
+  // conta é criada com sucesso uma vez, novos avanços do Passo 2 para o
+  // Passo 3 só re-validam os campos e navegam, sem repetir o registo.
+  const [accountCreated, setAccountCreated] = useState(false);
+
   // ── Novo: só para permitir escolher os ficheiros do BI e da selfie ──
   const [biFile, setBiFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const biInputRef = useRef<HTMLInputElement>(null);
   const selfieInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Novo: foto de perfil opcional (Passo 3) ──────────────────────────
+  // Reutiliza exactamente o endpoint POST /users/me/avatar já criado —
+  // nenhum sistema de upload novo. Só pode acontecer depois de
+  // handleContinueFromStep2 ter criado a conta e guardado sessão, já
+  // que o endpoint exige um token válido.
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarSelect = async (file: File | null) => {
+    if (!file) return;
+    setAvatarUploading(true);
+    setAvatarError("");
+    try {
+      const token = getToken();
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await fetch(`${API_URL}/users/me/avatar`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(
+          Array.isArray(err.message) ? err.message[0] : err.message || "Erro ao enviar foto."
+        );
+      }
+
+      const updated = await res.json();
+      setAvatarUrl(updated.avatarUrl ?? null);
+      refreshUserInStorage(updated);
+    } catch (err: unknown) {
+      setAvatarError(err instanceof Error ? err.message : "Erro ao enviar foto.");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   // Cria a conta ao sair do Passo 2 — já temos tudo que o RegisterDto exige.
-  // O Passo 3 (upload KYC) precisa de sessão válida, por isso o registo
-  // tem de acontecer antes de lá chegar.
+  // O Passo 3 (foto) e o Passo 4 (upload KYC) precisam de sessão válida,
+  // por isso o registo tem de acontecer antes de lá chegar.
+  //
+  // FIX (bug #6): se a conta já foi criada nesta sessão de registo (o
+  // utilizador recuou do Passo 3 e está a avançar de novo), não repete
+  // authApi.register() — só valida os campos e avança para o Passo 3.
   const handleContinueFromStep2 = async () => {
     setError("");
 
@@ -38,6 +97,11 @@ export default function RegisterProviderPage() {
     }
     if (!selectedCat) {
       setError("Seleciona uma categoria de serviço.");
+      return;
+    }
+
+    if (accountCreated) {
+      setStep(3);
       return;
     }
 
@@ -51,6 +115,7 @@ export default function RegisterProviderPage() {
         phone: form.phone.trim() || undefined,
       });
       saveSession(data);
+      setAccountCreated(true);
       setStep(3);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro ao criar conta. Tenta novamente.");
@@ -94,6 +159,7 @@ export default function RegisterProviderPage() {
         .auth-perk-row { display: flex; align-items: center; gap: 8px; }
         .auth-footer-text { text-align: center; font-size: 13px; color: #64748b; margin-top: 20px; }
         .auth-link-btn { color: #1D9E75; font-weight: 700; background: none; border: none; cursor: pointer; padding: 0; font-family: inherit; font-size: inherit; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 480px) { .auth-card { padding: 30px 22px; } .cat-grid { grid-template-columns: repeat(2,1fr); } }
       `}</style>
 
@@ -102,6 +168,7 @@ export default function RegisterProviderPage() {
           <div className="auth-card">
 
             <button
+              type="button"
               className="auth-back"
               onClick={() => step === 1 ? router.back() : setStep(s => s - 1)}
             >
@@ -112,12 +179,12 @@ export default function RegisterProviderPage() {
               <div className="auth-logo-mark"><Zap size={20} color="#fff" /></div>
               <div>
                 <p className="auth-title">Criar perfil de prestador</p>
-                <p className="auth-subtitle">Passo {step} de 3</p>
+                <p className="auth-subtitle">Passo {step} de 4</p>
               </div>
             </div>
 
             <div className="progress-bar">
-              <div className="progress-fill" style={{ width: `${(step / 3) * 100}%` }} />
+              <div className="progress-fill" style={{ width: `${(step / 4) * 100}%` }} />
             </div>
 
             {error && <div className="auth-error">{error}</div>}
@@ -144,12 +211,12 @@ export default function RegisterProviderPage() {
                     value={form.password}
                     onChange={e => setForm({ ...form, password: e.target.value })}
                   />
-                  <button className="auth-eye" onClick={() => setShow(!show)} type="button">
+                  <button type="button" className="auth-eye" onClick={() => setShow(!show)}>
                     {show ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
 
-                <button className="auth-btn" onClick={() => setStep(2)}>Continuar →</button>
+                <button type="button" className="auth-btn" onClick={() => setStep(2)}>Continuar →</button>
               </div>
             )}
 
@@ -176,7 +243,7 @@ export default function RegisterProviderPage() {
                 <label className="auth-label">Preço hora (Kz)</label>
                 <input className="auth-input" type="number" placeholder="Ex: 5000" />
 
-                <button className="auth-btn" disabled={loading} onClick={handleContinueFromStep2}>
+                <button type="button" className="auth-btn" disabled={loading} onClick={handleContinueFromStep2}>
                   {loading
                     ? <><Loader2 size={16} className="animate-spin" /> A criar conta...</>
                     : "Continuar →"
@@ -185,8 +252,54 @@ export default function RegisterProviderPage() {
               </div>
             )}
 
-            {/* ── Passo 3: Verificação KYC ────────────────────────────── */}
+            {/* ── Passo 3: Foto de perfil (opcional) ──────────────────── */}
             {step === 3 && (
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>Foto de perfil (opcional)</p>
+                <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20, lineHeight: 1.6 }}>
+                  Ajuda os clientes a reconhecerem-te mais facilmente. Podes saltar este passo e adicionar uma foto mais tarde em Perfil → Editar perfil.
+                </p>
+
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    e.target.value = "";
+                    handleAvatarSelect(file);
+                  }}
+                />
+
+                {avatarError && <div className="auth-error">{avatarError}</div>}
+
+                <div
+                  className={`upload-area${avatarUrl ? " has-file" : ""}`}
+                  onClick={() => avatarInputRef.current?.click()}
+                  style={{ borderRadius: "50%", width: 120, height: 120, margin: "0 auto 16px", padding: 0, overflow: "hidden", position: "relative" }}
+                >
+                  {avatarUploading ? (
+                    <Loader2 size={26} style={{ color: "#94a3b8", animation: "spin 1s linear infinite" }} />
+                  ) : avatarUrl ? (
+                    <img src={avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <Upload size={22} style={{ color: "#94a3b8" }} />
+                  )}
+                </div>
+
+                <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", marginBottom: 20 }}>
+                  {avatarUrl ? "Foto enviada — clica para trocar" : "Clica para escolher uma foto"}
+                </p>
+
+                <button type="button" className="auth-btn" disabled={avatarUploading} onClick={() => setStep(4)}>
+                  {avatarUrl ? "Continuar →" : "Continuar sem foto →"}
+                </button>
+              </div>
+            )}
+
+            {/* ── Passo 4: Verificação KYC ────────────────────────────── */}
+            {step === 4 && (
               <div>
                 <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>Verificação de identidade (KYC)</p>
                 <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20, lineHeight: 1.6 }}>
@@ -248,7 +361,7 @@ export default function RegisterProviderPage() {
                   ))}
                 </div>
 
-                <button className="auth-btn" onClick={() => router.push("/provider-home")}>
+                <button type="button" className="auth-btn" onClick={() => router.push("/provider-home")}>
                   Submeter e aguardar aprovação →
                 </button>
               </div>
@@ -256,7 +369,30 @@ export default function RegisterProviderPage() {
 
             <p className="auth-footer-text">
               Já tens conta?{" "}
-              <button className="auth-link-btn" onClick={() => router.push("/login")}>
+              <button
+                type="button"
+                className="auth-link-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // FIX: se a conta já foi criada (Passo 2 concluído), já
+                  // existe um token/cookie de sessão válido guardado por
+                  // saveSession(). O proxy trata "/login" como rota
+                  // exclusiva para visitantes sem sessão — ao detetar esse
+                  // token, redireciona automaticamente para a home do role
+                  // (provider-home), em vez de mostrar o login. Isso fazia
+                  // parecer que o clique em "Entrar" saltava passos e ia
+                  // parar à home. Limpar a sessão local antes de navegar
+                  // faz o proxy tratar o pedido como visitante e mostrar
+                  // o login normalmente. A conta em si não é apagada —
+                  // só a sessão local; o utilizador volta a entrar com
+                  // email e senha.
+                  if (accountCreated) {
+                    clearSession();
+                  }
+                  router.push("/login?type=provider");
+                }}
+              >
                 Entrar
               </button>
             </p>

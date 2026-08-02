@@ -72,7 +72,7 @@ export default function RegisterClientPage() {
       <div className="auth">
         <div className="auth-wrap">
           <div className="auth-card">
-            <button className="auth-back" onClick={() => step === 1 ? router.push("/") : setStep(1)}>
+            <button type="button" className="auth-back" onClick={() => step === 1 ? router.push("/") : setStep(1)}>
               <ArrowLeft size={15} /> {step === 1 ? "Voltar" : "Passo anterior"}
             </button>
 
@@ -101,7 +101,7 @@ export default function RegisterClientPage() {
                 <label className="auth-label">Telemóvel</label>
                 <input className="auth-input" placeholder="+244 9XX XXX XXX" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
 
-                <button className="auth-btn" onClick={() => setStep(2)}>Continuar →</button>
+                <button type="button" className="auth-btn" onClick={() => setStep(2)}>Continuar →</button>
               </div>
             ) : (
               <div>
@@ -115,7 +115,7 @@ export default function RegisterClientPage() {
                     value={form.password}
                     onChange={e => setForm({ ...form, password: e.target.value })}
                   />
-                  <button className="auth-eye" onClick={() => setShow(!show)} type="button">
+                  <button type="button" className="auth-eye" onClick={() => setShow(!show)}>
                     {show ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
@@ -129,7 +129,7 @@ export default function RegisterClientPage() {
                   ))}
                 </div>
 
-                <button className="auth-btn" disabled={loading} onClick={handleSubmit}>
+                <button type="button" className="auth-btn" disabled={loading} onClick={handleSubmit}>
                   {loading
                     ? <><Loader2 size={16} className="animate-spin" /> A criar conta...</>
                     : "Criar conta →"
@@ -145,7 +145,15 @@ export default function RegisterClientPage() {
 
             <p className="auth-footer-text">
               Já tens conta?{" "}
-              <button className="auth-link-btn" onClick={() => router.push("/login")}>
+              <button
+                type="button"
+                className="auth-link-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  router.push("/login");
+                }}
+              >
                 Entrar
               </button>
             </p>

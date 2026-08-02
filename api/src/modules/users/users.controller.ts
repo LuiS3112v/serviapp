@@ -1,4 +1,8 @@
-import { Controller, Get, Patch, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller, Get, Patch, Post, Body, Query, UseGuards,
+  UseInterceptors, UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtGuard } from '../../common/guards/jwt.guard';
@@ -20,6 +24,21 @@ export class UsersController {
     return this.usersService.updateById(user.id, dto);
   }
 
+  // Causa do "Cannot POST /api/users/me/avatar": esta rota não existia.
+  // Endpoint multipart próprio, separado do PATCH /users/me (JSON),
+  // seguindo o mesmo padrão de POST /company/:companyId/logo. O campo
+  // do FormData tem de se chamar "avatar" — é o nome passado a
+  // FileInterceptor. Não requer nenhuma configuração extra de módulo:
+  // FileInterceptor já funciona out-of-the-box neste projecto (é o
+  // mesmo mecanismo que já serve logo/banner/galeria da empresa, sem
+  // MulterModule.register() nenhum).
+  @Post('me/avatar')
+  @UseGuards(JwtGuard)
+  @UseInterceptors(FileInterceptor('avatar'))
+  uploadAvatar(@CurrentUser() user: any, @UploadedFile() file: Express.Multer.File) {
+    return this.usersService.uploadAvatar(user.id, file);
+  }
+
   @Get('category-counts')
   getCategoryCounts() {
     return this.usersService.getCategoryCounts();
@@ -30,9 +49,6 @@ export class UsersController {
     return this.usersService.findProviders(category);
   }
 
-  // ── Pesquisa de utilizadores para o modal de convite de empresa ──────────
-  // GET /users/search?q=nome_ou_email_ou_telefone
-  // Requer autenticação — só providers/company owners devem convidar
   @Get('search')
   @UseGuards(JwtGuard)
   searchUsers(@Query('q') q: string) {
