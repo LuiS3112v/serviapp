@@ -9,12 +9,15 @@
  *
  * 2. clearSession() and clearAllSessions() now clear that cookie too.
  *
- * 3. refreshStoredSession() — NEW. Called by useAuth after /auth/me returns
+ * 3. refreshStoredSession() — Called by useAuth after /auth/me returns
  *    fresh data. Handles role promotions (e.g. client → admin) by migrating
  *    storage to the correct role-keyed slot.
  *
- * 4. fetchMe() — NEW. Calls GET /auth/me to get the current user from DB.
+ * 4. fetchMe() — Calls GET /auth/me to get the current user from DB.
  *    This is the fix for the stale-localStorage problem.
+ *
+ * 5. AuthUser now includes optional `bio` — fixes the TypeScript build error
+ *    from provider/profile/page.tsx, which sets `bio` on the user object.
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
@@ -29,6 +32,7 @@ export interface AuthUser {
   phone?: string;
   category?: string;
   isSuperAdmin?: boolean;
+  bio?: string;
 }
 
 export interface AuthResponse {
