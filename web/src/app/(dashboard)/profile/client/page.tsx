@@ -99,14 +99,14 @@ export default function ClientProfilePage() {
             {/* Card com info */}
             <div className="prof-card">
               <div style={{ display:"flex",alignItems:"center",gap:16,marginBottom:24,paddingBottom:24,borderBottom:"1px solid #eef1f5" }}>
-                <div style={{ width:72,height:72,borderRadius:"50%",background:"#eff6ff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                  <User size={32} style={{ color:"#2563eb" }}/>
+                <div style={{ width:72,height:72,borderRadius:"50%",background:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                  <User size={32} style={{ color:"#64748b" }}/>
                 </div>
                 <div>
                   {loading
                     ? <div className="skeleton" style={{ width:160,height:20,marginBottom:8 }}/>
                     : <p style={{ fontSize:18,fontWeight:700,color:"#0f172a",marginBottom:4 }}>{user?.fullName ?? "—"}</p>}
-                  <span style={{ fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:99,background:"#eff6ff",color:"#2563eb",border:"1px solid #dbeafe" }}>
+                  <span style={{ fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:99,background:"#f1f5f9",color:"#64748b",border:"1px solid #e2e8f0" }}>
                     Cliente
                   </span>
                 </div>
