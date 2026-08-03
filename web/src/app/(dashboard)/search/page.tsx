@@ -6,7 +6,7 @@ import Navbar from "@/components/layout/Navbar";
 import {
   Search, Filter, Briefcase, FileText,
   Wifi, WifiOff, Loader2, X, RefreshCw,
-  Package, CheckCircle, Building2,
+  Package, CheckCircle, Building2, User,
   Sparkles, Wind, Wrench, Zap, Monitor, Leaf,
   Scissors, Car, Paintbrush, HardHat, Lock,
 } from "lucide-react";
@@ -19,23 +19,19 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 const CATS  = ["Todos","Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Segurança"];
 const SORTS = ["Mais próximo","Melhor avaliação","Menor preço"];
 
-// Mesma paleta de tons usada na Home Page e na Categories Page (TONES),
-// para que a identidade de cada categoria seja consistente em toda a
-// plataforma. Substitui o ciclo antigo de 3 cores (ACCENTS) por um tom
-// dedicado por categoria.
 const CAT_ICON: Record<string, { Icon: any; color: string }> = {
-  "Limpeza":      { Icon: Sparkles,   color: "#0E7A5F" }, // emerald
-  "Climatização": { Icon: Wind,       color: "#0284C7" }, // sky
-  "Canalização":  { Icon: Wrench,     color: "#0D9488" }, // teal
-  "Eletricista":  { Icon: Zap,        color: "#B45309" }, // amber
-  "TI & Redes":   { Icon: Monitor,    color: "#4F46E5" }, // indigo
-  "Jardinagem":   { Icon: Leaf,       color: "#65A30D" }, // lime
-  "Mudanças":     { Icon: Package,    color: "#0891B2" }, // cyan
-  "Beleza":       { Icon: Scissors,   color: "#E11D48" }, // rose
-  "Automóvel":    { Icon: Car,        color: "#2563EB" }, // blue
-  "Pintura":      { Icon: Paintbrush, color: "#7C3AED" }, // violet
-  "Construção":   { Icon: HardHat,    color: "#C2410C" }, // orange
-  "Segurança":    { Icon: Lock,       color: "#475569" }, // slate
+  "Limpeza":      { Icon: Sparkles,   color: "#0E7A5F" },
+  "Climatização": { Icon: Wind,       color: "#0284C7" },
+  "Canalização":  { Icon: Wrench,     color: "#0D9488" },
+  "Eletricista":  { Icon: Zap,        color: "#B45309" },
+  "TI & Redes":   { Icon: Monitor,    color: "#4F46E5" },
+  "Jardinagem":   { Icon: Leaf,       color: "#65A30D" },
+  "Mudanças":     { Icon: Package,    color: "#0891B2" },
+  "Beleza":       { Icon: Scissors,   color: "#E11D48" },
+  "Automóvel":    { Icon: Car,        color: "#2563EB" },
+  "Pintura":      { Icon: Paintbrush, color: "#7C3AED" },
+  "Construção":   { Icon: HardHat,    color: "#C2410C" },
+  "Segurança":    { Icon: Lock,       color: "#475569" },
 };
 const DEFAULT_CAT_ICON = { Icon: Wrench, color: "#64748b" };
 
@@ -59,9 +55,6 @@ interface SearchResult {
   providerId:          string;
   providerName:        string;
   providerAvatar?:     string;
-  // Logo da empresa — sempre e só sourced de company.logoUrl (via o
-  // campo companyLogoUrl que o backend agora expõe explicitamente em
-  // /users/providers). Nunca é preenchido a partir de user.avatarUrl.
   companyLogoUrl?:     string;
   isOnline?:           boolean;
   category?:           string;
@@ -246,6 +239,16 @@ function SearchInner() {
     }
   };
 
+  // Navega para o perfil público preservando query (pesquisa + categoria)
+  // na própria URL da search page — ao voltar com router.back(), o
+  // Next.js App Router restaura o scroll automaticamente, e a query
+  // string continua na URL de origem, por isso fetchAll() e os estados
+  // de query/cat já leem sp.get(...) no mount, sem precisar de nenhum
+  // mecanismo novo de persistência de estado.
+  const handleViewProfile = (providerId: string) => {
+    router.push(`/prestador/${providerId}`);
+  };
+
   return (
     <>
       <style>{`
@@ -292,6 +295,8 @@ function SearchInner() {
         .orc-full{flex:1}
         .ver-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#4F46E5,#4338ca);color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s;flex:1;box-shadow:0 3px 10px rgba(79,70,229,0.28)}
         .ver-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(79,70,229,0.4)}
+        .perfil-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;border:1.5px solid #1D9E75;background:#ffffff;color:#1D9E75;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s}
+        .perfil-btn:hover{background:#1D9E75;color:white;box-shadow:0 4px 14px rgba(29,158,117,0.32)}
         .empty-s{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px;text-align:center}
         .sk{background:#e2e8f0;border-radius:8px;animation:sk 1.5s infinite}
         @keyframes sk{0%,100%{opacity:1}50%{opacity:0.4}}
@@ -483,57 +488,64 @@ function SearchInner() {
                         </div>
                       </div>
 
-                      <div style={{display:"flex",gap:8}}>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
 
                         {isCompany ? (
                           <button className="ver-btn" onClick={() => item.companyId && router.push(`/company/${item.companyId}`)}>
                             <Building2 size={13}/> Ver empresa
                           </button>
 
-                        ) : isCatalog ? (
+                        ) : (
                           <>
-                            {sol === "idle" && (
-                              <button className="sol-idle" onClick={() => handleSolicitar(item)}>
-                                <Package size={14}/> Solicitar
+                            <button className="perfil-btn" onClick={() => handleViewProfile(item.providerId)}>
+                              <User size={13}/> Ver Perfil
+                            </button>
+
+                            {isCatalog ? (
+                              <>
+                                {sol === "idle" && (
+                                  <button className="sol-idle" onClick={() => handleSolicitar(item)}>
+                                    <Package size={14}/> Solicitar
+                                  </button>
+                                )}
+                                {sol === "loading" && (
+                                  <div className="sol-load">
+                                    <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>
+                                    A solicitar...
+                                  </div>
+                                )}
+                                {sol === "done" && (
+                                  <div className="sol-done">
+                                    <CheckCircle size={14}/> Solicitado
+                                  </div>
+                                )}
+                                {sol === "error" && (
+                                  <div className="sol-err">Erro — tenta novamente</div>
+                                )}
+                                <button
+                                  className="orc-btn"
+                                  disabled={quoteLoadingId === item.key}
+                                  onClick={() => handleOrcamento(item.key, item.providerId)}
+                                >
+                                  {quoteLoadingId === item.key
+                                    ? <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>
+                                    : <FileText size={14}/>}
+                                  {quoteLoadingId === item.key ? "A abrir..." : "Orçamento"}
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                className="orc-btn"
+                                disabled={quoteLoadingId === item.key}
+                                onClick={() => handleOrcamento(item.key, item.providerId)}
+                              >
+                                {quoteLoadingId === item.key
+                                  ? <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>
+                                  : <FileText size={14}/>}
+                                {quoteLoadingId === item.key ? "A abrir..." : "Orçamento"}
                               </button>
                             )}
-                            {sol === "loading" && (
-                              <div className="sol-load">
-                                <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>
-                                A solicitar...
-                              </div>
-                            )}
-                            {sol === "done" && (
-                              <div className="sol-done">
-                                <CheckCircle size={14}/> Solicitado
-                              </div>
-                            )}
-                            {sol === "error" && (
-                              <div className="sol-err">Erro — tenta novamente</div>
-                            )}
-                            <button
-                              className="orc-btn"
-                              disabled={quoteLoadingId === item.key}
-                              onClick={() => handleOrcamento(item.key, item.providerId)}
-                            >
-                              {quoteLoadingId === item.key
-                                ? <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>
-                                : <FileText size={14}/>}
-                              {quoteLoadingId === item.key ? "A abrir..." : "Orçamento"}
-                            </button>
                           </>
-
-                        ) : (
-                          <button
-                            className="orc-btn orc-full"
-                            disabled={quoteLoadingId === item.key}
-                            onClick={() => handleOrcamento(item.key, item.providerId)}
-                          >
-                            {quoteLoadingId === item.key
-                              ? <Loader2 size={14} style={{animation:"spin 1s linear infinite"}}/>
-                              : <FileText size={14}/>}
-                            {quoteLoadingId === item.key ? "A abrir..." : "Orçamento"}
-                          </button>
                         )}
                       </div>
                     </div>

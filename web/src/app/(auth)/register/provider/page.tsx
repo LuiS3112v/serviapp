@@ -39,7 +39,7 @@ export default function RegisterProviderPage() {
   const biInputRef = useRef<HTMLInputElement>(null);
   const selfieInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Novo: foto de perfil opcional (Passo 3) ──────────────────────────
+  // ── Foto de perfil (Passo 3) — AGORA OBRIGATÓRIA ─────────────────────
   // Reutiliza exactamente o endpoint POST /users/me/avatar já criado —
   // nenhum sistema de upload novo. Só pode acontecer depois de
   // handleContinueFromStep2 ter criado a conta e guardado sessão, já
@@ -252,12 +252,12 @@ export default function RegisterProviderPage() {
               </div>
             )}
 
-            {/* ── Passo 3: Foto de perfil (opcional) ──────────────────── */}
+            {/* ── Passo 3: Foto de perfil (OBRIGATÓRIA) ───────────────── */}
             {step === 3 && (
               <div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>Foto de perfil (opcional)</p>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>Foto de perfil</p>
                 <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20, lineHeight: 1.6 }}>
-                  Ajuda os clientes a reconhecerem-te mais facilmente. Podes saltar este passo e adicionar uma foto mais tarde em Perfil → Editar perfil.
+                  A tua foto ajuda os clientes a reconhecerem-te e a confiarem no teu perfil. É obrigatória para continuares o registo.
                 </p>
 
                 <input
@@ -292,8 +292,8 @@ export default function RegisterProviderPage() {
                   {avatarUrl ? "Foto enviada — clica para trocar" : "Clica para escolher uma foto"}
                 </p>
 
-                <button type="button" className="auth-btn" disabled={avatarUploading} onClick={() => setStep(4)}>
-                  {avatarUrl ? "Continuar →" : "Continuar sem foto →"}
+                <button type="button" className="auth-btn" disabled={avatarUploading || !avatarUrl} onClick={() => setStep(4)}>
+                  Continuar →
                 </button>
               </div>
             )}
