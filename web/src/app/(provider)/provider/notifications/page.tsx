@@ -11,7 +11,11 @@ import { AppNotification } from "@/lib/notifications.api";
 import { getToken } from "@/lib/auth.api";
 import { api } from "@/lib/api";
 
+// ─── Types ─────────────────────────────────────────────────────────────────
+
 type TabFilter = "all" | "unread" | "read";
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
 
 function timeAgo(date: string): string {
   const diff = Date.now() - new Date(date).getTime();
@@ -25,21 +29,31 @@ function timeAgo(date: string): string {
   return new Date(date).toLocaleDateString("pt-PT");
 }
 
+// Paleta clara do provider:
+// acento principal  → âmbar   #EF9F27
+// acento secundário → verde   #1D9E75
+// texto principal   → #0f172a
+// texto secundário  → #64748b
+// fundo página      → #f8fafc
+// fundo cards       → #ffffff / #fbfcfd
+// bordas            → #eef1f5 / #fcd9a1 (amber-tinted para unread)
+
 const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string }> = {
-  message:           { icon: MessageCircle, color: "#1D9E75", bg: "#1d9e7520" },
-  service_accepted:  { icon: CheckCircle,   color: "#378ADD", bg: "#378ADD20" },
-  service_started:   { icon: CheckCircle,   color: "#8B5CF6", bg: "#8B5CF620" },
-  service_completed: { icon: CheckCircle,   color: "#1D9E75", bg: "#1d9e7520" },
-  service_cancelled: { icon: AlertCircle,   color: "#E24B4A", bg: "#E24B4A20" },
-  payment:           { icon: Wallet,        color: "#EF9F27", bg: "#EF9F2720" },
-  wallet:            { icon: Wallet,        color: "#EF9F27", bg: "#EF9F2720" },
-  kyc_approved:      { icon: CheckCircle,   color: "#1D9E75", bg: "#1d9e7520" },
-  kyc_rejected:      { icon: AlertCircle,   color: "#E24B4A", bg: "#E24B4A20" },
-  system:            { icon: Bell,          color: "#6a7a8a", bg: "#1a2535"   },
-  admin:             { icon: AlertCircle,   color: "#D4537E", bg: "#D4537E20" },
+  message:           { icon: MessageCircle, color: "#1D9E75", bg: "#e3f5ee" },
+  service_accepted:  { icon: CheckCircle,   color: "#EF9F27", bg: "#fef3e2" },
+  service_started:   { icon: CheckCircle,   color: "#8B5CF6", bg: "#ede9fe" },
+  service_completed: { icon: CheckCircle,   color: "#1D9E75", bg: "#e3f5ee" },
+  service_cancelled: { icon: AlertCircle,   color: "#dc2626", bg: "#fef2f2" },
+  payment:           { icon: Wallet,        color: "#EF9F27", bg: "#fef3e2" },
+  wallet:            { icon: Wallet,        color: "#EF9F27", bg: "#fef3e2" },
+  kyc_approved:      { icon: CheckCircle,   color: "#1D9E75", bg: "#e3f5ee" },
+  kyc_rejected:      { icon: AlertCircle,   color: "#dc2626", bg: "#fef2f2" },
+  system:            { icon: Bell,          color: "#64748b", bg: "#f1f5f9" },
+  admin:             { icon: AlertCircle,   color: "#DB2777", bg: "#fce7f3" },
 };
 
-// ─── Detecta se é notificação de convite de empresa ──────────────────────────
+// ─── Detecta convite de empresa ────────────────────────────────────────────
+
 function isCompanyInvite(n: AppNotification): boolean {
   return (
     n.type === "system" &&
@@ -48,7 +62,8 @@ function isCompanyInvite(n: AppNotification): boolean {
   );
 }
 
-// ─── Botões de aceitar/rejeitar convite ──────────────────────────────────────
+// ─── Botões aceitar/rejeitar convite ───────────────────────────────────────
+
 function InviteActions({
   notification,
   onResponded,
@@ -60,18 +75,13 @@ function InviteActions({
   const [loading, setLoading] = useState<"accept" | "reject" | null>(null);
   const [done, setDone]       = useState<"accepted" | "rejected" | null>(null);
 
-  // Extrai o invitationId do actionUrl ou metadata
-  // O backend guarda o invitationId no metadata quando existe
   const invitationId = notification.metadata?.invitationId as string | undefined;
 
   const handleRespond = async (accept: boolean) => {
     if (!invitationId) {
-      // Se não temos o invitationId na notificação, redireciona para o perfil
-      // da empresa onde pode responder manualmente
       router.push("/provider/company");
       return;
     }
-
     setLoading(accept ? "accept" : "reject");
     try {
       await api.patch(`/company/invitations/${invitationId}/respond`, { accept });
@@ -89,10 +99,10 @@ function InviteActions({
       <div style={{
         display: "flex", alignItems: "center", gap: 6,
         marginTop: 10, padding: "8px 12px", borderRadius: 9,
-        background: done === "accepted" ? "#1D9E7520" : "#E24B4A20",
-        border: `1px solid ${done === "accepted" ? "#1D9E7540" : "#E24B4A40"}`,
+        background: done === "accepted" ? "#e3f5ee" : "#fef2f2",
+        border: `1px solid ${done === "accepted" ? "#a7e3cc" : "#fecaca"}`,
         fontSize: 12, fontWeight: 600,
-        color: done === "accepted" ? "#1D9E75" : "#E24B4A",
+        color: done === "accepted" ? "#1D9E75" : "#dc2626",
       }}>
         {done === "accepted"
           ? <><CheckCircle size={13}/> Convite aceite — bem-vindo à equipa!</>
@@ -129,8 +139,8 @@ function InviteActions({
         style={{
           display: "flex", alignItems: "center", gap: 6,
           padding: "8px 16px", borderRadius: 9,
-          border: "1px solid #E24B4A40", background: "#E24B4A15",
-          color: "#E24B4A", fontSize: 12, fontWeight: 600,
+          border: "1px solid #fecaca", background: "#fef2f2",
+          color: "#dc2626", fontSize: 12, fontWeight: 600,
           cursor: loading ? "not-allowed" : "pointer",
           fontFamily: "inherit", opacity: loading === "accept" ? 0.5 : 1,
           transition: "all 0.15s",
@@ -146,7 +156,8 @@ function InviteActions({
   );
 }
 
-// ─── Notification Card ────────────────────────────────────────────────────────
+// ─── Notification Card ─────────────────────────────────────────────────────
+
 function NotifCard({
   n, onRead, onDelete, onRefresh,
 }: {
@@ -157,7 +168,7 @@ function NotifCard({
 }) {
   const isInvite = isCompanyInvite(n);
   const cfg = isInvite
-    ? { icon: Building2, color: "#378ADD", bg: "#378ADD18" }
+    ? { icon: Building2, color: "#EF9F27", bg: "#fef3e2" }
     : (TYPE_CONFIG[n.type] ?? TYPE_CONFIG.system);
   const Icon = cfg.icon;
   const isUnread = n.status === "unread";
@@ -167,18 +178,21 @@ function NotifCard({
       style={{
         display: "flex", alignItems: "flex-start", gap: 14,
         padding: "16px", borderRadius: 14,
-        background: isUnread ? "#131b27" : "#0d1117",
-        border: `1px solid ${isInvite ? "#378ADD30" : (isUnread ? "#1d2535" : "#1a2535")}`,
-        cursor: isUnread ? "pointer" : "default",
+        background: isUnread ? "#ffffff" : "#fbfcfd",
+        border: `1px solid ${isInvite ? "#fcd9a1" : (isUnread ? "#fcd9a1" : "#eef1f5")}`,
+        boxShadow: isUnread ? "0 2px 10px rgba(15,23,42,0.05)" : "none",
+        cursor: isUnread && !isInvite ? "pointer" : "default",
         transition: "all 0.15s", position: "relative",
       }}
       onClick={() => isUnread && !isInvite && onRead(n.id)}
     >
+      {/* Indicador de não lida — âmbar para o provider */}
       {isUnread && (
         <div style={{
           position: "absolute", top: 16, right: 16,
-          width: 8, height: 8, borderRadius: "50%", background: "#1D9E75",
-        }} />
+          width: 8, height: 8, borderRadius: "50%",
+          background: "#EF9F27",
+        }}/>
       )}
 
       <div style={{
@@ -186,24 +200,20 @@ function NotifCard({
         background: cfg.bg, display: "flex",
         alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <Icon size={18} style={{ color: cfg.color }} />
+        <Icon size={18} style={{ color: cfg.color }}/>
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
-          <p style={{ fontSize: 14, fontWeight: isUnread ? 700 : 500, color: "#e2e8f0", margin: 0 }}>{n.title}</p>
-          <span style={{ fontSize: 11, color: "#3a4a5a", whiteSpace: "nowrap", flexShrink: 0 }}>{timeAgo(n.createdAt)}</span>
+          <p style={{ fontSize: 14, fontWeight: isUnread ? 700 : 500, color: "#0f172a", margin: 0 }}>{n.title}</p>
+          <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap", flexShrink: 0 }}>{timeAgo(n.createdAt)}</span>
         </div>
-        <p style={{ fontSize: 13, color: "#4a6a6a", lineHeight: 1.5, margin: 0 }}>{n.body}</p>
+        <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5, margin: 0 }}>{n.body}</p>
 
-        {/* Botões aceitar/rejeitar — só para convites de empresa */}
         {isInvite && (
           <InviteActions
             notification={n}
-            onResponded={() => {
-              onRead(n.id);
-              onRefresh();
-            }}
+            onResponded={() => { onRead(n.id); onRefresh(); }}
           />
         )}
       </div>
@@ -212,18 +222,19 @@ function NotifCard({
         onClick={e => { e.stopPropagation(); onDelete(n.id); }}
         style={{
           background: "none", border: "none", cursor: "pointer",
-          color: "#2a3a4a", padding: 4, flexShrink: 0, transition: "color 0.15s",
+          color: "#cbd5e1", padding: 4, flexShrink: 0, transition: "color 0.15s",
         }}
-        onMouseEnter={e => (e.currentTarget.style.color = "#E24B4A")}
-        onMouseLeave={e => (e.currentTarget.style.color = "#2a3a4a")}
+        onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")}
+        onMouseLeave={e => (e.currentTarget.style.color = "#cbd5e1")}
       >
-        <Trash2 size={14} />
+        <Trash2 size={14}/>
       </button>
     </div>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page ─────────────────────────────────────────────────────────────
+
 export default function ProviderNotificationsPage() {
   const {
     notifications, unread, loading,
@@ -231,7 +242,7 @@ export default function ProviderNotificationsPage() {
     deleteNotification, loadMore, refresh,
   } = useNotifications();
 
-  const [tab, setTab]           = useState<TabFilter>("all");
+  const [tab, setTab]               = useState<TabFilter>("all");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => { setIsLoggedIn(!!getToken()); }, []);
@@ -245,17 +256,50 @@ export default function ProviderNotificationsPage() {
   return (
     <>
       <style>{`
-        .pn-wrap{display:flex;flex-direction:column;gap:20px;padding:28px 32px;max-width:720px}
-        .pn-tabs{display:flex;gap:4px;background:#131b27;border-radius:12px;padding:4px;border:1px solid #1a2535;width:fit-content}
-        .pn-tab{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:#6a7a8a;transition:all 0.15s;font-family:inherit;white-space:nowrap}
-        .pn-tab.on{background:#1D9E75;color:white}
-        .pn-list{display:flex;flex-direction:column;gap:8px}
-        .pn-skeleton{background:#1a2535;border-radius:8px;animation:pnsk 1.5s infinite}
-        @keyframes pnsk{0%,100%{opacity:1}50%{opacity:0.4}}
-        @keyframes pnspin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-        .pn-load-btn{width:100%;padding:12px;border-radius:12px;border:1px solid #1a2535;background:#131b27;color:#6a7a8a;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.15s}
-        .pn-load-btn:hover{border-color:#1D9E75;color:#1D9E75}
-        @media(max-width:640px){.pn-wrap{padding:16px 16px 20px}}
+        @keyframes pnspin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+        @keyframes pnsk   { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
+
+        .pn-wrap  { display: flex; flex-direction: column; gap: 20px; padding: 28px 32px; max-width: 720px; }
+
+        /* ── Tabs — âmbar activo, distinto do azul do cliente ── */
+        .pn-tabs  { display: flex; gap: 4px; background: #ffffff; border-radius: 12px; padding: 4px; border: 1px solid #eef1f5; width: fit-content; }
+        .pn-tab   {
+          padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 500;
+          cursor: pointer; border: none; background: none;
+          color: #475569; transition: all 0.15s; font-family: inherit; white-space: nowrap;
+        }
+        .pn-tab:hover:not(.on) { background: #fef3e2; color: #b96f0f; }
+        .pn-tab.on             { background: #EF9F27; color: white; }
+
+        /* Badge: visível sobre fundo âmbar quando tab activa */
+        .pn-badge { margin-left: 6px; background: #EF9F27; color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; display: inline-block; }
+        .pn-tab.on .pn-badge  { background: rgba(255,255,255,0.25); color: white; }
+
+        /* ── Botão Actualizar ── */
+        .pn-btn-refresh {
+          display: flex; align-items: center; gap: 6px;
+          padding: 9px 16px; border-radius: 12px;
+          border: 1px solid #eef1f5; background: #ffffff;
+          color: #64748b; font-size: 13px; cursor: pointer; font-family: inherit;
+          transition: all 0.15s;
+        }
+        .pn-btn-refresh:hover:not(:disabled) { border-color: #fcd9a1; color: #b96f0f; background: #fffbf3; }
+        .pn-btn-refresh:disabled { opacity: 0.6; cursor: default; }
+
+        /* ── Lista e skeletons ── */
+        .pn-list     { display: flex; flex-direction: column; gap: 8px; }
+        .pn-skeleton { background: #e2e8f0; border-radius: 8px; animation: pnsk 1.5s infinite; }
+
+        /* ── Load more ── */
+        .pn-load-btn {
+          width: 100%; padding: 12px; border-radius: 12px;
+          border: 1px solid #eef1f5; background: #ffffff;
+          color: #64748b; font-size: 13px; font-weight: 500;
+          cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .pn-load-btn:hover { border-color: #EF9F27; color: #b96f0f; }
+
+        @media (max-width: 640px) { .pn-wrap { padding: 16px 16px 20px; } }
       `}</style>
 
       <div className="pn-wrap">
@@ -263,23 +307,20 @@ export default function ProviderNotificationsPage() {
         {/* Header */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
           <div>
-            <h1 style={{ fontSize:22, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>Notificações</h1>
-            <p style={{ fontSize:13, color:"#4a6a6a" }}>
+            <h1 style={{ fontSize:22, fontWeight:700, color:"#0f172a", marginBottom:4 }}>Notificações</h1>
+            <p style={{ fontSize:13, color:"#64748b" }}>
               {unread > 0 ? `${unread} não lida${unread !== 1 ? "s" : ""}` : "Tudo lido"}
             </p>
           </div>
           <div style={{ display:"flex", gap:8 }}>
-            <button
-              onClick={refresh} disabled={loading}
-              style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px", borderRadius:12, border:"1px solid #1a2535", background:"#131b27", color:"#6a7a8a", fontSize:13, cursor:"pointer", fontFamily:"inherit" }}
-            >
-              <RefreshCw size={13} style={{ animation: loading ? "pnspin 1s linear infinite" : "none" }} />
+            <button onClick={refresh} disabled={loading} className="pn-btn-refresh">
+              <RefreshCw size={13} style={{ animation: loading ? "pnspin 1s linear infinite" : "none" }}/>
               Actualizar
             </button>
             {unread > 0 && (
               <button
                 onClick={markAllAsRead}
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px", borderRadius:12, border:"1px solid #1d9e7540", background:"#1d9e7520", color:"#1D9E75", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
+                style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px", borderRadius:12, border:"1px solid #fcd9a1", background:"#fef3e2", color:"#b96f0f", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}
               >
                 <Check size={13}/> Marcar todas
               </button>
@@ -289,13 +330,11 @@ export default function ProviderNotificationsPage() {
 
         {/* Tabs */}
         <div className="pn-tabs">
-          {(["all", "unread", "read"] as TabFilter[]).map(t => (
-            <button key={t} className={`pn-tab${tab === t ? " on" : ""}`} onClick={() => setTab(t)}>
-              {t === "all" ? "Todas" : t === "unread" ? "Não lidas" : "Lidas"}
-              {t === "unread" && unread > 0 && (
-                <span style={{ marginLeft:6, background:"#1D9E75", color:"white", fontSize:10, fontWeight:700, padding:"1px 6px", borderRadius:99 }}>
-                  {unread}
-                </span>
+          {(["all","unread","read"] as TabFilter[]).map(t => (
+            <button key={t} className={`pn-tab${tab===t?" on":""}`} onClick={()=>setTab(t)}>
+              {t==="all"?"Todas":t==="unread"?"Não lidas":"Lidas"}
+              {t==="unread" && unread > 0 && (
+                <span className="pn-badge">{unread}</span>
               )}
             </button>
           ))}
@@ -303,17 +342,17 @@ export default function ProviderNotificationsPage() {
 
         {/* Not logged in */}
         {!isLoggedIn && (
-          <div style={{ textAlign:"center", padding:"60px 20px", background:"#131b27", border:"1px solid #1a2535", borderRadius:16 }}>
-            <Bell size={32} style={{ color:"#2a3a4a", margin:"0 auto 12px" }} />
-            <p style={{ fontSize:15, fontWeight:600, color:"#c0d0e0" }}>Faz login para ver notificações</p>
+          <div style={{ textAlign:"center", padding:"60px 20px", background:"#ffffff", border:"1px solid #eef1f5", borderRadius:16 }}>
+            <Bell size={32} style={{ color:"#cbd5e1", margin:"0 auto 12px" }}/>
+            <p style={{ fontSize:15, fontWeight:600, color:"#334155" }}>Faz login para ver notificações</p>
           </div>
         )}
 
-        {/* Loading */}
+        {/* Loading skeletons */}
         {isLoggedIn && loading && notifications.length === 0 && (
           <div className="pn-list">
             {[1,2,3,4].map(i => (
-              <div key={i} style={{ display:"flex", gap:14, padding:16, background:"#131b27", border:"1px solid #1a2535", borderRadius:14 }}>
+              <div key={i} style={{ display:"flex", gap:14, padding:16, background:"#ffffff", border:"1px solid #eef1f5", borderRadius:14 }}>
                 <div className="pn-skeleton" style={{ width:42, height:42, borderRadius:12, flexShrink:0 }}/>
                 <div style={{ flex:1 }}>
                   <div className="pn-skeleton" style={{ width:"55%", height:13, marginBottom:8 }}/>
@@ -324,22 +363,24 @@ export default function ProviderNotificationsPage() {
           </div>
         )}
 
-        {/* Empty */}
+        {/* Empty state */}
         {isLoggedIn && !loading && filtered.length === 0 && (
-          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"80px 20px", gap:16, textAlign:"center", background:"#131b27", border:"1px solid #1a2535", borderRadius:16 }}>
-            <div style={{ width:64, height:64, borderRadius:20, background:"#0d1117", border:"1px solid #1a2535", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <Bell size={28} style={{ color:"#2a3a4a" }}/>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"80px 20px", gap:16, textAlign:"center", background:"#ffffff", border:"1px solid #eef1f5", borderRadius:16 }}>
+            <div style={{ width:64, height:64, borderRadius:20, background:"#f8fafc", border:"1px solid #eef1f5", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <Bell size={28} style={{ color:"#cbd5e1" }}/>
             </div>
             <div>
-              <p style={{ fontSize:16, fontWeight:700, color:"#c0d0e0", marginBottom:8 }}>
-                {tab === "unread" ? "Nenhuma não lida" : tab === "read" ? "Nenhuma lida" : "Sem notificações"}
+              <p style={{ fontSize:16, fontWeight:700, color:"#334155", marginBottom:8 }}>
+                {tab==="unread"?"Nenhuma não lida":tab==="read"?"Nenhuma lida":"Sem notificações"}
               </p>
-              <p style={{ fontSize:13, color:"#4a6a6a", lineHeight:1.6 }}>
-                {tab === "all" ? "As tuas notificações aparecem aqui quando tiveres actividade." : "Muda o filtro para ver outras."}
+              <p style={{ fontSize:13, color:"#64748b", lineHeight:1.6 }}>
+                {tab==="all"
+                  ? "As tuas notificações aparecem aqui quando tiveres actividade."
+                  : "Muda o filtro para ver outras notificações."}
               </p>
             </div>
             {tab !== "all" && (
-              <button onClick={() => setTab("all")} style={{ fontSize:13, color:"#1D9E75", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>
+              <button onClick={()=>setTab("all")} style={{ fontSize:13, color:"#EF9F27", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>
                 Ver todas
               </button>
             )}
@@ -362,7 +403,8 @@ export default function ProviderNotificationsPage() {
               <button className="pn-load-btn" onClick={loadMore} disabled={loading}>
                 {loading
                   ? <><Loader2 size={13} style={{ display:"inline", marginRight:6, animation:"pnspin 1s linear infinite" }}/>A carregar...</>
-                  : "Carregar mais"}
+                  : "Carregar mais"
+                }
               </button>
             )}
           </div>

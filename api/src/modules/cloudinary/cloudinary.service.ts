@@ -44,6 +44,13 @@ export class CloudinaryService {
   // obrigatório na Cloudinary para estes tipos — usar 'image' (o
   // default de uploadBuffer) corrompe o acesso ao ficheiro e a URL
   // deixa de abrir para qualquer utilizador, incluindo quem fez upload.
+  //
+  // SECURITY FIX: adicionados allowed_formats e max_bytes, que já
+  // existiam em uploadBuffer mas não aqui — esta função ficava sem
+  // nenhum limite de tamanho ou tipo aplicado do lado da Cloudinary,
+  // dependendo inteiramente da validação feita antes no service que a
+  // chama (que agora também está reforçada em payment-proof.service.ts,
+  // mas esta é uma segunda camada independente).
   async uploadRawFile(buffer: Buffer, folder: string, publicId: string): Promise<{ url: string; publicId: string }> {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
@@ -53,6 +60,8 @@ export class CloudinaryService {
           resource_type: 'raw',
           type: 'upload',
           access_mode: 'public',
+          allowed_formats: ['pdf'],
+          max_bytes: 5 * 1024 * 1024,
         },
         (error, result) => {
           if (error || !result) return reject(error);

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Send, Shield, AlertTriangle, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Shield, AlertTriangle, Loader2, MessageCircle } from "lucide-react";
 import { chatApi, ChatMessage, ChatRoom } from "@/lib/chat.api";
 import { getToken } from "@/lib/auth.api";
 import { connectSocket } from "@/lib/socket";
@@ -14,8 +14,8 @@ function formatTime(d: string) {
 const OPT_PREFIX = "__opt__";
 
 export default function ProviderChatDetailPage() {
-  const router           = useRouter();
-  const { id: roomId }   = useParams() as { id: string };
+  const router         = useRouter();
+  const { id: roomId } = useParams() as { id: string };
 
   // ═══════════════════════════════════════════════════════════════════════════
   // OWNERSHIP — exact same hook as client chat, exact same logic
@@ -53,7 +53,6 @@ export default function ProviderChatDetailPage() {
     Promise.all([loadRoom(), loadMessages()]).finally(() => setLoading(false));
   }, [loadRoom, loadMessages]);
 
-  // Socket: connectSocket() detects token changes and reconnects automatically
   useEffect(() => {
     if (!getToken()) return;
 
@@ -92,7 +91,7 @@ export default function ProviderChatDetailPage() {
       socket.off("new_message", onNewMessage);
       socket.off("typing",      onTyping);
     };
-  }, [roomId]);  // userId never changes with synchronous hook
+  }, [roomId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -104,7 +103,6 @@ export default function ProviderChatDetailPage() {
     setSending(true);
     setMsg("");
 
-    // Optimistic update — appears immediately on the correct side
     if (userId) {
       const optimistic: ChatMessage = {
         id:        `${OPT_PREFIX}${Date.now()}_${Math.random()}`,
@@ -118,7 +116,6 @@ export default function ProviderChatDetailPage() {
     }
 
     try {
-      // connectSocket() ensures the server has the correct user identity
       connectSocket().emit("send_message", { roomId, content, type: "text" });
     } catch {}
 
@@ -140,145 +137,185 @@ export default function ProviderChatDetailPage() {
   return (
     <>
       <style>{`
-        .pc-wrap{
-          display:flex;flex-direction:column;
-          height:calc(100vh - 64px);
-          background:#0d1117;overflow:hidden;
+        *,*::before,*::after { box-sizing: border-box }
+
+        /* ── Shell: ocupa o espaço restante abaixo da Navbar (64px) ── */
+        .pcd-wrap {
+          display: flex; flex-direction: column;
+          height: calc(100vh - 64px);
+          background: #f8fafc; overflow: hidden;
         }
-        .pc-header{
-          flex-shrink:0;display:flex;align-items:center;gap:14px;
-          padding:0 24px;height:65px;
-          background:#080e1a;border-bottom:1px solid #1a2535;
+
+        /* ── Header ── */
+        .pcd-header {
+          flex-shrink: 0; display: flex; align-items: center; gap: 14px;
+          padding: 0 24px; height: 65px;
+          background: #ffffff; border-bottom: 1px solid #eef1f5;
         }
-        .pc-msgs{
-          flex:1;display:flex;flex-direction:column;gap:10px;
-          padding:20px 24px;overflow-y:auto;scroll-behavior:smooth;
+
+        /* ── Messages area ── */
+        .pcd-msgs {
+          flex: 1; display: flex; flex-direction: column; gap: 10px;
+          padding: 20px 24px; overflow-y: auto; scroll-behavior: smooth;
+          /* fundo ligeiramente estriado para distinguir do branco dos cards */
+          background: #f8fafc;
         }
-        .pc-msgs::-webkit-scrollbar{width:4px}
-        .pc-msgs::-webkit-scrollbar-thumb{background:#1a2535;border-radius:4px}
-        .pc-input-area{
-          flex-shrink:0;display:flex;align-items:center;gap:10px;
-          padding:14px 24px;background:#080e1a;border-top:1px solid #1a2535;
+        .pcd-msgs::-webkit-scrollbar { width: 4px; }
+        .pcd-msgs::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+
+        /* ── Input bar ── */
+        .pcd-input-area {
+          flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+          padding: 14px 24px;
+          background: #ffffff; border-top: 1px solid #eef1f5;
         }
-        /* Provider's own messages: right, amber */
-        .pc-bubble-me{
-          max-width:68%;padding:10px 14px;border-radius:14px;
-          font-size:14px;line-height:1.55;word-break:break-word;
-          background:#EF9F27;color:#0d1117;
-          align-self:flex-end;border-bottom-right-radius:4px;
+
+        /* ── Bolhas ── */
+
+        /* Provider (eu): direita, âmbar sólido, texto escuro */
+        .pcd-me {
+          max-width: 68%; padding: 10px 14px; border-radius: 14px;
+          font-size: 14px; line-height: 1.55; word-break: break-word;
+          background: #EF9F27; color: #0f172a;
+          align-self: flex-end; border-bottom-right-radius: 4px;
         }
-        /* Client's messages: left, dark */
-        .pc-bubble-other{
-          max-width:68%;padding:10px 14px;border-radius:14px;
-          font-size:14px;line-height:1.55;word-break:break-word;
-          background:#131b27;color:#c0d0e0;
-          align-self:flex-start;border-bottom-left-radius:4px;
+        /* Optimistic */
+        .pcd-me-opt { opacity: 0.72; }
+
+        /* Cliente (outro): esquerda, cinza claro — igual ao cliente mas invertido */
+        .pcd-other {
+          max-width: 68%; padding: 10px 14px; border-radius: 14px;
+          font-size: 14px; line-height: 1.55; word-break: break-word;
+          background: #e4e9f0; color: #1e293b;
+          align-self: flex-start; border-bottom-left-radius: 4px;
         }
-        /* Optimistic: slightly translucent */
-        .pc-bubble-me-opt{ opacity:0.75; }
-        .pc-time{font-size:10px;opacity:0.55;margin-top:4px}
-        .pc-blocked{
-          background:#E24B4A15;border:1px solid #E24B4A30;
-          border-radius:10px;padding:8px 12px;
-          display:flex;align-items:center;gap:8px;
-          align-self:flex-start;max-width:80%;
+
+        .pcd-time { font-size: 10px; opacity: 0.55; margin-top: 4px; }
+
+        /* ── Mensagem bloqueada ── */
+        .pcd-blocked {
+          background: #fef2f2; border: 1px solid #fecaca;
+          border-radius: 10px; padding: 8px 12px;
+          display: flex; align-items: center; gap: 8px;
+          align-self: flex-start; max-width: 80%;
         }
-        .pc-text-input{
-          flex:1;padding:12px 16px;border-radius:12px;
-          background:#131b27;border:1px solid #1a2535;
-          color:#e2e8f0;font-size:14px;outline:none;
-          font-family:inherit;transition:border 0.2s;
+
+        /* ── Typing indicator ── */
+        .pcd-typing-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: #94a3b8; animation: pcdtdot 1.2s infinite;
         }
-        .pc-text-input:focus{border-color:#EF9F27}
-        .pc-text-input::placeholder{color:#4a5a6a}
-        .pc-send{
-          flex-shrink:0;width:42px;height:42px;border-radius:12px;
-          background:#EF9F27;border:none;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;
-          transition:opacity 0.2s;
+
+        /* ── Input ── */
+        .pcd-input {
+          flex: 1; padding: 12px 16px; border-radius: 12px;
+          background: #f8fafc; border: 1.5px solid #e2e8f0;
+          color: #0f172a; font-size: 14px; outline: none;
+          font-family: inherit; transition: border 0.2s, background 0.2s;
         }
-        .pc-send:disabled{opacity:0.5;cursor:not-allowed}
-        .typing-dot{width:6px;height:6px;border-radius:50%;background:#4a6a6a;animation:tdot 1.2s infinite}
-        .sk{background:#1a2535;border-radius:8px;animation:sk 1.5s infinite}
-        @keyframes sk{0%,100%{opacity:1}50%{opacity:0.4}}
-        @keyframes tdot{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-        @media(max-width:1024px){.pc-header{padding-left:72px}}
-        @media(max-width:640px){
-          .pc-msgs{padding:12px 14px}
-          .pc-input-area{padding:10px 14px}
-          .pc-bubble-me,.pc-bubble-other{max-width:84%}
+        .pcd-input:focus { border-color: #EF9F27; background: #ffffff; }
+        .pcd-input::placeholder { color: #94a3b8; }
+
+        /* ── Send button — âmbar, ícone escuro (legível sobre fundo claro) ── */
+        .pcd-send {
+          flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px;
+          background: #EF9F27; border: none; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transition: opacity 0.2s, transform 0.15s;
+        }
+        .pcd-send:hover:not(:disabled) { transform: scale(1.05); }
+        .pcd-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── Skeleton ── */
+        .pcd-sk { background: #e2e8f0; border-radius: 8px; animation: pcdsk 1.5s infinite; }
+        @keyframes pcdsk   { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }
+        @keyframes pcdtdot { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
+        @keyframes pcdspin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+
+        @media (max-width: 1024px) { .pcd-header { padding-left: 72px; } }
+        @media (max-width: 640px) {
+          .pcd-msgs        { padding: 12px 14px; }
+          .pcd-input-area  { padding: 10px 14px; }
+          .pcd-me, .pcd-other { max-width: 84%; }
         }
       `}</style>
 
-      <div className="pc-wrap">
+      <div className="pcd-wrap">
 
-        {/* Header */}
-        <div className="pc-header">
+        {/* ── Header ── */}
+        <div className="pcd-header">
           <button
             onClick={() => router.back()}
-            style={{ background:"none",border:"none",cursor:"pointer",color:"#6a7a8a",display:"flex",padding:4 }}
+            style={{ background:"none", border:"none", cursor:"pointer", color:"#64748b", display:"flex", padding:4 }}
           >
             <ArrowLeft size={20}/>
           </button>
 
+          {/* Avatar */}
           {loading
-            ? <div className="sk" style={{ width:40,height:40,borderRadius:"50%",flexShrink:0 }}/>
+            ? <div className="pcd-sk" style={{ width:40, height:40, borderRadius:"50%", flexShrink:0 }}/>
             : (
               <div style={{
-                width:40,height:40,borderRadius:"50%",background:"#2a1e08",
-                display:"flex",alignItems:"center",justifyContent:"center",
-                fontSize:16,fontWeight:700,color:"#EF9F27",flexShrink:0,
+                width:40, height:40, borderRadius:"50%",
+                background:"#fef3e2", display:"flex", alignItems:"center",
+                justifyContent:"center", fontSize:16, fontWeight:700,
+                color:"#b96f0f", flexShrink:0, overflow:"hidden",
               }}>
-                {other?.fullName?.charAt(0)?.toUpperCase() ?? "?"}
+                {other?.avatarUrl
+                  ? <img src={other.avatarUrl} style={{ width:"100%", height:"100%", objectFit:"cover" }} alt=""/>
+                  : other?.fullName?.charAt(0)?.toUpperCase() ?? "?"}
               </div>
             )
           }
 
-          <div style={{ flex:1,minWidth:0 }}>
+          {/* Name */}
+          <div style={{ flex:1, minWidth:0 }}>
             {loading
-              ? <div className="sk" style={{ width:120,height:14,marginBottom:4 }}/>
-              : <p style={{ fontSize:15,fontWeight:700,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+              ? <div className="pcd-sk" style={{ width:120, height:14, marginBottom:4 }}/>
+              : <p style={{ fontSize:15, fontWeight:700, color:"#0f172a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                   {other?.fullName ?? "—"}
                 </p>
             }
-            <p style={{ fontSize:11,color:"#4a6a6a",marginTop:2 }}>Cliente</p>
+            <p style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>Cliente</p>
           </div>
 
+          {/* Badge "Protegida" — âmbar suave, distinto do verde do cliente */}
           <div style={{
-            display:"flex",alignItems:"center",gap:6,
-            padding:"6px 12px",borderRadius:8,
-            background:"#2a1e08",border:"1px solid #EF9F2725",flexShrink:0,
+            display:"flex", alignItems:"center", gap:6,
+            padding:"6px 12px", borderRadius:8,
+            background:"#fef3e2", border:"1px solid #fcd9a1", flexShrink:0,
           }}>
             <Shield size={13} style={{ color:"#EF9F27" }}/>
-            <span style={{ fontSize:11,color:"#EF9F27",fontWeight:600 }}>Protegida</span>
+            <span style={{ fontSize:11, color:"#b96f0f", fontWeight:600 }}>Protegida</span>
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="pc-msgs">
+        {/* ── Messages ── */}
+        <div className="pcd-msgs">
           {loading ? (
             [1,2,3].map(i => (
-              <div key={i} className="sk" style={{
-                height:40,borderRadius:14,
+              <div key={i} className="pcd-sk" style={{
+                height:40, borderRadius:14,
                 width: i%2===0 ? "55%" : "42%",
                 alignSelf: i%2===0 ? "flex-start" : "flex-end",
               }}/>
             ))
           ) : messages.length === 0 ? (
             <div style={{
-              display:"flex",flexDirection:"column",alignItems:"center",
-              justifyContent:"center",flex:1,gap:14,textAlign:"center",
+              display:"flex", flexDirection:"column", alignItems:"center",
+              justifyContent:"center", flex:1, gap:14, textAlign:"center",
             }}>
               <div style={{
-                width:56,height:56,borderRadius:16,background:"#131b27",
-                border:"1px solid #1a2535",display:"flex",alignItems:"center",
-                justifyContent:"center",fontSize:26,
-              }}>💬</div>
-              <p style={{ fontSize:14,fontWeight:600,color:"#c0d0e0" }}>
+                width:56, height:56, borderRadius:16,
+                background:"#ffffff", border:"1px solid #eef1f5",
+                display:"flex", alignItems:"center", justifyContent:"center",
+              }}>
+                <MessageCircle size={26} style={{ color:"#94a3b8" }}/>
+              </div>
+              <p style={{ fontSize:14, fontWeight:600, color:"#334155" }}>
                 {other ? `Inicia uma conversa com ${other.fullName}` : "Inicia a conversa"}
               </p>
-              <p style={{ fontSize:12,color:"#4a6a6a",lineHeight:1.6 }}>
+              <p style={{ fontSize:12, color:"#64748b", lineHeight:1.6 }}>
                 Escreve uma mensagem para começar.
               </p>
             </div>
@@ -291,55 +328,58 @@ export default function ProviderChatDetailPage() {
             const isOptimistic = m.id.startsWith(OPT_PREFIX);
 
             if (m.isBlocked) return (
-              <div className="pc-blocked" key={m.id}>
-                <AlertTriangle size={14} style={{ color:"#E24B4A",flexShrink:0 }}/>
+              <div className="pcd-blocked" key={m.id}>
+                <AlertTriangle size={14} style={{ color:"#dc2626", flexShrink:0 }}/>
                 <div>
-                  <p style={{ fontSize:12,fontWeight:600,color:"#E24B4A" }}>Mensagem bloqueada</p>
-                  <p style={{ fontSize:11,color:"#6a3a3a" }}>Partilha de contactos externos não é permitida.</p>
+                  <p style={{ fontSize:12, fontWeight:600, color:"#dc2626" }}>Mensagem bloqueada</p>
+                  <p style={{ fontSize:11, color:"#b91c1c" }}>Partilha de contactos externos não é permitida.</p>
                 </div>
               </div>
             );
 
             return (
               <div key={m.id} style={{
-                display:"flex",flexDirection:"column",
+                display:"flex", flexDirection:"column",
                 alignItems: isMe ? "flex-end" : "flex-start",
               }}>
-                <div className={`${isMe ? "pc-bubble-me" : "pc-bubble-other"}${isOptimistic ? " pc-bubble-me-opt" : ""}`}>
+                <div className={`${isMe ? "pcd-me" : "pcd-other"}${isOptimistic ? " pcd-me-opt" : ""}`}>
                   {m.content}
                 </div>
-                <span className="pc-time" style={{ alignSelf: isMe ? "flex-end" : "flex-start" }}>
+                <span className="pcd-time" style={{ alignSelf: isMe ? "flex-end" : "flex-start" }}>
                   {isOptimistic ? "A enviar..." : formatTime(m.createdAt)}
                 </span>
               </div>
             );
           })}
 
+          {/* Typing indicator */}
           {typing && (
             <div style={{
-              display:"flex",alignItems:"center",gap:6,
-              padding:"8px 14px",background:"#131b27",
-              borderRadius:14,alignSelf:"flex-start",borderBottomLeftRadius:4,
+              display:"flex", alignItems:"center", gap:6,
+              padding:"8px 14px", background:"#e4e9f0",
+              borderRadius:14, alignSelf:"flex-start", borderBottomLeftRadius:4,
             }}>
-              {[0,1,2].map(i => <div key={i} className="typing-dot" style={{ animationDelay:`${i*0.2}s` }}/>)}
+              {[0,1,2].map(i => (
+                <div key={i} className="pcd-typing-dot" style={{ animationDelay:`${i*0.2}s` }}/>
+              ))}
             </div>
           )}
           <div ref={bottomRef}/>
         </div>
 
-        {/* Input */}
-        <div className="pc-input-area">
+        {/* ── Input ── */}
+        <div className="pcd-input-area">
           <input
-            className="pc-text-input"
+            className="pcd-input"
             placeholder={other ? `Mensagem para ${other.fullName}...` : "Escreve uma mensagem..."}
             value={msg}
             onChange={e => { setMsg(e.target.value); handleTyping(); }}
             onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
           />
-          <button className="pc-send" disabled={!msg.trim() || sending} onClick={handleSend}>
+          <button className="pcd-send" disabled={!msg.trim() || sending} onClick={handleSend}>
             {sending
-              ? <Loader2 size={16} color="#0d1117" style={{ animation:"spin 1s linear infinite" }}/>
-              : <Send size={16} color="#0d1117"/>
+              ? <Loader2 size={16} color="#0f172a" style={{ animation:"pcdspin 1s linear infinite" }}/>
+              : <Send size={16} color="#0f172a"/>
             }
           </button>
         </div>

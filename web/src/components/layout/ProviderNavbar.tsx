@@ -288,8 +288,8 @@ export default function ProviderNavbar() {
           gap: 12px;
           padding: 0 24px;
           height: 64px;
-          background: #080e1a;
-          border-bottom: 1px solid #1a2535;
+          background: #FFFFFF;
+          border-bottom: 1px solid #E2E8F0;
           position: sticky;
           top: 0;
           z-index: 30;
@@ -305,33 +305,38 @@ export default function ProviderNavbar() {
         }
         .pnav-s {
           display: flex; align-items: center; gap: 10px;
-          background: #0d1520; border: 1px solid #1a2535;
+          background: #F8FAFC; border: 1px solid #CBD5E1;
           border-radius: 12px; padding: 10px 16px;
-          width: 100%; transition: border-color 0.2s;
+          width: 100%; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+          cursor: text;
         }
-        .pnav-s:focus-within { border-color: #EF9F27; }
+        .pnav-s:focus-within {
+          border-color: #94A3B8;
+          background: #FFFFFF;
+          box-shadow: 0 0 0 3px rgba(239,159,39,0.10);
+        }
         .pnav-s input {
           background: none; border: none; outline: none;
-          font-size: 14px; color: #8a9ab0;
+          font-size: 14px; color: #0F172A;
           width: 100%; min-width: 0; font-family: inherit;
         }
-        .pnav-s input::placeholder { color: #4a5a6a; }
+        .pnav-s input::placeholder { color: #94A3B8; }
 
         /* ── Search dropdown ───────────────────────────────────────────── */
         .pnav-drop {
           position: absolute; top: calc(100% + 8px); left: 0; right: 0;
-          background: #131b27; border: 1px solid #1a2535;
-          border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+          background: #FFFFFF; border: 1px solid #E2E8F0;
+          border-radius: 14px; box-shadow: 0 8px 32px rgba(15,23,42,0.12);
           z-index: 50; overflow: hidden; max-height: 360px; overflow-y: auto;
         }
         .pnav-result {
           display: flex; align-items: center; gap: 12px;
           padding: 12px 16px; cursor: pointer;
-          border-bottom: 1px solid #1a2535; transition: background 0.15s;
+          border-bottom: 1px solid #F1F5F9; transition: background 0.15s;
         }
         .pnav-result:last-child { border-bottom: none; }
-        .pnav-result:hover { background: #1a2535; }
-        .pnav-empty { padding: 20px; text-align: center; font-size: 13px; color: #4a6a6a; }
+        .pnav-result:hover { background: #F8FAFC; }
+        .pnav-empty { padding: 20px; text-align: center; font-size: 13px; color: #94A3B8; }
 
         /* ── Right section ─────────────────────────────────────────────── */
         .pnav-right {
@@ -343,39 +348,39 @@ export default function ProviderNavbar() {
         .pnav-loc-btn {
           display: flex; align-items: center; gap: 6px;
           padding: 7px 12px; border-radius: 20px;
-          border: 1px solid rgba(239,159,39,0.3);
-          background: rgba(239,159,39,0.06);
+          border: 1px solid rgba(239,159,39,0.35);
+          background: rgba(239,159,39,0.07);
           cursor: pointer; transition: all 0.25s ease;
           white-space: nowrap; position: relative; overflow: hidden;
           flex-shrink: 0;
         }
         .pnav-loc-btn:hover:not(.pnav-loc-btn--loading) {
-          background: rgba(239,159,39,0.12);
-          border-color: rgba(239,159,39,0.5);
+          background: rgba(239,159,39,0.14);
+          border-color: rgba(239,159,39,0.55);
         }
         .pnav-loc-btn--loading { opacity: 0.8; cursor: wait; }
         .pnav-loc-btn--active {
           border-color: rgba(34,197,94,0.4);
-          background: rgba(34,197,94,0.08);
+          background: rgba(34,197,94,0.07);
         }
         .pnav-loc-btn--active:hover {
-          background: rgba(34,197,94,0.14);
+          background: rgba(34,197,94,0.13);
           border-color: rgba(34,197,94,0.6);
         }
         .pnav-loc-btn--denied {
           border-color: rgba(239,68,68,0.4);
-          background: rgba(239,68,68,0.08);
+          background: rgba(239,68,68,0.07);
         }
 
         /* ── Location label ────────────────────────────────────────────── */
         .pnav-loc-label {
-          font-size: 12px; font-weight: 500; color: #8a9ab0;
+          font-size: 12px; font-weight: 500; color: #64748B;
           transition: color 0.25s; line-height: 1;
         }
-        .pnav-loc-btn--active  .pnav-loc-label { color: #22c55e; }
-        .pnav-loc-btn--denied  .pnav-loc-label { color: #ef4444; }
+        .pnav-loc-btn--active  .pnav-loc-label { color: #16a34a; }
+        .pnav-loc-btn--denied  .pnav-loc-label { color: #dc2626; }
         .pnav-loc-btn:hover:not(.pnav-loc-btn--active):not(.pnav-loc-btn--denied):not(.pnav-loc-btn--loading) .pnav-loc-label {
-          color: #EF9F27;
+          color: #d97b10;
         }
 
         @keyframes pnav-pin-pulse {
@@ -400,35 +405,36 @@ export default function ProviderNavbar() {
           pointer-events: none;
         }
 
-        /* ── Chat icon ─────────────────────────────────────────────────── */
+        /* ── Icon buttons (chat / bell) ────────────────────────────────── */
         .pnav-ib { position: relative; cursor: pointer; flex-shrink: 0; }
         .pnav-ii {
           width: 40px; height: 40px; border-radius: 12px;
-          background: #0d1520; border: 1px solid #1a2535;
+          background: #FFFFFF; border: 1px solid #E2E8F0;
           display: flex; align-items: center; justify-content: center;
           transition: all 0.15s;
         }
-        .pnav-ii:hover { border-color: #EF9F27; }
+        .pnav-ii:hover { background: #F8FAFC; border-color: #CBD5E1; transform: translateY(-1px); }
         .pnav-badge {
           position: absolute; top: -4px; right: -4px;
           min-width: 18px; height: 18px; border-radius: 99px;
-          background: #EF9F27; border: 2px solid #080e1a;
+          background: #EF9F27; border: 2px solid #FFFFFF;
           display: flex; align-items: center; justify-content: center;
-          font-size: 9px; font-weight: 700; color: #0d1117; padding: 0 4px;
+          font-size: 9px; font-weight: 700; color: #fff; padding: 0 4px;
+          box-shadow: 0 1px 3px rgba(15,23,42,0.18);
         }
 
         /* ── Bell ──────────────────────────────────────────────────────── */
         .pnav-bell {
           position: relative; width: 40px; height: 40px;
           display: flex; align-items: center; justify-content: center;
-          border-radius: 12px; background: #0d1520; border: 1px solid #1a2535;
+          border-radius: 12px; background: #FFFFFF; border: 1px solid #E2E8F0;
           cursor: pointer; transition: all 0.15s; flex-shrink: 0;
         }
-        .pnav-bell:hover { border-color: #EF9F27; }
+        .pnav-bell:hover { background: #F8FAFC; border-color: #CBD5E1; transform: translateY(-1px); }
         .pnav-bell-badge {
           position: absolute; top: 6px; right: 6px;
           width: 7px; height: 7px; border-radius: 50%;
-          background: #EF9F27; border: 1.5px solid #080e1a;
+          background: #F59E0B; border: 1.5px solid #FFFFFF;
         }
 
         /* ── Avatar ────────────────────────────────────────────────────── */
@@ -436,12 +442,13 @@ export default function ProviderNavbar() {
           width: 40px; height: 40px; border-radius: 12px;
           background: linear-gradient(135deg, #EF9F27, #e07b10);
           display: flex; align-items: center; justify-content: center;
-          font-size: 14px; font-weight: 700; color: #0d1117;
+          font-size: 14px; font-weight: 700; color: #fff;
           cursor: pointer; flex-shrink: 0;
-          border: 1px solid rgba(239,159,39,0.4);
-          transition: border-color 0.2s;
+          border: 1px solid rgba(239,159,39,0.3);
+          transition: all 0.15s;
+          box-shadow: 0 2px 8px rgba(239,159,39,0.28);
         }
-        .pnav-avatar:hover { border-color: #EF9F27; }
+        .pnav-avatar:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(239,159,39,0.36); }
 
         /* ── Spinner ───────────────────────────────────────────────────── */
         @keyframes pnav-spin { to { transform: rotate(360deg); } }
@@ -492,8 +499,8 @@ export default function ProviderNavbar() {
         <div className="pnav-sw" ref={searchRef}>
           <div className="pnav-s">
             {searching
-              ? <Loader2 size={15} style={{ color:"#7a6040", flexShrink:0 }} className="pnav-spin"/>
-              : <Search size={15} style={{ color:"#7a6040", flexShrink:0 }}/>
+              ? <Loader2 size={15} style={{ color:"#94A3B8", flexShrink:0 }} className="pnav-spin"/>
+              : <Search size={15} style={{ color:"#94A3B8", flexShrink:0 }}/>
             }
             <input
               placeholder="Pesquise pedidos de clientes..."
@@ -504,7 +511,7 @@ export default function ProviderNavbar() {
             {query && (
               <button
                 onClick={() => { setQuery(""); setResults([]); setShowResults(false); }}
-                style={{ background:"none", border:"none", cursor:"pointer", color:"#4a5a6a", display:"flex", flexShrink:0 }}
+                style={{ background:"none", border:"none", cursor:"pointer", color:"#94A3B8", display:"flex", flexShrink:0 }}
               >
                 <X size={14}/>
               </button>
@@ -522,25 +529,25 @@ export default function ProviderNavbar() {
                   className="pnav-result"
                   onClick={() => handleResultClick(item)}
                 >
-                  <div style={{ width:36, height:36, borderRadius:10, background:"#2a1e08", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
+                  <div style={{ width:36, height:36, borderRadius:10, background:"#FEF3C7", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
                     {CAT_EMOJI[item.category] ?? "🔧"}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <p style={{ fontSize:13, fontWeight:600, color:"#e2e8f0", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</p>
+                      <p style={{ fontSize:13, fontWeight:600, color:"#0F172A", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</p>
                       {item.sourceType === "quick" && (
-                        <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:99, background:"#8B5CF620", color:"#a78bfa", border:"1px solid #8B5CF640", flexShrink:0 }}>
+                        <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:99, background:"#EDE9FE", color:"#7C3AED", border:"1px solid #DDD6FE", flexShrink:0 }}>
                           <Zap size={9}/> Rápido
                         </span>
                       )}
                     </div>
-                    <p style={{ fontSize:11, color:"#4a6a6a" }}>
+                    <p style={{ fontSize:11, color:"#94A3B8" }}>
                       {item.category}
                       {item.sourceType !== "quick" && item.budget != null ? ` · ${Number(item.budget).toLocaleString("pt-PT")} Kz` : ""}
                       {item.address ? ` · ${item.address}` : ""}
                     </p>
                   </div>
-                  <ChevronRight size={14} style={{ color:"#3a4a5a", flexShrink:0 }}/>
+                  <ChevronRight size={14} style={{ color:"#CBD5E1", flexShrink:0 }}/>
                 </div>
               ))}
             </div>
@@ -581,8 +588,8 @@ export default function ProviderNavbar() {
                   className={locState === "active" ? "pnav-pin-active" : ""}
                   style={{
                     flexShrink: 0,
-                    color: locState === "active" ? "#22c55e"
-                         : locState === "denied"  ? "#ef4444"
+                    color: locState === "active" ? "#16a34a"
+                         : locState === "denied"  ? "#dc2626"
                          : "#EF9F27",
                   }}
                 />
@@ -600,7 +607,7 @@ export default function ProviderNavbar() {
           {/* Chat icon */}
           <div className="pnav-ib" onClick={() => router.push("/provider/chat")} role="button" aria-label="Chat">
             <div className="pnav-ii">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a9ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
             </div>
@@ -615,7 +622,7 @@ export default function ProviderNavbar() {
             onClick={() => router.push("/provider/notifications")}
             aria-label="Notificações"
           >
-            <Bell size={18} style={{ color:"#8a9ab0" }}/>
+            <Bell size={18} style={{ color:"#64748B" }}/>
             {unreadNotif > 0 && <span className="pnav-bell-badge" aria-hidden="true"/>}
           </button>
 

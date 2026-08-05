@@ -27,7 +27,16 @@ export class KycController {
         { name: 'backBi', maxCount: 1 },
         { name: 'selfie', maxCount: 1 },
       ],
-      { storage: memoryStorage() },
+      {
+        storage: memoryStorage(),
+        // SECURITY FIX: sem limits, o multer aceitava qualquer tamanho
+        // de ficheiro em memória antes de qualquer validação de negócio
+        // (KycService.validateFiles) correr. Um ficheiro de centenas de
+        // MB já teria consumido memória do processo antes de ser
+        // rejeitado. 5MB alinhado com o limite já usado em
+        // validateFiles() e em CloudinaryService.uploadBuffer.
+        limits: { fileSize: 5 * 1024 * 1024 },
+      },
     ),
   )
   async submit(

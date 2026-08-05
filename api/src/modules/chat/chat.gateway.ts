@@ -11,6 +11,16 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../../database/entities/user.entity';
 
+// SECURITY FIX: throttle manual por socket para o evento send_message.
+// O ThrottlerGuard global (APP_GUARD em app.module.ts) só se aplica a
+// rotas HTTP — não intercepta mensagens de WebSocket. Sem isto, um
+// cliente ligado por WebSocket podia emitir send_message em loop
+// apertado, sem qualquer limite, ao contrário do POST /chat/messages
+// equivalente por REST (que já herda o throttle HTTP global). Limite
+// simples em memória por socket: 20 mensagens em 10 segundos.
+const MESSAGE_RATE_LIMIT = 20;
+const MESSAGE_RATE_WINDOW_MS = 10_000;
+
 // Render doesn't support sticky sessions on free tier.
 // Setting transports to ['websocket', 'polling'] and allowEIO3: true
 // prevents connection drops.
@@ -28,6 +38,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   private userSockets = new Map<string, string>();
+  private messageTimestamps = new Map<string, number[]>();
 
   constructor(
     private chatService: ChatService,
@@ -64,6 +75,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleDisconnect(client: Socket) {
     if (client.data.userId) {
+      this.messageTimestamps.delete(client.data.userId);
       this.userSockets.delete(client.data.userId);
 
       // ─── FIX: marca utilizador como offline ──────────────────────────────
@@ -98,6 +110,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const userId = client.data.userId;
     if (!userId) return;
+
+    // SECURITY FIX: rate limit por utilizador para este evento
+    // específico — ver comentário no topo do ficheiro.
+    const now = Date.now();
+    const timestamps = (this.messageTimestamps.get(userId) ?? [])
+      .filter(t => now - t < MESSAGE_RATE_WINDOW_MS);
+
+    if (timestamps.length >= MESSAGE_RATE_LIMIT) {
+      client.emit('message_error', {
+        error: 'Estás a enviar mensagens demasiado rápido. Espera um pouco.',
+      });
+      return;
+    }
+
+    timestamps.push(now);
+    this.messageTimestamps.set(userId, timestamps);
 
     try {
       const message = await this.chatService.saveMessage(userId, {

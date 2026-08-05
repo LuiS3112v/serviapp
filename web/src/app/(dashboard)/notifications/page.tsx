@@ -5,7 +5,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
 import {
   Bell, CheckCircle, MessageCircle, Wallet, AlertCircle,
-  Trash2, Check, Loader2, RefreshCw, Filter,
+  Trash2, Check, Loader2, RefreshCw,
 } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { AppNotification } from "@/lib/notifications.api";
@@ -130,19 +130,60 @@ export default function NotificationsPage() {
   return (
     <>
       <style>{`
-        .notif-wrap{display:flex;min-height:100vh;background:#f8fafc}
-        .notif-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
-        .notif-inner{flex:1;padding:28px 32px;max-width:720px;display:flex;flex-direction:column;gap:20px}
-        .tabs{display:flex;gap:4px;background:#ffffff;border-radius:12px;padding:4px;border:1px solid #eef1f5;width:fit-content}
-        .tab{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:#64748b;transition:all 0.15s;font-family:inherit;white-space:nowrap}
-        .tab.on{background:#2563eb;color:white}
-        .notif-list{display:flex;flex-direction:column;gap:8px}
-        .skeleton{background:#e2e8f0;border-radius:8px;animation:sk 1.5s infinite}
-        @keyframes sk{0%,100%{opacity:1}50%{opacity:0.4}}
-        .load-more-btn{width:100%;padding:12px;border-radius:12px;border:1px solid #eef1f5;background:#ffffff;color:#64748b;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.15s}
-        .load-more-btn:hover{border-color:#2563eb;color:#2563eb}
-        @media(max-width:1024px){.notif-main{margin-left:0}}
-        @media(max-width:640px){.notif-inner{padding:70px 16px 20px}}
+        @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+        @keyframes sk { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
+
+        .notif-wrap { display: flex; min-height: 100vh; background: #f8fafc }
+        .notif-main { flex: 1; margin-left: 240px; display: flex; flex-direction: column }
+        .notif-inner { flex: 1; padding: 28px 32px; max-width: 720px; display: flex; flex-direction: column; gap: 20px }
+
+        /* ── Tabs ── */
+        .tabs { display: flex; gap: 4px; background: #ffffff; border-radius: 12px; padding: 4px; border: 1px solid #eef1f5; width: fit-content }
+        .tab {
+          padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 500;
+          cursor: pointer; border: none; background: none;
+          /* FIX 1: contraste melhorado — era #64748b, agora #475569 */
+          color: #475569;
+          transition: all 0.15s; font-family: inherit; white-space: nowrap
+        }
+        .tab:hover:not(.on) { background: #f1f5f9; color: #1e293b }
+        .tab.on { background: #2563eb; color: white }
+
+        /* FIX 4: badge visível quando tab está activa (fundo azul → badge branco) */
+        .tab.on .notif-badge { background: rgba(255,255,255,0.25); color: white }
+        .notif-badge {
+          margin-left: 6px; background: #2563eb; color: white;
+          font-size: 10px; font-weight: 700; padding: 1px 6px;
+          border-radius: 99px; display: inline-block;
+        }
+
+        /* ── Botões de acção ── */
+        .btn-refresh {
+          display: flex; align-items: center; gap: 6px;
+          padding: 9px 16px; border-radius: 12px;
+          border: 1px solid #eef1f5; background: #ffffff;
+          color: #64748b; font-size: 13px; cursor: pointer; font-family: inherit;
+          transition: all 0.15s;
+        }
+        /* FIX 2: hover no botão Actualizar */
+        .btn-refresh:hover:not(:disabled) { border-color: #cbd5e1; color: #334155; background: #f8fafc }
+        .btn-refresh:disabled { opacity: 0.6; cursor: default }
+
+        /* ── Lista e esqueletos ── */
+        .notif-list { display: flex; flex-direction: column; gap: 8px }
+        .skeleton { background: #e2e8f0; border-radius: 8px; animation: sk 1.5s infinite }
+
+        /* ── Load more ── */
+        .load-more-btn {
+          width: 100%; padding: 12px; border-radius: 12px;
+          border: 1px solid #eef1f5; background: #ffffff;
+          color: #64748b; font-size: 13px; font-weight: 500;
+          cursor: pointer; font-family: inherit; transition: all 0.15s
+        }
+        .load-more-btn:hover { border-color: #2563eb; color: #2563eb }
+
+        @media (max-width: 1024px) { .notif-main { margin-left: 0 } }
+        @media (max-width: 640px)  { .notif-inner { padding: 70px 16px 20px } }
       `}</style>
 
       <div className="notif-wrap">
@@ -160,12 +201,13 @@ export default function NotificationsPage() {
                 </p>
               </div>
               <div style={{ display:"flex", gap:8 }}>
+                {/* FIX 2: hover tratado via className */}
                 <button
                   onClick={refresh}
                   disabled={loading}
-                  style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px", borderRadius:12, border:"1px solid #eef1f5", background:"#ffffff", color:"#64748b", fontSize:13, cursor:"pointer", fontFamily:"inherit" }}
+                  className="btn-refresh"
                 >
-                  <RefreshCw size={13} style={{ animation:loading?"spin 1s linear infinite":"none" }}/>
+                  <RefreshCw size={13} style={{ animation: loading ? "spin 1s linear infinite" : "none" }}/>
                   Actualizar
                 </button>
                 {unread > 0 && (
@@ -184,8 +226,9 @@ export default function NotificationsPage() {
               {(["all","unread","read"] as TabFilter[]).map(t => (
                 <button key={t} className={`tab${tab===t?" on":""}`} onClick={()=>setTab(t)}>
                   {t==="all"?"Todas":t==="unread"?"Não lidas":"Lidas"}
-                  {t==="unread"&&unread>0&&(
-                    <span style={{ marginLeft:6, background:"#2563eb", color:"white", fontSize:10, fontWeight:700, padding:"1px 6px", borderRadius:99 }}>{unread}</span>
+                  {/* FIX 4: badge usa classe própria para override quando tab.on */}
+                  {t==="unread" && unread > 0 && (
+                    <span className="notif-badge">{unread}</span>
                   )}
                 </button>
               ))}
@@ -230,7 +273,7 @@ export default function NotificationsPage() {
                       : "Muda o filtro para ver outras notificações."}
                   </p>
                 </div>
-                {tab!=="all"&&(
+                {tab!=="all" && (
                   <button onClick={()=>setTab("all")} style={{ fontSize:13, color:"#2563eb", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>
                     Ver todas
                   </button>
@@ -251,7 +294,10 @@ export default function NotificationsPage() {
                 ))}
                 {hasMore && (
                   <button className="load-more-btn" onClick={loadMore} disabled={loading}>
-                    {loading ? <><Loader2 size={13} style={{ display:"inline", marginRight:6, animation:"spin 1s linear infinite" }}/>A carregar...</> : "Carregar mais"}
+                    {loading
+                      ? <><Loader2 size={13} style={{ display:"inline", marginRight:6, animation:"spin 1s linear infinite" }}/>A carregar...</>
+                      : "Carregar mais"
+                    }
                   </button>
                 )}
               </div>
@@ -260,7 +306,6 @@ export default function NotificationsPage() {
           </div>
         </div>
       </div>
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </>
   );
 }

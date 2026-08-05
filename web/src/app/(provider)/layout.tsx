@@ -21,7 +21,7 @@ export default async function ProviderLayout({
   return (
     <>
       <style>{`
-        .prov-layout{display:flex;min-height:100vh;background:#0d1117}
+        .prov-layout{display:flex;min-height:100vh;background:#f8fafc}
         .prov-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden}
         @media(max-width:1024px){.prov-main{margin-left:0}}
       `}</style>

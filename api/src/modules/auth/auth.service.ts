@@ -125,8 +125,19 @@ export class AuthService {
       .catch(() => {});
   }
 
-  async validateUser(id: string): Promise<User | null> {
-    return this.userRepo.findOne({ where: { id } });
+  // SECURITY FIX: antes devolvia `Promise<User | null>` — a entidade
+  // completa da base de dados, incluindo password (hash) e os dois
+  // segredos de 2FA. Se este método for usado por um JwtStrategy para
+  // hidratar req.user (padrão comum no NestJS), qualquer controller que
+  // devolva @CurrentUser() directamente — como AuthController.me() —
+  // ficaria a expor esses campos na resposta HTTP. Passa a devolver
+  // Partial<User> já sanitizado. A assinatura muda de User para
+  // Partial<User>; nenhum consumidor que já dependesse apenas de campos
+  // não-sensíveis (id, email, role, fullName, etc.) é afectado.
+  async validateUser(id: string): Promise<Partial<User> | null> {
+    const user = await this.userRepo.findOne({ where: { id } });
+    if (!user) return null;
+    return this.sanitize(user);
   }
 
   private async createSession(userId: string, context: RequestContext): Promise<UserSession> {
@@ -167,8 +178,12 @@ export class AuthService {
     });
   }
 
+  // SECURITY FIX: agora remove também twoFactorSecret e
+  // twoFactorTempSecret, não só password. Antes, se um utilizador
+  // tivesse 2FA activo, os dois segredos passavam intactos na resposta
+  // de /auth/register e /auth/login.
   private sanitize(user: User): Partial<User> {
-    const { password, ...rest } = user;
+    const { password, twoFactorSecret, twoFactorTempSecret, ...rest } = user;
     return rest;
   }
 }

@@ -26,7 +26,18 @@ export class ChatRoom {
   @Column({ type: 'uuid' })
   clientId: string;
 
-  @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
+  // SECURITY FIX: removido eager:true. Este flag forçava o TypeORM a
+  // carregar SEMPRE a entidade User completa (incluindo password hash,
+  // twoFactorSecret, twoFactorTempSecret) em QUALQUER find()/findOne()
+  // sobre ChatRoom em toda a base de código, mesmo sem ninguém pedir
+  // relations explicitamente. Era exactamente isto que causava o leak
+  // de passwords visível nas respostas da API do chat. A partir de
+  // agora, quem precisar de dados de client/provider tem de pedir a
+  // relação explicitamente e — por convenção obrigatória a partir de
+  // agora neste projecto — usar select explícito, nunca a entidade
+  // User completa (ver kyc.service.ts e payment-proof.service.ts como
+  // referência do padrão correto).
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'clientId' })
   client: User;
 
@@ -36,7 +47,8 @@ export class ChatRoom {
   @Column({ type: 'uuid' })
   providerId: string;
 
-  @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
+  // Mesma correcção de segurança que client acima.
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'providerId' })
   provider: User;
 

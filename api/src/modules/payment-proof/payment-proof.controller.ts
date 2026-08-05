@@ -2,6 +2,7 @@ import {
   Controller, Get, Post, Param, UseGuards,
   UseInterceptors, UploadedFile, Res, StreamableFile,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { PaymentProofService } from './payment-proof.service';
@@ -16,8 +17,18 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 export class PaymentProofController {
   constructor(private readonly paymentProofService: PaymentProofService) {}
 
+  // SECURITY FIX: FileInterceptor sem limits aceitava qualquer tamanho
+  // de ficheiro em memória antes de qualquer validação correr no
+  // service. 5MB alinhado com o limite já usado no resto do projecto
+  // (KYC, CloudinaryService.uploadBuffer). Throttle dedicado — upload é
+  // um vector de abuso mais caro (I/O, chamada externa à Cloudinary) do
+  // que o limite genérico de 60/min do throttler global permite conter
+  // razoavelmente.
   @Post(':paymentId/upload')
-  @UseInterceptors(FileInterceptor('proof'))
+  @Throttle({ default: { limit: 10, ttl: 600000 } })
+  @UseInterceptors(FileInterceptor('proof', {
+    limits: { fileSize: 5 * 1024 * 1024 },
+  }))
   uploadProof(
     @Param('paymentId') paymentId: string,
     @CurrentUser() user: any,

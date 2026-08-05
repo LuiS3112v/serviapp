@@ -101,9 +101,24 @@ export class KycService {
 
       return await this.verificationRepo.save(verification);
     } catch (error: any) {
+      // SECURITY FIX: o console.error mantém-se — é log interno do
+      // servidor, nunca chega ao cliente. O que mudou é o
+      // InternalServerErrorException: antes propagava error?.message
+      // directamente na resposta HTTP, o que podia expor detalhes
+      // internos (erros do TypeORM, da Cloudinary, nomes de coluna,
+      // etc.) a quem fizer a chamada. Agora a resposta ao cliente é
+      // sempre genérica; erros de validação de negócio (BadRequestException
+      // lançados acima) continuam a propagar normalmente, porque o
+      // catch aqui só reformula erros inesperados que caiam até este
+      // ponto — mas como BadRequestException já foi lançada e re-lançada
+      // antes deste catch a intercetar, precisamos de deixar essas
+      // passarem primeiro.
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       console.error('❌ KYC SUBMIT ERROR:', error);
       throw new InternalServerErrorException(
-        error?.message || 'Erro ao processar KYC',
+        'Erro ao processar a submissão do KYC. Tenta novamente.',
       );
     }
   }
@@ -114,22 +129,74 @@ export class KycService {
         where: { providerId },
       });
     } catch (e) {
+      console.error('❌ KYC STATUS ERROR:', e);
       throw new InternalServerErrorException('Erro ao buscar status KYC');
     }
   }
 
+  // SECURITY FIX: relations:{provider:true} carregava o User completo
+  // (password hash, twoFactorSecret, twoFactorTempSecret) para cada
+  // verificação pendente devolvida ao admin. Substituído por select
+  // explícito, restrito aos campos que o painel de admin precisa para
+  // identificar o prestador.
   async getPending() {
     return this.verificationRepo.find({
       where: { status: KycStatus.PENDING },
       relations: { provider: true },
+      select: {
+        id: true,
+        providerId: true,
+        fullName: true,
+        biNumber: true,
+        phoneNumber: true,
+        province: true,
+        category: true,
+        frontBiUrl: true,
+        backBiUrl: true,
+        selfieUrl: true,
+        status: true,
+        createdAt: true,
+        provider: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          avatarUrl: true,
+        },
+      },
       order: { createdAt: 'ASC' },
     });
   }
 
+  // Mesma correcção que getPending().
   async getById(id: string) {
     const verification = await this.verificationRepo.findOne({
       where: { id },
       relations: { provider: true },
+      select: {
+        id: true,
+        providerId: true,
+        fullName: true,
+        biNumber: true,
+        phoneNumber: true,
+        province: true,
+        category: true,
+        frontBiUrl: true,
+        backBiUrl: true,
+        selfieUrl: true,
+        status: true,
+        rejectionReason: true,
+        reviewedByAdminId: true,
+        reviewedAt: true,
+        createdAt: true,
+        provider: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          avatarUrl: true,
+        },
+      },
     });
 
     if (!verification) {
@@ -195,7 +262,8 @@ export class KycService {
     backBi?: Express.Multer.File[];
     selfie?: Express.Multer.File[];
   }) {
-    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
     const maxSize = 5 * 1024 * 1024;
 
     for (const key of ['frontBi', 'backBi', 'selfie'] as const) {
@@ -207,8 +275,18 @@ export class KycService {
 
       const file = fileArr[0];
 
-      if (!allowed.includes(file.mimetype)) {
+      // SECURITY FIX: já validava mimetype, mas não cruzava com a
+      // extensão declarada no nome do ficheiro. Um ficheiro chamado
+      // "documento.pdf.exe" com mimetype forjado como application/pdf
+      // no cabeçalho multipart passava antes. Agora exige que ambos
+      // batam certo.
+      if (!allowedMimeTypes.includes(file.mimetype)) {
         throw new BadRequestException(`${key}: formato inválido.`);
+      }
+
+      const ext = (file.originalname.split('.').pop() ?? '').toLowerCase();
+      if (!allowedExtensions.includes(ext)) {
+        throw new BadRequestException(`${key}: extensão de ficheiro inválida.`);
       }
 
       if (file.size > maxSize) {

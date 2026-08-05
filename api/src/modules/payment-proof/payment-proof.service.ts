@@ -14,6 +14,18 @@ import { v2 as cloudinary } from 'cloudinary';
 
 const ALLOWED_TYPES = ['pdf', 'png', 'jpg', 'jpeg'];
 
+// SECURITY FIX: mapa inverso do que já existia (CONTENT_TYPE_MAP),
+// usado agora para cruzar extensão declarada com mimetype real do
+// multipart. Antes a validação de tipo confiava apenas em
+// file.originalname — controlado inteiramente pelo cliente e trivial
+// de forjar (renomear qualquer ficheiro para "comprovativo.pdf").
+const ALLOWED_MIME_BY_EXT: Record<string, string[]> = {
+  pdf: ['application/pdf'],
+  png: ['image/png'],
+  jpg: ['image/jpeg', 'image/jpg'],
+  jpeg: ['image/jpeg', 'image/jpg'],
+};
+
 const CONTENT_TYPE_MAP: Record<string, string> = {
   pdf: 'application/pdf',
   png: 'image/png',
@@ -57,6 +69,17 @@ export class PaymentProofService {
     if (!ALLOWED_TYPES.includes(ext)) {
       throw new BadRequestException(
         `Ficheiro inválido. Formatos aceites: ${ALLOWED_TYPES.join(', ').toUpperCase()}.`,
+      );
+    }
+
+    // SECURITY FIX: cruza a extensão declarada com o mimetype real
+    // reportado pelo multer a partir do Content-Type do multipart. Um
+    // ficheiro renomeado (ex: executável renomeado para .jpg) tem
+    // mimetype que não bate com a extensão e é rejeitado aqui.
+    const allowedMimes = ALLOWED_MIME_BY_EXT[ext] ?? [];
+    if (!allowedMimes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'O tipo real do ficheiro não corresponde à extensão indicada.',
       );
     }
 
@@ -130,12 +153,32 @@ export class PaymentProofService {
     return proof;
   }
 
+  // SECURITY FIX: relations:{uploadedBy:true} carregava o User completo
+  // (password hash, twoFactorSecret, twoFactorTempSecret) para o admin.
+  // Substituído por select explícito.
   async getProofHistoryForAdmin(paymentId: string): Promise<PaymentProof[]> {
     await this.getPaymentOrFail(paymentId);
     return this.proofRepo.find({
       where: { paymentId },
       order: { createdAt: 'DESC' },
       relations: { uploadedBy: true },
+      select: {
+        id: true,
+        paymentId: true,
+        uploadedByUserId: true,
+        fileUrl: true,
+        filePublicId: true,
+        fileType: true,
+        status: true,
+        confirmedByAdminId: true,
+        confirmedAt: true,
+        createdAt: true,
+        uploadedBy: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
     });
   }
 
