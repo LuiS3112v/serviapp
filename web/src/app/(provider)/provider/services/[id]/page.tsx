@@ -12,17 +12,17 @@ import {
 } from "lucide-react";
 
 const STATUS: Record<string, { label: string; color: string }> = {
-  requested:          { label: "Pedido recebido",                   color: "#EF9F27" },
+  requested:          { label: "Pedido recebido",                   color: "#D97706" },
   rejected:           { label: "Recusado",                          color: "#E24B4A" },
   accepted:           { label: "Aceite — a aguardar pagamento",     color: "#378ADD" },
-  payment_pending:    { label: "A aguardar transferência",          color: "#EF9F27" },
-  payment_held:       { label: "Pagamento protegido",               color: "#1D9E75" },
+  payment_pending:    { label: "A aguardar transferência",          color: "#D97706" },
+  payment_held:       { label: "Pagamento protegido",               color: "#0E7A5F" },
   in_progress:        { label: "Em execução",                       color: "#8B5CF6" },
-  provider_completed: { label: "A aguardar confirmação do cliente", color: "#EF9F27" },
-  completed:          { label: "Concluído",                         color: "#1D9E75" },
+  provider_completed: { label: "A aguardar confirmação do cliente", color: "#D97706" },
+  completed:          { label: "Concluído",                         color: "#0E7A5F" },
   disputed:           { label: "Em disputa",                        color: "#E24B4A" },
   cancelled:          { label: "Cancelado",                         color: "#E24B4A" },
-  refunded:           { label: "Reembolsado",                       color: "#1D9E75" },
+  refunded:           { label: "Reembolsado",                       color: "#0E7A5F" },
 };
 
 const TL: Record<string, string> = {
@@ -69,13 +69,13 @@ function PinModal({ onSubmit, onClose, loading }: { onSubmit:(p:string)=>void; o
   };
   const pin = digits.join("");
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.88)",
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.55)",
       zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background:"#131b27", border:"1px solid #1a2535",
-        borderRadius:20, padding:32, maxWidth:340, width:"100%", textAlign:"center" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background:"#E2E8F0", border:"1px solid #CBD5E1",
+        borderRadius:20, padding:32, maxWidth:340, width:"100%", textAlign:"center", boxShadow:"0 20px 48px rgba(15,23,42,0.18)" }}>
         <div style={{ fontSize:36, marginBottom:12 }}>🔑</div>
-        <p style={{ fontSize:16, fontWeight:700, color:"#e2e8f0", marginBottom:6 }}>Inserir PIN</p>
-        <p style={{ fontSize:13, color:"#4a6a6a", marginBottom:24, lineHeight:1.5 }}>
+        <p style={{ fontSize:16, fontWeight:700, color:"#0F172A", marginBottom:6 }}>Inserir PIN</p>
+        <p style={{ fontSize:13, color:"#4B5563", marginBottom:24, lineHeight:1.5 }}>
           Pede o PIN de 6 dígitos ao cliente para confirmar que chegaste ao local.
         </p>
         <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:24 }}>
@@ -83,15 +83,15 @@ function PinModal({ onSubmit, onClose, loading }: { onSubmit:(p:string)=>void; o
             <input key={i} id={`pd-${i}`} value={d} maxLength={1}
               onChange={e => change(i, e.target.value)}
               style={{ width:44, height:52, textAlign:"center", fontSize:22, fontWeight:700,
-                borderRadius:10, background:"#0d1117",
-                border:`2px solid ${d ? "#8B5CF6" : "#1a2535"}`,
-                color:"#e2e8f0", outline:"none", fontFamily:"monospace" }} />
+                borderRadius:10, background:"#FFFFFF",
+                border:`2px solid ${d ? "#8B5CF6" : "#CBD5E1"}`,
+                color:"#111827", outline:"none", fontFamily:"monospace" }} />
           ))}
         </div>
         <button disabled={pin.length < 6 || loading} onClick={() => onSubmit(pin)}
           style={{ width:"100%", padding:13, borderRadius:11, border:"none",
-            background: pin.length === 6 ? "linear-gradient(135deg,#8B5CF6,#7C3AED)" : "#1a2535",
-            color: pin.length === 6 ? "white" : "#4a5a6a",
+            background: pin.length === 6 ? "linear-gradient(135deg,#8B5CF6,#7C3AED)" : "#CBD5E1",
+            color: pin.length === 6 ? "white" : "#94A3B8",
             fontSize:14, fontWeight:700, cursor: pin.length === 6 ? "pointer" : "not-allowed",
             display:"flex", alignItems:"center", justifyContent:"center", gap:8, fontFamily:"inherit" }}>
           {loading && <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }} />}
@@ -181,7 +181,7 @@ export default function ProviderServiceDetailPage() {
 
   if (loading) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"60vh" }}>
-      <Loader2 size={28} style={{ color:"#EF9F27", animation:"spin 1s linear infinite" }} />
+      <Loader2 size={28} style={{ color:"#D97706", animation:"spin 1s linear infinite" }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -205,26 +205,26 @@ export default function ProviderServiceDetailPage() {
         *, *::before, *::after { box-sizing: border-box; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .pd-body { padding: 28px 32px; display: flex; flex-direction: column;
-                   gap: 20px; max-width: 760px; width: 100%; }
-        .pd-card { background: #131b27; border: 1px solid #1a2535;
-                   border-radius: 18px; padding: 24px; }
+                   gap: 20px; max-width: 760px; width: 100%; background: #FFFFFF; }
+        .pd-card { background: #E2E8F0; border: 1px solid #CBD5E1;
+                   border-radius: 18px; padding: 24px; box-shadow: 0 2px 10px rgba(15,23,42,0.06); }
         .ab { display: flex; align-items: center; justify-content: center; gap: 8px;
               padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 700;
               cursor: pointer; font-family: inherit; border: none; transition: all .2s; width: 100%; }
         .ab:disabled { opacity: .5; cursor: not-allowed; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .info-item { background: #0d1117; border-radius: 10px; padding: 10px 14px; }
-        .pr-input { width: 100%; padding: 11px 14px; border-radius: 10px; background: #0d1117;
-                    border: 1px solid #1a2535; color: #e2e8f0; font-size: 14px; outline: none;
+        .info-item { background: #FFFFFF; border-radius: 10px; padding: 10px 14px; }
+        .pr-input { width: 100%; padding: 11px 14px; border-radius: 10px; background: #FFFFFF;
+                    border: 1px solid #CBD5E1; color: #111827; font-size: 14px; outline: none;
                     font-family: inherit; transition: border-color .15s; }
-        .pr-input:focus { border-color: #EF9F27; }
+        .pr-input:focus { border-color: #D97706; }
         .tl-wrap { display: flex; flex-direction: column; }
         .tl-item { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
         .tl-item:last-child { padding-bottom: 0; }
         .tl-line { position: absolute; left: 9px; top: 20px; bottom: 0;
-                   width: 1px; background: #1a2535; }
-        .tl-dot  { width: 20px; height: 20px; border-radius: 50%; background: #EF9F2720;
-                   border: 1px solid #EF9F27; display: flex; align-items: center;
+                   width: 1px; background: #94A3B8; }
+        .tl-dot  { width: 20px; height: 20px; border-radius: 50%; background: #D97706;
+                   border: 3px solid #FDE8C8; display: flex; align-items: center;
                    justify-content: center; flex-shrink: 0; z-index: 1; }
         @media(max-width:640px)  { .pd-body { padding: 20px 16px; gap: 14px; }
                                    .info-grid { grid-template-columns: 1fr; } }
@@ -234,7 +234,7 @@ export default function ProviderServiceDetailPage() {
 
         <button onClick={() => router.push("/provider/services")}
           style={{ display:"flex", alignItems:"center", gap:8, background:"none",
-            border:"none", color:"#4a6a6a", cursor:"pointer", fontSize:13,
+            border:"none", color:"#475569", cursor:"pointer", fontSize:13,
             fontFamily:"inherit", width:"fit-content" }}>
           <ArrowLeft size={15} /> Voltar
         </button>
@@ -244,7 +244,7 @@ export default function ProviderServiceDetailPage() {
           <div style={{ display:"flex", alignItems:"flex-start",
             justifyContent:"space-between", gap:12, marginBottom:16 }}>
             <div>
-              <h1 style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", marginBottom:8 }}>
+              <h1 style={{ fontSize:18, fontWeight:700, color:"#0F172A", marginBottom:8 }}>
                 {service.title}
               </h1>
               <span style={{ display:"inline-flex", alignItems:"center", gap:6,
@@ -254,8 +254,8 @@ export default function ProviderServiceDetailPage() {
               </span>
             </div>
             <div style={{ textAlign:"right", flexShrink:0 }}>
-              <p style={{ fontSize:24, fontWeight:800, color:"#EF9F27" }}>{fKz(amount)}</p>
-              <p style={{ fontSize:11, color:"#4a6a6a", marginTop:2 }}>Valor acordado</p>
+              <p style={{ fontSize:24, fontWeight:800, color:"#D97706" }}>{fKz(amount)}</p>
+              <p style={{ fontSize:11, color:"#4B5563", marginTop:2 }}>Valor acordado</p>
             </div>
           </div>
 
@@ -267,22 +267,22 @@ export default function ProviderServiceDetailPage() {
               { l:"Data",      v: new Date(service.createdAt).toLocaleDateString("pt-PT") },
             ].map((x,i) => (
               <div className="info-item" key={i}>
-                <p style={{ fontSize:11, color:"#4a6a6a", marginBottom:2 }}>{x.l}</p>
-                <p style={{ fontSize:13, color:"#c0d0e0", fontWeight:600 }}>{x.v}</p>
+                <p style={{ fontSize:11, color:"#4B5563", marginBottom:2 }}>{x.l}</p>
+                <p style={{ fontSize:13, color:"#111827", fontWeight:600 }}>{x.v}</p>
               </div>
             ))}
           </div>
 
           {service.description && (
-            <p style={{ fontSize:13, color:"#6a7a8a", lineHeight:1.6,
-              marginTop:14, padding:"12px 14px", background:"#0d1117", borderRadius:10 }}>
+            <p style={{ fontSize:13, color:"#374151", lineHeight:1.6,
+              marginTop:14, padding:"12px 14px", background:"#FFFFFF", borderRadius:10 }}>
               {service.description}
             </p>
           )}
 
           {service.warrantyExpiresAt && (
-            <div style={{ marginTop:12, padding:"10px 14px", background:"#EF9F2710",
-              border:"1px solid #EF9F2730", borderRadius:10, fontSize:12, color:"#EF9F27" }}>
+            <div style={{ marginTop:12, padding:"10px 14px", background:"#FFFBEB",
+              border:"1px solid #FDE68A", borderRadius:10, fontSize:12, color:"#92400E" }}>
               ⭐ Garantia válida até {new Date(service.warrantyExpiresAt).toLocaleDateString("pt-PT")}
             </div>
           )}
@@ -291,10 +291,10 @@ export default function ProviderServiceDetailPage() {
         {/* ── Comprovativo do cliente ── */}
         {canViewProof && (
           <div className="pd-card">
-            <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+            <p style={{ fontSize:14, fontWeight:700, color:"#0F172A", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
               <FileText size={16} style={{ color:"#378ADD" }} /> Comprovativo do cliente
             </p>
-            <p style={{ fontSize:12, color:"#4a6a6a", lineHeight:1.6, marginBottom:14 }}>
+            <p style={{ fontSize:12, color:"#4B5563", lineHeight:1.6, marginBottom:14 }}>
               O cliente enviou um comprovativo de pagamento. Podes vê-lo para confirmar visualmente que a transferência foi feita.
             </p>
             <button className="ab" disabled={proofLoading}
@@ -309,7 +309,7 @@ export default function ProviderServiceDetailPage() {
         {/* ── Acções ── */}
         {!ended && (
           <div className="pd-card">
-            <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:14 }}>
+            <p style={{ fontSize:14, fontWeight:700, color:"#0F172A", marginBottom:14 }}>
               Acções disponíveis
             </p>
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -317,21 +317,21 @@ export default function ProviderServiceDetailPage() {
               {service.status === "requested" && (
                 <>
                   <div>
-                    <label style={{ fontSize:12, color:"#4a6a6a", display:"block", marginBottom:6 }}>
+                    <label style={{ fontSize:12, color:"#4B5563", display:"block", marginBottom:6 }}>
                       Preço a propor (orçamento do cliente: {fKz(service.budget)})
                     </label>
                     <input className="pr-input" type="number" value={priceIn}
                       onChange={e => setPriceIn(e.target.value)} placeholder="Valor em Kz" />
                   </div>
                   <button className="ab" disabled={actL==="accept"}
-                    style={{ background:"linear-gradient(135deg,#1D9E75,#16876a)", color:"white",
-                             boxShadow:"0 4px 14px rgba(29,158,117,0.3)" }}
+                    style={{ background:"linear-gradient(135deg,#0E7A5F,#0A5F4A)", color:"white",
+                             boxShadow:"0 4px 14px rgba(14,122,95,0.3)" }}
                     onClick={() => act("accept", () => servicesDetailApi.accept(id, priceIn ? Number(priceIn) : undefined))}>
                     {actL==="accept" ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/> : <CheckCircle size={15}/>}
                     {actL==="accept" ? "A aceitar..." : "Aceitar pedido"}
                   </button>
                   <button className="ab" disabled={actL==="reject"}
-                    style={{ background:"#E24B4A15", color:"#E24B4A", border:"1px solid #E24B4A40" }}
+                    style={{ background:"#FEF2F2", color:"#B91C1C", border:"1px solid #FCA5A5" }}
                     onClick={() => {
                       if (confirm("Tens a certeza que queres recusar este pedido?"))
                         act("reject", () => servicesDetailApi.reject(id, "Prestador indisponível"));
@@ -346,7 +346,7 @@ export default function ProviderServiceDetailPage() {
                 <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px",
                   background:"#378ADD10", border:"1px solid #378ADD30", borderRadius:12 }}>
                   <Clock size={18} style={{ color:"#378ADD", flexShrink:0 }} />
-                  <p style={{ fontSize:13, color:"#8ab0dd", lineHeight:1.5 }}>
+                  <p style={{ fontSize:13, color:"#2668b0", lineHeight:1.5 }}>
                     A aguardar que o cliente efectue a transferência de {fKz(amount)}.
                   </p>
                 </div>
@@ -354,9 +354,9 @@ export default function ProviderServiceDetailPage() {
 
               {["accepted", "payment_pending"].includes(service.status) && canViewProof && (
                 <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px",
-                  background:"#EF9F2710", border:"1px solid #EF9F2730", borderRadius:12 }}>
-                  <Clock size={18} style={{ color:"#EF9F27", flexShrink:0 }} />
-                  <p style={{ fontSize:13, color:"#d4b578", lineHeight:1.5 }}>
+                  background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:12 }}>
+                  <Clock size={18} style={{ color:"#D97706", flexShrink:0 }} />
+                  <p style={{ fontSize:13, color:"#92400E", lineHeight:1.5 }}>
                     A aguardar confirmação do comprovativo pelo administrador.
                   </p>
                 </div>
@@ -373,7 +373,7 @@ export default function ProviderServiceDetailPage() {
               {service.status === "in_progress" && (
                 <>
                   <div>
-                    <label style={{ fontSize:12, color:"#4a6a6a", display:"block", marginBottom:6 }}>
+                    <label style={{ fontSize:12, color:"#4B5563", display:"block", marginBottom:6 }}>
                       Garantia (opcional)
                     </label>
                     <select className="pr-input"
@@ -387,8 +387,8 @@ export default function ProviderServiceDetailPage() {
                     </select>
                   </div>
                   <button className="ab" disabled={actL==="complete"}
-                    style={{ background:"linear-gradient(135deg,#1D9E75,#16876a)", color:"white",
-                             boxShadow:"0 4px 14px rgba(29,158,117,0.3)" }}
+                    style={{ background:"linear-gradient(135deg,#0E7A5F,#0A5F4A)", color:"white",
+                             boxShadow:"0 4px 14px rgba(14,122,95,0.3)" }}
                     onClick={() => act("complete", () => servicesDetailApi.providerComplete(id, warranty ? Number(warranty) : undefined))}>
                     {actL==="complete" ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }}/> : <CheckCircle size={15}/>}
                     {actL==="complete" ? "A marcar..." : "Marcar como concluído"}
@@ -398,9 +398,9 @@ export default function ProviderServiceDetailPage() {
 
               {service.status === "provider_completed" && (
                 <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px",
-                  background:"#EF9F2710", border:"1px solid #EF9F2730", borderRadius:12 }}>
-                  <Clock size={18} style={{ color:"#EF9F27", flexShrink:0 }} />
-                  <p style={{ fontSize:13, color:"#d4b578", lineHeight:1.5 }}>
+                  background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:12 }}>
+                  <Clock size={18} style={{ color:"#D97706", flexShrink:0 }} />
+                  <p style={{ fontSize:13, color:"#92400E", lineHeight:1.5 }}>
                     A aguardar confirmação do cliente para avançar com o pagamento.
                   </p>
                 </div>
@@ -410,7 +410,7 @@ export default function ProviderServiceDetailPage() {
                 <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px",
                   background:"#8B5CF610", border:"1px solid #8B5CF630", borderRadius:12 }}>
                   <Clock size={18} style={{ color:"#8B5CF6", flexShrink:0 }} />
-                  <p style={{ fontSize:13, color:"#c0a8f0", lineHeight:1.5 }}>
+                  <p style={{ fontSize:13, color:"#5B21B6", lineHeight:1.5 }}>
                     A administração está a preparar a transferência do teu pagamento.
                   </p>
                 </div>
@@ -428,7 +428,7 @@ export default function ProviderServiceDetailPage() {
 
               {["payment_held","in_progress"].includes(service.status) && (
                 <button className="ab"
-                  style={{ background:"#E24B4A15", color:"#E24B4A", border:"1px solid #E24B4A40", fontSize:13 }}
+                  style={{ background:"#FEF2F2", color:"#B91C1C", border:"1px solid #FCA5A5", fontSize:13 }}
                   onClick={() => {
                     const r = prompt("Motivo da disputa:");
                     if (r?.trim()) act("dispute", () => servicesDetailApi.openDispute(id, r));
@@ -438,10 +438,10 @@ export default function ProviderServiceDetailPage() {
               )}
 
               {service.status === "completed" && payment?.status === "completed" && (
-                <div style={{ textAlign:"center", padding:"20px", background:"#1D9E7510", border:"1px solid #1D9E7530", borderRadius:12 }}>
-                  <CheckCircle size={24} style={{ color:"#1D9E75", marginBottom:8 }} />
-                  <p style={{ fontSize:14, fontWeight:700, color:"#1D9E75" }}>Pagamento concluído!</p>
-                  <p style={{ fontSize:12, color:"#4a6a6a", marginTop:4 }}>
+                <div style={{ textAlign:"center", padding:"20px", background:"#F0FDF9", border:"1px solid #A7F3D0", borderRadius:12 }}>
+                  <CheckCircle size={24} style={{ color:"#0E7A5F", marginBottom:8 }} />
+                  <p style={{ fontSize:14, fontWeight:700, color:"#0E7A5F" }}>Pagamento concluído!</p>
+                  <p style={{ fontSize:12, color:"#4B5563", marginTop:4 }}>
                     {fKz(Number(payment.providerAmount))} foi creditado na tua wallet.
                   </p>
                 </div>
@@ -453,24 +453,24 @@ export default function ProviderServiceDetailPage() {
         {/* ── Timeline ── */}
         {timeline.length > 0 && (
           <div className="pd-card">
-            <p style={{ fontSize:14, fontWeight:700, color:"#c0d0e0", marginBottom:16 }}>Histórico</p>
+            <p style={{ fontSize:14, fontWeight:700, color:"#0F172A", marginBottom:16 }}>Histórico</p>
             <div className="tl-wrap">
               {timeline.map((ev, i) => (
                 <div className="tl-item" key={ev.id}>
                   {i < timeline.length-1 && <span className="tl-line" />}
                   <div className="tl-dot">
-                    <span style={{ fontSize:8, color:"#EF9F27" }}>●</span>
+                    <span style={{ fontSize:8, color:"#FFFFFF" }}>●</span>
                   </div>
                   <div style={{ flex:1, paddingTop:1 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", gap:8 }}>
-                      <p style={{ fontSize:13, fontWeight:600, color:"#c0d0e0" }}>
+                      <p style={{ fontSize:13, fontWeight:600, color:"#0F172A" }}>
                         {TL[ev.action] ?? ev.action}
                       </p>
-                      <span style={{ fontSize:11, color:"#3a4a5a", flexShrink:0 }}>
+                      <span style={{ fontSize:11, color:"#94A3B8", flexShrink:0 }}>
                         {ago(ev.createdAt)}
                       </span>
                     </div>
-                    <p style={{ fontSize:12, color:"#4a6a6a", marginTop:2 }}>{ev.description}</p>
+                    <p style={{ fontSize:12, color:"#4B5563", marginTop:2 }}>{ev.description}</p>
                   </div>
                 </div>
               ))}

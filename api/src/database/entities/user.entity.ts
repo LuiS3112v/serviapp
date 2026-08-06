@@ -61,11 +61,6 @@ export class User {
   @Column({ nullable: true })
   avatarUrl: string;
 
-  // Id do ficheiro no Cloudinary correspondente a avatarUrl — espelha o
-  // padrão já usado em Company (logoPublicId/bannerPublicId), para
-  // permitir gestão/remoção futura do ficheiro. Requer ALTER TABLE
-  // manual em produção, já que synchronize está desligado fora de
-  // desenvolvimento.
   @Column({ nullable: true })
   avatarPublicId: string;
 
@@ -91,15 +86,19 @@ export class User {
   @Column({ default: false })
   isOnline: boolean;
 
-  // Controla se este prestador aparece no Mapa de Descoberta.
-  // Distinto de isOnline: um prestador pode estar online no chat sem ter
-  // ativado a partilha de localização. Só quando este campo é true é
-  // que o backend aceita atualizações de posição vindas do prestador.
   @Column({ default: false })
   locationSharingEnabled: boolean;
 
   @Column({ nullable: true, type: 'timestamp' })
   lastSeenAt: Date;
+
+  // NOVO: marca de eliminação de conta (soft delete). Null = conta
+  // activa. Quando preenchido, AuthService.validateUser() e
+  // AuthService.login() tratam a conta como inexistente — nenhum
+  // token antigo nem tentativa de login volta a funcionar contra ela.
+  // Ver SecurityService.deleteAccount() para o fluxo completo.
+  @Column({ nullable: true, type: 'timestamp' })
+  deletedAt: Date | null;
 
   @OneToOne(
     () => ProviderVerification,

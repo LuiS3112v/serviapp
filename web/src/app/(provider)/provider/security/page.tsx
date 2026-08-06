@@ -69,7 +69,6 @@ function timeAgo(dateString: string): string {
 export default function ProviderSecurityPage() {
   const router = useRouter();
 
-  // ── Password ──────────────────────────────────────────────────────────
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -80,13 +79,11 @@ export default function ProviderSecurityPage() {
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  // ── Sessões ───────────────────────────────────────────────────────────
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [revokingAll, setRevokingAll] = useState(false);
 
-  // ── 2FA ───────────────────────────────────────────────────────────────
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [twoFactorLoading, setTwoFactorLoading] = useState(true);
   const [setupData, setSetupData] = useState<{ qrCodeDataUrl: string; secret: string } | null>(null);
@@ -100,11 +97,9 @@ export default function ProviderSecurityPage() {
   const [disabling, setDisabling] = useState(false);
   const [disableError, setDisableError] = useState("");
 
-  // ── Histórico ─────────────────────────────────────────────────────────
   const [history, setHistory] = useState<SecurityLogEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
-  // ── Eliminar conta ────────────────────────────────────────────────────
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
@@ -300,7 +295,6 @@ export default function ProviderSecurityPage() {
           <p style={{ fontSize:13, color:"#64748b" }}>Protege a tua conta e controla as opções de autenticação.</p>
         </div>
 
-        {/* ── Card 1: Alterar palavra-passe ── */}
         <div className="sec-card">
           <h2 style={{ fontSize:15, fontWeight:700, color:"#0f172a", marginBottom:16, display:"flex", alignItems:"center", gap:8 }}>
             <KeyRound size={17} style={{ color:"#1D9E75" }} /> Alterar palavra-passe
@@ -393,7 +387,6 @@ export default function ProviderSecurityPage() {
           </div>
         </div>
 
-        {/* ── Card 2: Sessões ativas ── */}
         <div className="sec-card">
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
             <h2 style={{ fontSize:15, fontWeight:700, color:"#0f172a", display:"flex", alignItems:"center", gap:8 }}>
@@ -460,7 +453,6 @@ export default function ProviderSecurityPage() {
           )}
         </div>
 
-        {/* ── Card 3: 2FA ── */}
         <div className="sec-card">
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
             <h2 style={{ fontSize:15, fontWeight:700, color:"#0f172a", display:"flex", alignItems:"center", gap:8 }}>
@@ -545,7 +537,6 @@ export default function ProviderSecurityPage() {
           )}
         </div>
 
-        {/* ── Card 4: Histórico de segurança ── */}
         <div className="sec-card">
           <h2 style={{ fontSize:15, fontWeight:700, color:"#0f172a", marginBottom:16, display:"flex", alignItems:"center", gap:8 }}>
             <Clock size={17} style={{ color:"#EF9F27" }} /> Histórico de segurança
@@ -578,7 +569,6 @@ export default function ProviderSecurityPage() {
           )}
         </div>
 
-        {/* ── Card 5: Eliminar conta ── */}
         <div className="sec-card sec-card--danger">
           <h2 style={{ fontSize:15, fontWeight:700, color:"#dc2626", marginBottom:8, display:"flex", alignItems:"center", gap:8 }}>
             <Trash2 size={17} /> Eliminar conta
@@ -593,7 +583,6 @@ export default function ProviderSecurityPage() {
 
       </div>
 
-      {/* ── Modal: desactivar 2FA ── */}
       {showDisableModal && (
         <div onClick={() => setShowDisableModal(false)} style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.5)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background:"white", borderRadius:16, padding:24, maxWidth:380, width:"100%" }}>
@@ -625,7 +614,6 @@ export default function ProviderSecurityPage() {
         </div>
       )}
 
-      {/* ── Modal: eliminar conta ── */}
       {showDeleteModal && (
         <div onClick={() => setShowDeleteModal(false)} style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.5)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background:"white", borderRadius:16, padding:24, maxWidth:400, width:"100%" }}>

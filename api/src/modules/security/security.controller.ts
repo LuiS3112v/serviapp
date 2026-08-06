@@ -78,10 +78,13 @@ export class SecurityController {
     return this.securityService.getSecurityHistory(user.id);
   }
 
+  // ALTERADO: agora passa dto.confirmation também — a validação da
+  // frase "ELIMINAR" mudou-se do DTO (@Equals) para o service, para
+  // devolver a mensagem de erro exacta pedida ("Confirmação inválida").
   @Delete()
   async deleteAccount(@CurrentUser() user: any, @Body() dto: DeleteAccountDto, @Req() req: Request) {
     const context = this.buildContext(req);
-    await this.securityService.deleteAccount(user.id, dto.password, context);
+    await this.securityService.deleteAccount(user.id, dto.password, dto.confirmation, context);
     return { success: true };
   }
 

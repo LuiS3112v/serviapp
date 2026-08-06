@@ -4,11 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Shield, CheckCircle, ArrowLeft, Upload, X, Loader2 } from "lucide-react";
 import { Suspense } from "react";
 
-// ─── FIX #1: getToken correcto ────────────────────────────────────────────────
-// Bug original: localStorage.getItem("serviapp_token") devolvia sempre null.
-// auth.api.ts guarda sob "serviapp_token_<role>". Esta função replica o
-// getToken() de auth.api.ts — podes também importar directamente:
-//   import { getToken } from "@/lib/api/auth.api"  (ajusta o caminho)
 function getActiveToken(): string | null {
   if (typeof window === "undefined") return null;
   const role = localStorage.getItem("serviapp_active_role");
@@ -16,7 +11,6 @@ function getActiveToken(): string | null {
   return localStorage.getItem(`serviapp_token_${role}`);
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface FilePreview {
   file: File;
   preview: string;
@@ -31,7 +25,6 @@ interface PersonalInfo {
   category: string;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 const ANGOLA_PROVINCES = [
   "Bengo", "Benguela", "Bié", "Cabinda", "Cuando Cubango",
   "Cuanza Norte", "Cuanza Sul", "Cunene", "Huambo", "Huíla",
@@ -47,9 +40,6 @@ const PROVIDER_CATEGORIES = [
 
 const TOTAL_STEPS = 3;
 
-// ─── FIX #3: FileUploadArea definido FORA de KYCContent ──────────────────────
-// Bug original: definido dentro do componente pai → nova referência em cada
-// render → React fazia unmount/remount → inputs de ficheiro resetavam.
 interface FileUploadAreaProps {
   label: string;
   subLabel: string;
@@ -68,8 +58,8 @@ const FileUploadArea = memo(function FileUploadArea({
       className="upload-area"
       onClick={() => inputRef.current?.click()}
       style={{
-        borderColor: value ? "#1D9E75" : undefined,
-        background:  value ? "#0b2a2a" : undefined,
+        borderColor: value ? "#0E7A5F" : undefined,
+        background:  value ? "#E3F5EE" : undefined,
       }}
     >
       <input
@@ -89,55 +79,52 @@ const FileUploadArea = memo(function FileUploadArea({
             ? <img src={value.preview} alt={label} style={{ width: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 8 }} />
             : <span style={{ fontSize: 28 }}>📄</span>
           }
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#1D9E75" }}>{value.name}</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#0E7A5F" }}>{value.name}</p>
           <button
             type="button"
             onClick={e => { e.stopPropagation(); onClear(); }}
-            style={{ position: "absolute", top: 10, right: 10, background: "#E24B4A20", border: "1px solid #E24B4A40", borderRadius: 8, padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+            style={{ position: "absolute", top: 10, right: 10, background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
           >
-            <X size={12} style={{ color: "#E24B4A" }} />
-            <span style={{ fontSize: 11, color: "#E24B4A" }}>Remover</span>
+            <X size={12} style={{ color: "#B91C1C" }} />
+            <span style={{ fontSize: 11, color: "#B91C1C" }}>Remover</span>
           </button>
-          <CheckCircle size={16} style={{ color: "#1D9E75" }} />
+          <CheckCircle size={16} style={{ color: "#0E7A5F" }} />
         </>
       ) : (
         <>
           <span style={{ fontSize: 32 }}>{emoji}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Upload size={14} style={{ color: "#4a7a7a" }} />
-            <p style={{ fontSize: 14, fontWeight: 600, color: "#6a7a8a" }}>{label}</p>
+            <Upload size={14} style={{ color: "#64748B" }} />
+            <p style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>{label}</p>
           </div>
-          <p style={{ fontSize: 12, color: "#3a4a5a" }}>{subLabel}</p>
+          <p style={{ fontSize: 12, color: "#94A3B8" }}>{subLabel}</p>
         </>
       )}
     </div>
   );
 });
 
-// ─── Estilos partilhados (module-level para não recriar em cada render) ───────
 const INPUT_STYLE: React.CSSProperties = {
-  width: "100%", padding: "12px 14px", background: "#0d1822",
-  border: "1px solid #1a2535", borderRadius: 10, color: "#e2e8f0",
+  width: "100%", padding: "12px 14px", background: "#F1F5F9",
+  border: "1px solid #CBD5E1", borderRadius: 10, color: "#111827",
   fontSize: 14, fontFamily: "inherit", outline: "none",
   boxSizing: "border-box", marginBottom: 12, display: "block",
 };
 
 const LABEL_STYLE: React.CSSProperties = {
-  display: "block", fontSize: 11, color: "#4a6a7a", marginBottom: 6,
+  display: "block", fontSize: 11, color: "#64748B", marginBottom: 6,
   fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
 };
 
-// ─── Componente principal ─────────────────────────────────────────────────────
 function KYCContent() {
-  const router      = useRouter();
+  const router       = useRouter();
   const searchParams = useSearchParams();
-  const role        = searchParams.get("role") ?? "provider";
+  const role         = searchParams.get("role") ?? "provider";
 
   const [step,    setStep]    = useState(1);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
 
-  // FIX #2: campos pessoais agora recolhidos no Step 1
   const [info, setInfo] = useState<PersonalInfo>({
     fullName: "", biNumber: "", phoneNumber: "", province: "Luanda", category: "",
   });
@@ -150,7 +137,6 @@ function KYCContent() {
   const backRef   = useRef<HTMLInputElement>(null);
   const selfieRef = useRef<HTMLInputElement>(null);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleFile = (file: File, setter: (v: FilePreview | null) => void) => {
     const allowed = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
     if (!allowed.includes(file.type)) { setError("Formato inválido. Usa JPG, PNG ou PDF."); return; }
@@ -185,7 +171,6 @@ function KYCContent() {
     setError("");
 
     try {
-      // FIX #1: token correcto via chave role-based
       const token = getActiveToken();
       if (!token) {
         setError("Sessão expirada. Faz login novamente.");
@@ -194,11 +179,9 @@ function KYCContent() {
       }
 
       const formData = new FormData();
-      // Ficheiros
       formData.append("frontBi", frontBi!.file);
       formData.append("backBi",  backBi!.file);
       formData.append("selfie",  selfie.file);
-      // FIX #2: campos pessoais com valores reais (não strings vazias)
       formData.append("fullName",    info.fullName.trim());
       formData.append("biNumber",    info.biNumber.trim().toUpperCase());
       formData.append("phoneNumber", info.phoneNumber.trim());
@@ -209,9 +192,6 @@ function KYCContent() {
         `${process.env.NEXT_PUBLIC_API_URL}/provider/kyc/submit`,
         {
           method: "POST",
-          // ⚠️ NÃO definir Content-Type com FormData.
-          // O browser define o multipart boundary automaticamente.
-          // Definir manualmente quebra o parsing do multer no backend.
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
         },
@@ -219,7 +199,6 @@ function KYCContent() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        // ValidationPipe pode retornar array de mensagens
         const msg = Array.isArray(data.message)
           ? data.message.join(" • ")
           : data.message || "Erro ao submeter documentos.";
@@ -234,61 +213,56 @@ function KYCContent() {
     }
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
-        .kyc-wrap{min-height:100vh;background:#0d1117;display:flex;align-items:center;justify-content:center;padding:24px}
-        .kyc-card{width:100%;max-width:480px;background:#131b27;border:1px solid #1a2535;border-radius:24px;padding:40px 36px}
-        .upload-area{border:2px dashed #1a2535;border-radius:14px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;margin-bottom:14px;transition:all .2s;text-align:center;position:relative}
-        .upload-area:hover{border-color:#1D9E75;background:#0b2a2a}
-        .prog-bar{height:4px;border-radius:99px;background:#1a2535;margin-bottom:28px}
-        .prog-fill{height:100%;border-radius:99px;background:#1D9E75;transition:width .3s}
-        .step-btn{width:100%;padding:15px;border-radius:12px;border:none;background:#1D9E75;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s;margin-top:8px}
+        .kyc-wrap{min-height:100vh;background:#FFFFFF;display:flex;align-items:center;justify-content:center;padding:24px}
+        .kyc-card{width:100%;max-width:480px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:24px;padding:40px 36px;box-shadow:0 4px 24px rgba(15,23,42,0.06)}
+        .upload-area{border:2px dashed #CBD5E1;border-radius:14px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;margin-bottom:14px;transition:all .2s;text-align:center;position:relative;background:#FFFFFF}
+        .upload-area:hover{border-color:#0E7A5F;background:#F0FDF9}
+        .prog-bar{height:4px;border-radius:99px;background:#E2E8F0;margin-bottom:28px}
+        .prog-fill{height:100%;border-radius:99px;background:#0E7A5F;transition:width .3s}
+        .step-btn{width:100%;padding:15px;border-radius:12px;border:none;background:#0E7A5F;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s;margin-top:8px}
         .step-btn:disabled{opacity:.6;cursor:not-allowed}
         .step-btn:hover:not(:disabled){opacity:.9}
-        .error-msg{background:#E24B4A15;border:1px solid #E24B4A30;border-radius:10px;padding:10px 14px;font-size:13px;color:#E24B4A;margin-bottom:14px}
-        .kyc-input:focus{border-color:#1D9E75!important;outline:none}
-        select option{background:#0d1822;color:#e2e8f0}
+        .error-msg{background:#FEF2F2;border:1px solid #FCA5A5;border-radius:10px;padding:10px 14px;font-size:13px;color:#B91C1C;margin-bottom:14px}
+        .kyc-input:focus{border-color:#0E7A5F!important;outline:none}
+        select option{background:#FFFFFF;color:#111827}
         @media(max-width:480px){.kyc-card{padding:28px 20px}}
       `}</style>
 
       <div className="kyc-wrap">
         <div className="kyc-card">
 
-          {/* Voltar */}
           <button
             type="button"
             onClick={handleBack}
-            style={{ display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#4a6a6a",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit" }}
+            style={{ display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#475569",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit" }}
           >
             <ArrowLeft size={15}/> Voltar
           </button>
 
-          {/* Header */}
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:8 }}>
-            <div style={{ width:40,height:40,borderRadius:12,background:"#1d9e7520",display:"flex",alignItems:"center",justifyContent:"center" }}>
-              <Shield size={20} style={{ color:"#1D9E75" }}/>
+            <div style={{ width:40,height:40,borderRadius:12,background:"#E3F5EE",display:"flex",alignItems:"center",justifyContent:"center" }}>
+              <Shield size={20} style={{ color:"#0E7A5F" }}/>
             </div>
             <div>
-              <h1 style={{ fontSize:20,fontWeight:700,color:"#e2e8f0" }}>Verificação de identidade</h1>
-              <p  style={{ fontSize:13,color:"#4a6a6a" }}>Passo {step} de {TOTAL_STEPS}</p>
+              <h1 style={{ fontSize:20,fontWeight:700,color:"#0F172A" }}>Verificação de identidade</h1>
+              <p  style={{ fontSize:13,color:"#64748B" }}>Passo {step} de {TOTAL_STEPS}</p>
             </div>
           </div>
 
-          {/* Barra de progresso */}
           <div className="prog-bar">
             <div className="prog-fill" style={{ width:`${Math.round((step/TOTAL_STEPS)*100)}%` }}/>
           </div>
 
-          {/* Erro */}
           {error && <div className="error-msg">{error}</div>}
 
-          {/* ── STEP 1: Dados Pessoais ───────────────────────────────────── */}
+          {/* ── STEP 1 ── */}
           {step === 1 && (
             <>
-              <p style={{ fontSize:14,fontWeight:600,color:"#c0d0e0",marginBottom:6 }}>Dados pessoais</p>
-              <p style={{ fontSize:13,color:"#4a6a6a",marginBottom:20,lineHeight:1.6 }}>
+              <p style={{ fontSize:14,fontWeight:600,color:"#0F172A",marginBottom:6 }}>Dados pessoais</p>
+              <p style={{ fontSize:13,color:"#4B5563",marginBottom:20,lineHeight:1.6 }}>
                 Preenche os teus dados para a verificação de identidade.
               </p>
 
@@ -318,12 +292,12 @@ function KYCContent() {
                   fontFamily: "monospace",
                   letterSpacing: "0.12em",
                   borderColor: info.biNumber.length > 0 && info.biNumber.length !== 14
-                    ? "#E24B4A60"
-                    : "#1a2535",
+                    ? "#FCA5A5"
+                    : "#CBD5E1",
                 }}
               />
               {info.biNumber.length > 0 && (
-                <p style={{ fontSize:11,marginTop:-8,marginBottom:12,color:info.biNumber.length===14?"#1D9E75":"#E24B4A80" }}>
+                <p style={{ fontSize:11,marginTop:-8,marginBottom:12,color:info.biNumber.length===14?"#0E7A5F":"#FCA5A5" }}>
                   {info.biNumber.length}/14 caracteres
                 </p>
               )}
@@ -355,7 +329,7 @@ function KYCContent() {
                 className="kyc-input"
                 value={info.category}
                 onChange={e => setInfo(p => ({ ...p, category: e.target.value }))}
-                style={{ ...INPUT_STYLE, color: info.category ? "#e2e8f0" : "#4a6a7a" }}
+                style={{ ...INPUT_STYLE, color: info.category ? "#111827" : "#94A3B8" }}
               >
                 <option value="" disabled>Seleciona uma categoria</option>
                 {PROVIDER_CATEGORIES.map(cat => (
@@ -373,11 +347,11 @@ function KYCContent() {
             </>
           )}
 
-          {/* ── STEP 2: Documentos BI ────────────────────────────────────── */}
+          {/* ── STEP 2 ── */}
           {step === 2 && (
             <>
-              <p style={{ fontSize:14,fontWeight:600,color:"#c0d0e0",marginBottom:6 }}>Bilhete de Identidade</p>
-              <p style={{ fontSize:13,color:"#4a6a6a",marginBottom:20,lineHeight:1.6 }}>
+              <p style={{ fontSize:14,fontWeight:600,color:"#0F172A",marginBottom:6 }}>Bilhete de Identidade</p>
+              <p style={{ fontSize:13,color:"#4B5563",marginBottom:20,lineHeight:1.6 }}>
                 Faz upload da frente e do verso do teu Bilhete de Identidade.
               </p>
 
@@ -410,11 +384,11 @@ function KYCContent() {
             </>
           )}
 
-          {/* ── STEP 3: Selfie + Submissão ───────────────────────────────── */}
+          {/* ── STEP 3 ── */}
           {step === 3 && (
             <>
-              <p style={{ fontSize:14,fontWeight:600,color:"#c0d0e0",marginBottom:6 }}>Selfie com documento</p>
-              <p style={{ fontSize:13,color:"#4a6a6a",marginBottom:20,lineHeight:1.6 }}>
+              <p style={{ fontSize:14,fontWeight:600,color:"#0F172A",marginBottom:6 }}>Selfie com documento</p>
+              <p style={{ fontSize:13,color:"#4B5563",marginBottom:20,lineHeight:1.6 }}>
                 Tira uma foto segurando o teu BI junto ao rosto.
               </p>
 
@@ -428,15 +402,15 @@ function KYCContent() {
                 onChange={f => handleFile(f, setSelfie)}
               />
 
-              <div style={{ background:"#0b2a2a",border:"1px solid #1d9e7525",borderRadius:12,padding:14,marginBottom:20 }}>
+              <div style={{ background:"#F0FDF9",border:"1px solid #A7F3D0",borderRadius:12,padding:14,marginBottom:20 }}>
                 {[
                   "Aprovação em até 48h",
                   "Dados tratados com confidencialidade",
                   "Só para verificação de identidade",
                 ].map((t, i) => (
                   <div key={i} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:i<2?8:0 }}>
-                    <CheckCircle size={13} style={{ color:"#1D9E75",flexShrink:0 }}/>
-                    <span style={{ fontSize:12,color:"#4a8a6a" }}>{t}</span>
+                    <CheckCircle size={13} style={{ color:"#0E7A5F",flexShrink:0 }}/>
+                    <span style={{ fontSize:12,color:"#065F46" }}>{t}</span>
                   </div>
                 ))}
               </div>
@@ -464,8 +438,8 @@ function KYCContent() {
 export default function KYCPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight:"100vh",background:"#0d1117",display:"flex",alignItems:"center",justifyContent:"center" }}>
-        <div style={{ color:"#4a6a6a",fontSize:14 }}>A carregar...</div>
+      <div style={{ minHeight:"100vh",background:"#FFFFFF",display:"flex",alignItems:"center",justifyContent:"center" }}>
+        <div style={{ color:"#64748B",fontSize:14 }}>A carregar...</div>
       </div>
     }>
       <KYCContent/>

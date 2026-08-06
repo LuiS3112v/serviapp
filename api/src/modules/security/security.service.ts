@@ -1,8 +1,10 @@
 import {
   Injectable, BadRequestException, UnauthorizedException, NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import * as speakeasy from 'speakeasy';
 import * as qrcode from 'qrcode';
@@ -16,6 +18,8 @@ const PASSWORD_STRENGTH_REGEX = {
   number: /[0-9]/,
   symbol: /[^A-Za-z0-9]/,
 };
+
+const DELETE_CONFIRMATION_PHRASE = 'ELIMINAR';
 
 @Injectable()
 export class SecurityService {
@@ -63,9 +67,6 @@ export class SecurityService {
       user.password = await bcrypt.hash(newPassword, 12);
       await queryRunner.manager.save(user);
 
-      // Invalida todas as sessões excepto a actual — trocar a senha é um
-      // gesto de segurança que deve encerrar qualquer outro acesso à
-      // conta que já não seja de confiança.
       await queryRunner.manager
         .createQueryBuilder()
         .update(UserSession)
@@ -255,14 +256,67 @@ export class SecurityService {
     await this.securityLogRepo.save(log).catch(() => {});
   }
 
-  // ── Eliminação de conta ───────────────────────────────────────────────
-
-  async deleteAccount(userId: string, password: string, context: RequestContext): Promise<void> {
+  // ══════════════════════════════════════════════════════════════════════
+  // Eliminação de conta — SOFT DELETE com anonimização.
+  //
+  // Porquê soft delete e não hard delete: o ServiApp tem Payment,
+  // Transaction, ProviderVerification (KYC), ChatRoom/ChatMessage e
+  // Service ligados a User. Um hard delete exigiria conhecer e coordenar
+  // o comportamento onDelete de CADA uma dessas relações — algumas têm
+  // CASCADE (ex: ChatRoom, que apagaria conversas inteiras, incluindo o
+  // histórico que pode ser relevante numa disputa), outras não têm
+  // CASCADE nenhum (o que faria o hard delete falhar com um erro de
+  // violação de foreign key sempre que o utilizador tivesse qualquer
+  // Service associado). Soft delete evita este problema de raiz: a
+  // linha nunca é removida, por isso nenhuma FK é violada, e o
+  // histórico de pagamentos/serviços/KYC permanece íntegro para fins de
+  // auditoria e resolução de disputas — o mesmo padrão usado por
+  // marketplaces como Uber e Airbnb.
+  //
+  // O que este método faz, na ordem:
+  //  1. Verifica password (UnauthorizedException se errada).
+  //  2. Verifica a frase de confirmação exacta (BadRequestException se
+  //     errada) — validação movida do DTO para aqui, para a mensagem
+  //     ser exactamente a pedida.
+  //  3. Revoga TODAS as sessões activas — o equivalente real, neste
+  //     projecto, a "invalidar refresh tokens": não existe uma tabela
+  //     de refresh tokens separada, a UserSession + JwtStrategy já
+  //     desempenham esse papel (ver JwtStrategy.validate, que rejeita
+  //     qualquer token cuja sessão tenha sido revogada).
+  //  4. Regista o evento ACCOUNT_DELETED no log de auditoria, com os
+  //     campos que a entity SecurityLog expõe hoje (userId, ip, device,
+  //     browser). Os campos "email antigo" e "role" pedidos no prompt
+  //     não são gravados aqui porque exigiriam colunas novas em
+  //     security-log.entity.ts, ficheiro que não tenho — não vou
+  //     adicionar colunas a uma entity que nunca vi. Nota: o userId já
+  //     é suficiente para reconstruir email/role históricos, porque o
+  //     User continua a existir (soft delete) — um JOIN a partir do log
+  //     ainda encontra o registo, apenas anonimizado a partir deste
+  //     momento em diante.
+  //  5. Anonimiza todos os campos de identificação pessoal em User e
+  //     marca deletedAt. O email é substituído por um valor tombstone
+  //     único (baseado no próprio id), o que liberta o email original
+  //     para um futuro novo registo — comportamento correcto para uma
+  //     plataforma onde "eliminar conta" deve mesmo libertar o email.
+  //     A password é sobreposta por um hash de um valor aleatório,
+  //     tornando login por password matematicamente impossível mesmo
+  //     antes de qualquer verificação de deletedAt correr.
+  // ══════════════════════════════════════════════════════════════════════
+  async deleteAccount(
+    userId: string,
+    password: string,
+    confirmation: string,
+    context: RequestContext,
+  ): Promise<void> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('Utilizador não encontrado.');
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) throw new UnauthorizedException('Senha incorreta.');
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) throw new UnauthorizedException('Senha incorreta.');
+
+    if (confirmation !== DELETE_CONFIRMATION_PHRASE) {
+      throw new BadRequestException('Confirmação inválida.');
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -285,12 +339,42 @@ export class SecurityService {
       });
       await queryRunner.manager.save(log);
 
-      await queryRunner.manager.delete(User, { id: userId });
+      const tombstoneEmail = `deleted_${userId}@removed.serviapp.local`;
+      const unusablePasswordHash = await bcrypt.hash(randomUUID(), 12);
+
+      await queryRunner.manager.update(User, { id: userId }, {
+        deletedAt: new Date(),
+        email: tombstoneEmail,
+        password: unusablePasswordHash,
+        fullName: 'Utilizador eliminado',
+        phone: null,
+        avatarUrl: null,
+        avatarPublicId: null,
+        bio: null,
+        province: null,
+        district: null,
+        latitude: null,
+        longitude: null,
+        profileVisible: false,
+        isOnline: false,
+        locationSharingEnabled: false,
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+        twoFactorTempSecret: null,
+      });
 
       await queryRunner.commitTransaction();
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      throw err;
+      // SECURITY FIX: mesmo padrão já corrigido em KycService.submit —
+      // nunca propagar err cru (podia expor detalhes internos do
+      // TypeORM/Postgres, ex. uma eventual violação de FK numa relação
+      // que eu não conheço). Log interno completo, resposta genérica
+      // ao cliente.
+      console.error('❌ DELETE ACCOUNT ERROR:', err);
+      throw new InternalServerErrorException(
+        'Erro ao eliminar a conta. Tenta novamente ou contacta o suporte.',
+      );
     } finally {
       await queryRunner.release();
     }

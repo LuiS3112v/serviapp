@@ -88,13 +88,13 @@ function StatusDot({ color, label }: { color: string; label: string }) {
 
 function VerificationBadge({ status }: { status: CompanyVerificationStatus }) {
   const map = {
-    verified:  { label: "Verificada",  color: "#1D9E75", Icon: ShieldCheck },
-    pending:   { label: "Em análise",  color: "#EF9F27", Icon: AlertCircle },
-    suspended: { label: "Suspensa",    color: "#E24B4A", Icon: X },
+    verified:  { label: "Verificada",  color: "#0E7A5F", Icon: ShieldCheck },
+    pending:   { label: "Em análise",  color: "#D97706", Icon: AlertCircle },
+    suspended: { label: "Suspensa",    color: "#DC2626", Icon: X },
   } as const;
   const { label, color, Icon } = map[status];
   return (
-    <span className="v-badge" style={{ background: `${color}20`, color, border: `1px solid ${color}40` }}>
+    <span className="v-badge" style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}>
       <Icon size={12} /> {label}
     </span>
   );
@@ -102,9 +102,9 @@ function VerificationBadge({ status }: { status: CompanyVerificationStatus }) {
 
 function EmployeeStatusBadge({ status }: { status: CompanyEmployee["status"] }) {
   const map = {
-    active:  { label: "Activo",  color: "#1D9E75" },
-    busy:    { label: "Ocupado", color: "#EF9F27" },
-    offline: { label: "Offline", color: "#5a6a7a" },
+    active:  { label: "Activo",  color: "#0E7A5F" },
+    busy:    { label: "Ocupado", color: "#D97706" },
+    offline: { label: "Offline", color: "#94A3B8" },
   } as const;
   const s = map[status];
   return <StatusDot color={s.color} label={s.label} />;
@@ -112,9 +112,9 @@ function EmployeeStatusBadge({ status }: { status: CompanyEmployee["status"] }) 
 
 function InviteStatusBadge({ status }: { status: CompanyInvitation["status"] }) {
   const map = {
-    pending:  { label: "Pendente",  color: "#EF9F27" },
-    accepted: { label: "Aceite",    color: "#1D9E75" },
-    rejected: { label: "Rejeitado", color: "#E24B4A" },
+    pending:  { label: "Pendente",  color: "#D97706" },
+    accepted: { label: "Aceite",    color: "#0E7A5F" },
+    rejected: { label: "Rejeitado", color: "#DC2626" },
   } as const;
   const s = map[status];
   return <StatusDot color={s.color} label={s.label} />;
@@ -208,7 +208,7 @@ function EditCompanyModal({
         </div>
         <div className="modal-body">
           {imageError && (
-            <div className="hint" style={{ color: "#E24B4A", background: "#E24B4A15", border: "1px solid #E24B4A30", borderRadius: 10, padding: "8px 12px" }}>
+            <div className="hint" style={{ color: "#DC2626", background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 10, padding: "8px 12px" }}>
               {imageError}
             </div>
           )}
@@ -258,7 +258,7 @@ function EditCompanyModal({
               >
                 {uploadingLogo
                   ? <Loader2 size={16} className="spin" />
-                  : !company.logoUrl && <Building2 size={20} style={{ color: "#4a6a6a" }} />}
+                  : !company.logoUrl && <Building2 size={20} style={{ color: "#94A3B8" }} />}
               </div>
               <button
                 type="button"
@@ -396,14 +396,14 @@ function InviteModal({
           <div className="field">
             <label>Pesquisar por nome, email ou telefone</label>
             <div className="search-box">
-              <Search size={15} style={{ color:"#4a6a6a" }} />
+              <Search size={15} style={{ color:"#94A3B8" }} />
               <input
                 className="search-input"
                 placeholder="Escreve pelo menos 2 caracteres..."
                 value={query}
                 onChange={e => { setQuery(e.target.value); setSelected(null); }}
               />
-              {searching && <Loader2 size={14} className="spin" style={{ color:"#4a6a6a" }} />}
+              {searching && <Loader2 size={14} className="spin" style={{ color:"#94A3B8" }} />}
             </div>
           </div>
 
@@ -420,15 +420,15 @@ function InviteModal({
                   onClick={() => setSelected({ id:u.id, fullName:u.fullName })}
                 >
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:36, height:36, borderRadius:"50%", background:"#1a2232", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:"#378ADD", flexShrink:0 }}>
+                    <div style={{ width:36, height:36, borderRadius:"50%", background:"#EFF6FF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:"#378ADD", flexShrink:0 }}>
                       {u.fullName.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p style={{ fontSize:13, fontWeight:600, color:"#e2e8f0", margin:0 }}>{u.fullName}</p>
-                      <p style={{ fontSize:11, color:"#4a6a6a", margin:0 }}>{u.email}{u.phone ? ` · ${u.phone}` : ""}</p>
+                      <p style={{ fontSize:13, fontWeight:600, color:"#0F172A", margin:0 }}>{u.fullName}</p>
+                      <p style={{ fontSize:11, color:"#94A3B8", margin:0 }}>{u.email}{u.phone ? ` · ${u.phone}` : ""}</p>
                     </div>
                   </div>
-                  <span style={{ fontSize:11, color:"#4a6a6a" }}>{u.role}</span>
+                  <span style={{ fontSize:11, color:"#94A3B8" }}>{u.role}</span>
                 </div>
               ))}
             </div>
@@ -438,12 +438,12 @@ function InviteModal({
             <>
               <div className="field">
                 <label>Utilizador seleccionado</label>
-                <div className="invite-row" style={{ background:"#1D9E7510", borderColor:"#1D9E7540" }}>
+                <div className="invite-row" style={{ background:"#F0FDF9", borderColor:"#0E7A5F30" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:32, height:32, borderRadius:"50%", background:"#1D9E7520", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:"#1D9E75" }}>
+                    <div style={{ width:32, height:32, borderRadius:"50%", background:"#0E7A5F15", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:"#0E7A5F" }}>
                       {selected.fullName.charAt(0).toUpperCase()}
                     </div>
-                    <p style={{ fontSize:13, fontWeight:600, color:"#e2e8f0", margin:0 }}>{selected.fullName}</p>
+                    <p style={{ fontSize:13, fontWeight:600, color:"#0F172A", margin:0 }}>{selected.fullName}</p>
                   </div>
                   <button className="icon-btn" onClick={() => setSelected(null)}><X size={14} /></button>
                 </div>
@@ -603,8 +603,8 @@ function CreateCompanyPrompt({ onCreate, creating }: { onCreate: (data: any) => 
     <div className="cp-inner">
       <div className="cp-card" style={{ textAlign:"center", padding:40 }}>
         <Building size={40} style={{ color:"#378ADD", margin:"0 auto 16px" }} />
-        <h1 style={{ fontSize:20, fontWeight:700, color:"#e2e8f0", marginBottom:8 }}>Cria o perfil da tua empresa</h1>
-        <p style={{ fontSize:13, color:"#4a6a6a", maxWidth:380, margin:"0 auto 24px" }}>
+        <h1 style={{ fontSize:20, fontWeight:700, color:"#0F172A", marginBottom:8 }}>Cria o perfil da tua empresa</h1>
+        <p style={{ fontSize:13, color:"#64748B", maxWidth:380, margin:"0 auto 24px" }}>
           Preenche os dados essenciais para começares. Podes editar tudo depois.
         </p>
         <div style={{ display:"flex", flexDirection:"column", gap:12, maxWidth:380, margin:"0 auto", textAlign:"left" }}>
@@ -642,7 +642,7 @@ function CreateCompanyPrompt({ onCreate, creating }: { onCreate: (data: any) => 
                 onClick={() => logoInputRef.current?.click()}
                 style={{ backgroundImage: logoPreview ? `url(${logoPreview})` : undefined }}
               >
-                {!logoPreview && <Building2 size={20} style={{ color:"#4a6a6a" }} />}
+                {!logoPreview && <Building2 size={20} style={{ color:"#94A3B8" }} />}
               </div>
               <button type="button" className="add-btn" onClick={() => logoInputRef.current?.click()}>
                 Escolher logo
@@ -978,17 +978,17 @@ export default function CompanyProfilePage() {
   ];
 
   const statsDisplay = stats ? [
-    { label:"Funcionários",           value: String(stats.employees),                                                    color:"#1D9E75" },
-    { label:"Clientes atendidos",     value: String(stats.clientsServed),                                                color:"#378ADD" },
-    { label:"Serviços activos",       value: String(stats.activeServices),                                               color:"#378ADD" },
-    { label:"Serviços concluídos",    value: String(stats.completedServices),                                            color:"#1D9E75" },
-    { label:"Avaliação média",        value: stats.averageRating > 0 ? `${stats.averageRating.toFixed(1)}★` : "—",      color:"#EF9F27" },
-    { label:"Total ganho",            value: `${stats.totalEarnings.toLocaleString("pt-PT")} Kz`,                       color:"#EF9F27" },
-    { label:"Ganhos do mês",          value: `${stats.monthlyEarnings.toLocaleString("pt-PT")} Kz`,                     color:"#EF9F27" },
-    { label:"Anos de actividade",     value: String(stats.yearsActive),                                                  color:"#8B5CF6" },
-    { label:"Tempo médio resposta",   value: stats.avgResponseTimeHours > 0 ? `${stats.avgResponseTimeHours}h` : "—",  color:"#8B5CF6" },
-    { label:"Taxa de conclusão",      value: `${stats.completionRate}%`,                                                 color:"#1D9E75" },
-    { label:"Clientes recorrentes",   value: String(stats.recurringClients),                                             color:"#378ADD" },
+    { label:"Funcionários",           value: String(stats.employees) },
+    { label:"Clientes atendidos",     value: String(stats.clientsServed) },
+    { label:"Serviços activos",       value: String(stats.activeServices) },
+    { label:"Serviços concluídos",    value: String(stats.completedServices) },
+    { label:"Avaliação média",        value: stats.averageRating > 0 ? `${stats.averageRating.toFixed(1)}★` : "—" },
+    { label:"Total ganho",            value: `${stats.totalEarnings.toLocaleString("pt-PT")} Kz` },
+    { label:"Ganhos do mês",          value: `${stats.monthlyEarnings.toLocaleString("pt-PT")} Kz` },
+    { label:"Anos de actividade",     value: String(stats.yearsActive) },
+    { label:"Tempo médio resposta",   value: stats.avgResponseTimeHours > 0 ? `${stats.avgResponseTimeHours}h` : "—" },
+    { label:"Taxa de conclusão",      value: `${stats.completionRate}%` },
+    { label:"Clientes recorrentes",   value: String(stats.recurringClients) },
   ] : [];
 
   // ── Loading ───────────────────────────────────────────────────────────
@@ -1003,18 +1003,18 @@ export default function CompanyProfilePage() {
   if (notFound || !company) return (
     <>
       <style>{`
-        .cp-inner{padding:28px 32px;display:flex;flex-direction:column;gap:20px;max-width:760px;width:100%}
-        .cp-card{background:#131b27;border:1px solid #1a2535;border-radius:20px;padding:24px;width:100%}
-        .field{width:100%;min-width:0}.field label{font-size:12px;font-weight:600;color:#6a7a8a;display:block;margin-bottom:6px}
-        .input{width:100%;padding:10px 13px;border-radius:10px;background:#0d1117;border:1px solid #1a2535;color:#e2e8f0;font-size:13px;outline:none;font-family:inherit;min-width:0}
-        .input:focus{border-color:#378ADD}
+        .cp-inner{padding:28px 32px;display:flex;flex-direction:column;gap:20px;max-width:760px;width:100%;background:#F1F5F9}
+        .cp-card{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:20px;padding:24px;width:100%;box-shadow:0 1px 3px rgba(15,23,42,0.06)}
+        .field{width:100%;min-width:0}.field label{font-size:12px;font-weight:600;color:#64748B;display:block;margin-bottom:6px}
+        .input{width:100%;padding:10px 13px;border-radius:10px;background:#F8FAFC;border:1px solid #E2E8F0;color:#0F172A;font-size:13px;outline:none;font-family:inherit;min-width:0}
+        .input:focus{border-color:#378ADD;background:#FFFFFF}
         .btn-primary{width:100%;padding:13px;border-radius:11px;background:#378ADD;color:white;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
         .btn-primary:disabled{opacity:0.5;cursor:not-allowed}
-        .add-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:#1d9e7520;color:#1D9E75;border:1px solid #1d9e7540;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+        .add-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:#ECFDF5;color:#0E7A5F;border:1px solid #0E7A5F30;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
         .add-btn:disabled{opacity:0.5;cursor:not-allowed}
-        .img-pick-banner{width:100%;height:90px;border-radius:12px;background:#0d1117;border:1px dashed #1a2535;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:#4a6a6a;font-size:12px;transition:border-color .2s}
+        .img-pick-banner{width:100%;height:90px;border-radius:12px;background:#F8FAFC;border:1px dashed #CBD5E1;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:#94A3B8;font-size:12px;transition:border-color .2s}
         .img-pick-banner:hover{border-color:#378ADD}
-        .img-pick-logo{width:64px;height:64px;border-radius:14px;background:#0d1117;border:1px dashed #1a2535;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .2s}
+        .img-pick-logo{width:64px;height:64px;border-radius:14px;background:#F8FAFC;border:1px dashed #CBD5E1;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .2s}
         .img-pick-logo:hover{border-color:#378ADD}
         @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin 1s linear infinite}
       `}</style>
@@ -1027,75 +1027,77 @@ export default function CompanyProfilePage() {
     <>
       <style>{`
         *,*::before,*::after{box-sizing:border-box}
-        .cp-inner{padding:28px 32px;display:flex;flex-direction:column;gap:20px;max-width:760px;width:100%}
-        .cp-card{background:#131b27;border:1px solid #1a2535;border-radius:20px;padding:24px;width:100%}
-        .info-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #1a2535}
+        .cp-inner{padding:28px 32px;display:flex;flex-direction:column;gap:20px;max-width:760px;width:100%;background:#F1F5F9}
+        .cp-card{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:20px;padding:24px;width:100%;box-shadow:0 1px 3px rgba(15,23,42,0.06);overflow:hidden}
+        .info-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #F1F5F9}
         .info-row:last-child{border-bottom:none}
         .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%}
-        .stat{background:#0d1117;border:1px solid #1a2535;border-radius:12px;padding:14px;text-align:center;min-width:0}
+        .stat{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:14px;text-align:center;min-width:0}
         .empty-state{display:flex;flex-direction:column;align-items:center;padding:32px;gap:10px;text-align:center}
-        .edit-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:12px;border:1px solid #1a2535;background:#131b27;color:#8a9ab0;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+        .edit-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:12px;border:1px solid #E2E8F0;background:#FFFFFF;color:#475569;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:border-color .2s, background .2s}
+        .edit-btn:hover{border-color:#378ADD;background:#F8FAFC}
         .edit-btn:disabled{opacity:0.5;cursor:not-allowed}
-        .add-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:#1d9e7520;color:#1D9E75;border:1px solid #1d9e7540;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+        .add-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:#ECFDF5;color:#0E7A5F;border:1px solid #0E7A5F30;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
         .add-btn:disabled{opacity:0.5;cursor:not-allowed}
         .v-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px}
-        .dot-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#8a9ab0;font-weight:600}
+        .dot-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#64748B;font-weight:600}
         .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-        .tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;border-bottom:1px solid #1a2535;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+        .tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;border-bottom:1px solid #E2E8F0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
         .tabs::-webkit-scrollbar{display:none}
-        .tab-btn{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px 10px 0 0;border:none;background:transparent;color:#4a6a6a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
-        .tab-btn.active{color:#378ADD;background:#131b27;border:1px solid #1a2535;border-bottom:1px solid #131b27;margin-bottom:-1px}
-        .badge-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:10px;background:#0d1117;border:1px solid #1a2535;color:#c0d0e0;font-size:13px}
-        .badge-pill button{background:none;border:none;color:#4a6a6a;cursor:pointer;display:flex;padding:0}
+        .tab-btn{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px 10px 0 0;border:none;background:transparent;color:#94A3B8;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+        .tab-btn.active{color:#378ADD;background:#FFFFFF;border:1px solid #E2E8F0;border-bottom:1px solid #FFFFFF;margin-bottom:-1px;box-shadow:0 -2px 6px rgba(15,23,42,0.04)}
+        .badge-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:10px;background:#F8FAFC;border:1px solid #E2E8F0;color:#334155;font-size:13px}
+        .badge-pill button{background:none;border:none;color:#94A3B8;cursor:pointer;display:flex;padding:0}
         .inline-add{display:flex;gap:8px;width:100%}
-        .input{width:100%;padding:10px 13px;border-radius:10px;background:#0d1117;border:1px solid #1a2535;color:#e2e8f0;font-size:13px;outline:none;font-family:inherit;min-width:0}
-        .input:focus{border-color:#378ADD}
-        textarea.about-textarea{width:100%;min-width:0;padding:12px 14px;border-radius:10px;background:#0d1117;border:1px solid #1a2535;color:#e2e8f0;font-size:13px;outline:none;font-family:inherit;resize:none;height:96px;max-height:96px;overflow-y:auto;line-height:1.6;display:block}
-        textarea.about-textarea:focus{border-color:#378ADD}
-        .emp-card{background:#0d1117;border:1px solid #1a2535;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+        .input{width:100%;padding:10px 13px;border-radius:10px;background:#F8FAFC;border:1px solid #E2E8F0;color:#0F172A;font-size:13px;outline:none;font-family:inherit;min-width:0}
+        .input:focus{border-color:#378ADD;background:#FFFFFF}
+        textarea.about-textarea{width:100%;min-width:0;padding:12px 14px;border-radius:10px;background:#F8FAFC;border:1px solid #E2E8F0;color:#0F172A;font-size:13px;outline:none;font-family:inherit;resize:none;height:96px;max-height:96px;overflow-y:auto;line-height:1.6;display:block}
+        textarea.about-textarea:focus{border-color:#378ADD;background:#FFFFFF}
+        .emp-card{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
         .emp-top{display:flex;align-items:center;gap:12px}
-        .emp-avatar{width:44px;height:44px;border-radius:12px;background:#1a2232;display:flex;align-items:center;justify-content:center;color:#378ADD;font-weight:700;font-size:14px;flex-shrink:0}
-        .emp-mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border-top:1px solid #1a2535;padding-top:12px}
+        .emp-avatar{width:44px;height:44px;border-radius:12px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;color:#378ADD;font-weight:700;font-size:14px;flex-shrink:0}
+        .emp-mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border-top:1px solid #E2E8F0;padding-top:12px}
         .emp-mini{text-align:center;min-width:0}
-        .emp-mini b{display:block;font-size:13px;color:#e2e8f0}
-        .emp-mini span{font-size:10px;color:#4a6a6a}
-        .invite-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;background:#0d1117;border:1px solid #1a2535;border-radius:12px;min-width:0}
-        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
-        .modal-card{background:#131b27;border:1px solid #1a2535;border-radius:20px;width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column}
-        .modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 22px;border-bottom:1px solid #1a2535;flex-shrink:0}
-        .modal-header h2{font-size:16px;font-weight:700;color:#e2e8f0;margin:0}
-        .icon-btn{background:none;border:none;color:#4a6a6a;cursor:pointer;padding:0}
+        .emp-mini b{display:block;font-size:13px;color:#0F172A}
+        .emp-mini span{font-size:10px;color:#94A3B8}
+        .invite-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;min-width:0}
+        .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+        .modal-card{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:20px;width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(15,23,42,0.18)}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 22px;border-bottom:1px solid #E2E8F0;flex-shrink:0}
+        .modal-header h2{font-size:16px;font-weight:700;color:#0F172A;margin:0}
+        .icon-btn{background:none;border:none;color:#94A3B8;cursor:pointer;padding:0}
         .modal-body{padding:20px 22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
         .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
         .field{width:100%;min-width:0}
-        .field label{font-size:12px;font-weight:600;color:#6a7a8a;display:block;margin-bottom:6px}
-        .modal-footer{padding:16px 22px;border-top:1px solid #1a2535;flex-shrink:0}
+        .field label{font-size:12px;font-weight:600;color:#64748B;display:block;margin-bottom:6px}
+        .modal-footer{padding:16px 22px;border-top:1px solid #E2E8F0;flex-shrink:0}
         .btn-primary{width:100%;padding:13px;border-radius:11px;background:#378ADD;color:white;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
         .btn-primary:disabled{opacity:0.5;cursor:not-allowed}
-        .search-box{display:flex;align-items:center;gap:8px;padding:10px 13px;border-radius:10px;background:#0d1117;border:1px solid #1a2535}
-        .search-input{flex:1;min-width:0;background:none;border:none;outline:none;color:#e2e8f0;font-size:13px;font-family:inherit}
-        .hint{font-size:11px;color:#4a6a6a;margin-top:6px;line-height:1.5}
-        .day-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1a2535;flex-wrap:wrap}
+        .search-box{display:flex;align-items:center;gap:8px;padding:10px 13px;border-radius:10px;background:#F8FAFC;border:1px solid #E2E8F0}
+        .search-input{flex:1;min-width:0;background:none;border:none;outline:none;color:#0F172A;font-size:13px;font-family:inherit}
+        .hint{font-size:11px;color:#94A3B8;margin-top:6px;line-height:1.5}
+        .day-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F1F5F9;flex-wrap:wrap}
         .day-row:last-child{border-bottom:none}
-        .day-name{flex:1;font-size:13px;color:#c0d0e0;font-weight:600;min-width:70px}
+        .day-name{flex:1;font-size:13px;color:#334155;font-weight:600;min-width:70px}
         .toggle{width:38px;height:22px;border-radius:99px;cursor:pointer;position:relative;flex-shrink:0;border:none}
-        .time-input{width:78px;padding:6px 8px;border-radius:8px;background:#0d1117;border:1px solid #1a2535;color:#e2e8f0;font-size:12px;font-family:inherit;flex-shrink:0}
+        .time-input{width:78px;padding:6px 8px;border-radius:8px;background:#F8FAFC;border:1px solid #E2E8F0;color:#0F172A;font-size:12px;font-family:inherit;flex-shrink:0}
         .timeline{display:flex;flex-direction:column}
         .tl-item{display:flex;gap:12px;padding-bottom:18px;position:relative}
         .tl-item:last-child{padding-bottom:0}
-        .tl-line{position:absolute;left:9px;top:20px;bottom:0;width:1px;background:#1a2535}
+        .tl-line{position:absolute;left:9px;top:20px;bottom:0;width:1px;background:#E2E8F0}
         .tl-item:last-child .tl-line{display:none}
         .tl-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1}
         .gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%}
-        .section-title{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:15px;font-weight:700;color:#c0d0e0}
-        .img-pick-banner{width:100%;height:90px;border-radius:12px;background:#0d1117;border:1px dashed #1a2535;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:#4a6a6a;font-size:12px;transition:border-color .2s}
+        .section-title{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:15px;font-weight:700;color:#0F172A}
+        .company-banner{height:110px;border-radius:20px 20px 0 0;background-size:cover;background-position:center;margin:-24px -24px 20px;background-color:#EFF6FF}
+        .img-pick-banner{width:100%;height:90px;border-radius:12px;background:#F8FAFC;border:1px dashed #CBD5E1;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:#94A3B8;font-size:12px;transition:border-color .2s}
         .img-pick-banner:hover{border-color:#378ADD}
-        .img-pick-logo{width:64px;height:64px;border-radius:14px;background:#0d1117;border:1px dashed #1a2535;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .2s}
+        .img-pick-logo{width:64px;height:64px;border-radius:14px;background:#F8FAFC;border:1px dashed #CBD5E1;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .2s}
         .img-pick-logo:hover{border-color:#378ADD}
         .spin{animation:spin 1s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
         @media(max-width:768px){.cp-inner{padding:20px 20px}.stat-grid{grid-template-columns:repeat(2,1fr)}.gallery-grid{grid-template-columns:repeat(3,1fr)}}
-        @media(max-width:640px){.cp-inner{padding:14px 14px;gap:14px}.cp-card{padding:16px;border-radius:16px}.stat-grid{grid-template-columns:repeat(2,1fr);gap:8px}.field-row{grid-template-columns:1fr}.emp-mini-stats{grid-template-columns:repeat(2,1fr)}.gallery-grid{grid-template-columns:repeat(2,1fr)}.modal-card{border-radius:16px}.day-row{gap:8px}.time-input{width:68px}.emp-top{flex-wrap:wrap}}
+        @media(max-width:640px){.cp-inner{padding:14px 14px;gap:14px}.cp-card{padding:16px;border-radius:16px}.stat-grid{grid-template-columns:repeat(2,1fr);gap:8px}.field-row{grid-template-columns:1fr}.emp-mini-stats{grid-template-columns:repeat(2,1fr)}.gallery-grid{grid-template-columns:repeat(2,1fr)}.modal-card{border-radius:16px}.day-row{gap:8px}.time-input{width:68px}.emp-top{flex-wrap:wrap}.company-banner{margin:-16px -16px 20px;border-radius:16px 16px 0 0;height:90px}}
         @media(max-width:380px){.cp-inner{padding:10px 10px}.tabs{gap:2px}.tab-btn{padding:8px 10px;font-size:12px}.stat-grid{grid-template-columns:1fr 1fr;gap:6px}.stat{padding:10px 8px}.gallery-grid{grid-template-columns:repeat(2,1fr)}.field-row{grid-template-columns:1fr}}
       `}</style>
 
@@ -1104,40 +1106,41 @@ export default function CompanyProfilePage() {
         {/* ── Cabeçalho ── */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12 }}>
           <div style={{ minWidth:0 }}>
-            <h1 style={{ fontSize:22, fontWeight:700, color:"#e2e8f0", margin:"0 0 4px" }}>Perfil da empresa</h1>
-            <p style={{ fontSize:13, color:"#4a6a6a", margin:0 }}>Gere a tua empresa e equipa</p>
+            <h1 style={{ fontSize:22, fontWeight:700, color:"#0F172A", margin:"0 0 4px" }}>Perfil da empresa</h1>
+            <p style={{ fontSize:13, color:"#64748B", margin:0 }}>Gere a tua empresa e equipa</p>
           </div>
           <button className="edit-btn" onClick={() => setEditOpen(true)}><Edit size={14} /> Editar</button>
         </div>
 
         {/* ── Card da empresa ── */}
         <div className="cp-card">
-          <div style={{
-            height:90, borderRadius:"20px 20px 0 0",
-            background: company.bannerUrl
-              ? `url(${company.bannerUrl}) center/cover`
-              : "linear-gradient(135deg,#378ADD15,#1D9E7515)",
-            margin:"-24px -24px 20px",
-          }} />
+          <div
+            className="company-banner"
+            style={{
+              background: company.bannerUrl
+                ? `url(${company.bannerUrl}) center/cover`
+                : "linear-gradient(135deg,#378ADD15,#0E7A5F15)",
+            }}
+          />
           <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
-            <div style={{ width:72, height:72, borderRadius:16, background:"#1a2232", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+            <div style={{ width:72, height:72, borderRadius:16, background:"#EFF6FF", border:"1px solid #E2E8F0", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
               {company.logoUrl
                 ? <img src={company.logoUrl} alt={company.name} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                 : <Building2 size={30} style={{ color:"#378ADD" }} />}
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:8, minWidth:0 }}>
-              <p style={{ fontSize:18, fontWeight:700, color:"#e2e8f0", margin:0 }}>{company.name}</p>
+              <p style={{ fontSize:18, fontWeight:700, color:"#0F172A", margin:0 }}>{company.name}</p>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 <VerificationBadge status={company.verificationStatus} />
-                <span className="v-badge" style={{ background:"#378ADD20", color:"#378ADD", border:"1px solid #378ADD40" }}>{company.mainCategory}</span>
+                <span className="v-badge" style={{ background:"#EFF6FF", color:"#378ADD", border:"1px solid #378ADD30" }}>{company.mainCategory}</span>
               </div>
             </div>
           </div>
-          <div style={{ display:"flex", gap:20, marginTop:18, paddingTop:18, borderTop:"1px solid #1a2535", flexWrap:"wrap", alignItems:"center" }}>
-            <span style={{ fontSize:12, color:"#4a6a6a" }}>Fundada em <b style={{ color:"#c0d0e0" }}>{company.foundedYear}</b></span>
+          <div style={{ display:"flex", gap:20, marginTop:18, paddingTop:18, borderTop:"1px solid #E2E8F0", flexWrap:"wrap", alignItems:"center" }}>
+            <span style={{ fontSize:12, color:"#64748B" }}>Fundada em <b style={{ color:"#334155" }}>{company.foundedYear}</b></span>
             {company.website
               ? <a href={company.website} target="_blank" rel="noreferrer" style={{ fontSize:12, color:"#378ADD", display:"flex", alignItems:"center", gap:4, wordBreak:"break-all" }}><Globe size={12} />{company.website}</a>
-              : <span style={{ fontSize:12, color:"#4a6a6a", display:"flex", alignItems:"center", gap:4 }}><Globe size={12} />Sem website</span>
+              : <span style={{ fontSize:12, color:"#94A3B8", display:"flex", alignItems:"center", gap:4 }}><Globe size={12} />Sem website</span>
             }
             {company.verificationStatus !== "verified" && (
               <button className="add-btn" style={{ marginLeft:"auto" }} onClick={() => setKycOpen(true)}>
@@ -1160,19 +1163,19 @@ export default function CompanyProfilePage() {
         {tab === "overview" && (<>
           <div className="cp-card">
             {[
-              { icon:Mail,     label:"Email",    value:company.email,            color:"#1D9E75" },
+              { icon:Mail,     label:"Email",    value:company.email,            color:"#0E7A5F" },
               { icon:Phone,    label:"Telefone", value:company.phone,            color:"#378ADD" },
-              { icon:MapPin,   label:"Sede",     value:company.headquarters||"—",color:"#EF9F27" },
+              { icon:MapPin,   label:"Sede",     value:company.headquarters||"—",color:"#D97706" },
               { icon:Briefcase,label:"Sector",   value:company.sector||"—",      color:"#8B5CF6" },
-              { icon:FileText, label:"NIF",      value:company.nif||"—",         color:"#5a6a7a" },
+              { icon:FileText, label:"NIF",      value:company.nif||"—",         color:"#64748B" },
             ].map((item, i) => { const Icon = item.icon; return (
               <div className="info-row" key={i}>
-                <div style={{ width:38, height:38, borderRadius:10, background:`${item.color}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <div style={{ width:38, height:38, borderRadius:10, background:`${item.color}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   <Icon size={16} style={{ color:item.color }} />
                 </div>
                 <div style={{ minWidth:0 }}>
-                  <p style={{ fontSize:11, color:"#4a5a6a", margin:"0 0 2px" }}>{item.label}</p>
-                  <p style={{ fontSize:14, color:"#c0d0e0", margin:0, wordBreak:"break-word" }}>{item.value}</p>
+                  <p style={{ fontSize:11, color:"#94A3B8", margin:"0 0 2px" }}>{item.label}</p>
+                  <p style={{ fontSize:14, color:"#0F172A", margin:0, wordBreak:"break-word" }}>{item.value}</p>
                 </div>
               </div>
             );})}
@@ -1189,8 +1192,8 @@ export default function CompanyProfilePage() {
           <div className="stat-grid">
             {statsDisplay.map((s, i) => (
               <div className="stat" key={i}>
-                <p style={{ fontSize:20, fontWeight:700, color:s.color, margin:"0 0 4px" }}>{s.value}</p>
-                <p style={{ fontSize:11, color:"#4a6a6a", margin:0 }}>{s.label}</p>
+                <p style={{ fontSize:20, fontWeight:700, color:"#0F172A", margin:"0 0 4px" }}>{s.value}</p>
+                <p style={{ fontSize:11, color:"#94A3B8", margin:0 }}>{s.label}</p>
               </div>
             ))}
           </div>
@@ -1199,9 +1202,9 @@ export default function CompanyProfilePage() {
         {/* ════ SERVIÇOS ════ */}
         {tab === "services" && (
           <div className="cp-card">
-            <div className="section-title"><Star size={15} style={{ color:"#EF9F27" }} />Serviços oferecidos</div>
+            <div className="section-title"><Star size={15} style={{ color:"#D97706" }} />Serviços oferecidos</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:16 }}>
-              {services.length === 0 && <p style={{ fontSize:13, color:"#4a6a6a", margin:0 }}>Ainda não adicionaste serviços.</p>}
+              {services.length === 0 && <p style={{ fontSize:13, color:"#94A3B8", margin:0 }}>Ainda não adicionaste serviços.</p>}
               {services.map(s => (
                 <span className="badge-pill" key={s.id}>{s.label}<button onClick={() => handleRemoveService(s.id)}><X size={13}/></button></span>
               ))}
@@ -1219,14 +1222,14 @@ export default function CompanyProfilePage() {
         {tab === "team" && (
           <div className="cp-card">
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-              <div className="section-title" style={{ marginBottom:0 }}><Users size={15} style={{ color:"#1D9E75" }}/>Equipa</div>
+              <div className="section-title" style={{ marginBottom:0 }}><Users size={15} style={{ color:"#0E7A5F" }}/>Equipa</div>
               <button className="add-btn" onClick={() => setInviteOpen(true)}><Plus size={13}/>Adicionar</button>
             </div>
             {employees.length === 0 ? (
               <div className="empty-state">
-                <Users size={28} style={{ color:"#2a3a4a" }}/>
-                <p style={{ fontSize:14, fontWeight:600, color:"#c0d0e0", margin:0 }}>Sem funcionários ainda</p>
-                <p style={{ fontSize:13, color:"#4a6a6a", lineHeight:1.6, maxWidth:280, margin:0, textAlign:"center" }}>Adiciona funcionários para distribuir serviços pela equipa.</p>
+                <Users size={28} style={{ color:"#CBD5E1" }}/>
+                <p style={{ fontSize:14, fontWeight:600, color:"#334155", margin:0 }}>Sem funcionários ainda</p>
+                <p style={{ fontSize:13, color:"#94A3B8", lineHeight:1.6, maxWidth:280, margin:0, textAlign:"center" }}>Adiciona funcionários para distribuir serviços pela equipa.</p>
               </div>
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
@@ -1235,8 +1238,8 @@ export default function CompanyProfilePage() {
                     <div className="emp-top">
                       <div className="emp-avatar">{emp.user?.fullName?.split(" ").map(n => n[0]).slice(0,2).join("") ?? "?"}</div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ fontSize:14, fontWeight:700, color:"#e2e8f0", margin:0 }}>{emp.user?.fullName ?? "—"}</p>
-                        <p style={{ fontSize:12, color:"#4a6a6a", margin:0 }}>{ROLE_LABEL[emp.role]}</p>
+                        <p style={{ fontSize:14, fontWeight:700, color:"#0F172A", margin:0 }}>{emp.user?.fullName ?? "—"}</p>
+                        <p style={{ fontSize:12, color:"#94A3B8", margin:0 }}>{ROLE_LABEL[emp.role]}</p>
                       </div>
                       <EmployeeStatusBadge status={emp.status}/>
                     </div>
@@ -1262,17 +1265,17 @@ export default function CompanyProfilePage() {
             </div>
             {invitations.length === 0 ? (
               <div className="empty-state">
-                <UserPlus size={28} style={{ color:"#2a3a4a" }}/>
-                <p style={{ fontSize:14, fontWeight:600, color:"#c0d0e0", margin:0 }}>Nenhum convite enviado</p>
-                <p style={{ fontSize:13, color:"#4a6a6a", lineHeight:1.6, maxWidth:280, margin:0, textAlign:"center" }}>Pesquisa um utilizador e convida-o para a tua equipa.</p>
+                <UserPlus size={28} style={{ color:"#CBD5E1" }}/>
+                <p style={{ fontSize:14, fontWeight:600, color:"#334155", margin:0 }}>Nenhum convite enviado</p>
+                <p style={{ fontSize:13, color:"#94A3B8", lineHeight:1.6, maxWidth:280, margin:0, textAlign:"center" }}>Pesquisa um utilizador e convida-o para a tua equipa.</p>
               </div>
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                 {invitations.map(inv => (
                   <div className="invite-row" key={inv.id}>
                     <div style={{ minWidth:0 }}>
-                      <p style={{ fontSize:13, fontWeight:600, color:"#e2e8f0", margin:0 }}>{inv.invitee?.fullName ?? "—"}</p>
-                      <p style={{ fontSize:11, color:"#4a6a6a", margin:0 }}>{inv.invitee?.email} · {ROLE_LABEL[inv.proposedRole]}</p>
+                      <p style={{ fontSize:13, fontWeight:600, color:"#0F172A", margin:0 }}>{inv.invitee?.fullName ?? "—"}</p>
+                      <p style={{ fontSize:11, color:"#94A3B8", margin:0 }}>{inv.invitee?.email} · {ROLE_LABEL[inv.proposedRole]}</p>
                     </div>
                     <InviteStatusBadge status={inv.status}/>
                   </div>
@@ -1287,14 +1290,14 @@ export default function CompanyProfilePage() {
           <div className="cp-card">
             <div className="section-title"><Briefcase size={15} style={{ color:"#378ADD" }}/>Projectos realizados</div>
             {portfolio.length === 0
-              ? <p style={{ fontSize:13, color:"#4a6a6a", marginBottom:16 }}>Ainda não adicionaste projectos ao portfólio.</p>
+              ? <p style={{ fontSize:13, color:"#94A3B8", marginBottom:16 }}>Ainda não adicionaste projectos ao portfólio.</p>
               : (
                 <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
                   {portfolio.map(p => (
                     <div className="invite-row" key={p.id}>
                       <div style={{ minWidth:0 }}>
-                        <p style={{ fontSize:13, fontWeight:600, color:"#e2e8f0", margin:0 }}>{p.name}</p>
-                        <p style={{ fontSize:11, color:"#4a6a6a", margin:0 }}>{p.client||"—"} · {p.category||"—"} · {p.projectDate||p.createdAt.slice(0,10)}</p>
+                        <p style={{ fontSize:13, fontWeight:600, color:"#0F172A", margin:0 }}>{p.name}</p>
+                        <p style={{ fontSize:11, color:"#94A3B8", margin:0 }}>{p.client||"—"} · {p.category||"—"} · {p.projectDate||p.createdAt.slice(0,10)}</p>
                       </div>
                       <button className="icon-btn" onClick={() => handleRemoveProject(p.id)}><Trash2 size={15}/></button>
                     </div>
@@ -1318,14 +1321,14 @@ export default function CompanyProfilePage() {
             {gallery.length > 0 && (
               <div className="gallery-grid" style={{ marginBottom:16 }}>
                 {gallery.map(img => (
-                  <div key={img.id} style={{ position:"relative", aspectRatio:"1", borderRadius:10, overflow:"hidden" }}>
+                  <div key={img.id} style={{ position:"relative", aspectRatio:"1", borderRadius:10, overflow:"hidden", border:"1px solid #E2E8F0" }}>
                     <img src={img.url} alt={img.caption || "Trabalho"} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                     <button
                       onClick={() => handleRemoveGalleryImage(img.id)}
                       style={{
                         position:"absolute", top:6, right:6,
                         width:24, height:24, borderRadius:"50%",
-                        background:"rgba(0,0,0,0.75)", border:"none",
+                        background:"rgba(15,23,42,0.65)", border:"none",
                         display:"flex", alignItems:"center", justifyContent:"center",
                         cursor:"pointer",
                       }}
@@ -1340,13 +1343,13 @@ export default function CompanyProfilePage() {
             <label style={{
               display:"flex", alignItems:"center", gap:12,
               padding:"14px 16px", borderRadius:12,
-              background:"#0d1117", border:"1px dashed #1a2535",
+              background:"#F8FAFC", border:"1px dashed #CBD5E1",
               cursor: uploadingGallery ? "not-allowed" : "pointer",
               opacity: uploadingGallery ? 0.6 : 1,
               transition:"border-color 0.2s",
             }}
               onMouseEnter={e => !uploadingGallery && (e.currentTarget.style.borderColor = "#8B5CF6")}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = "#1a2535")}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = "#CBD5E1")}
             >
               <input
                 type="file"
@@ -1365,10 +1368,10 @@ export default function CompanyProfilePage() {
                 : <ImageIcon size={20} style={{ color:"#8B5CF6", flexShrink:0 }} />
               }
               <div>
-                <p style={{ fontSize:13, fontWeight:600, color:"#c0d0e0", margin:0 }}>
+                <p style={{ fontSize:13, fontWeight:600, color:"#334155", margin:0 }}>
                   {uploadingGallery ? "A fazer upload..." : "Adicionar fotos ao portfólio"}
                 </p>
-                <p style={{ fontSize:11, color:"#4a6a6a", margin:0 }}>
+                <p style={{ fontSize:11, color:"#94A3B8", margin:0 }}>
                   Clica para seleccionar · JPG, PNG · múltiplas fotos
                 </p>
               </div>
@@ -1384,16 +1387,16 @@ export default function CompanyProfilePage() {
             {hours.map(h => (
               <div className="day-row" key={h.day}>
                 <span className="day-name">{h.day}</span>
-                <button className="toggle" style={{ background:h.open?"#1D9E75":"#1a2535" }} onClick={() => toggleDay(h.day)}>
+                <button className="toggle" style={{ background:h.open?"#0E7A5F":"#E2E8F0" }} onClick={() => toggleDay(h.day)}>
                   <span style={{ position:"absolute", left:h.open?19:3, top:3, width:16, height:16, borderRadius:"50%", background:"white", transition:"left .15s" }}/>
                 </button>
                 {h.open ? (
                   <div style={{ display:"flex", gap:6, alignItems:"center" }}>
                     <input className="time-input" type="time" value={h.from} onChange={e => updateDayTime(h.day,"from",e.target.value)} />
-                    <span style={{ color:"#4a6a6a", fontSize:12, flexShrink:0 }}>às</span>
+                    <span style={{ color:"#94A3B8", fontSize:12, flexShrink:0 }}>às</span>
                     <input className="time-input" type="time" value={h.to} onChange={e => updateDayTime(h.day,"to",e.target.value)} />
                   </div>
-                ) : <span style={{ fontSize:12, color:"#4a6a6a" }}>Fechado</span>}
+                ) : <span style={{ fontSize:12, color:"#94A3B8" }}>Fechado</span>}
               </div>
             ))}
             <button className="edit-btn" style={{ marginTop:14 }} disabled={savingHours} onClick={handleSaveHours}>
@@ -1403,7 +1406,7 @@ export default function CompanyProfilePage() {
 
           {/* Cobertura */}
           <div className="cp-card">
-            <div className="section-title"><MapPin size={15} style={{ color:"#EF9F27" }}/>Área de cobertura</div>
+            <div className="section-title"><MapPin size={15} style={{ color:"#D97706" }}/>Área de cobertura</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:16 }}>
               {coverage.map(p => (
                 <span className="badge-pill" key={p}>{p}<button onClick={() => removeCoverage(p)}><X size={13}/></button></span>
@@ -1442,9 +1445,9 @@ export default function CompanyProfilePage() {
 
           {/* Certificações */}
           <div className="cp-card">
-            <div className="section-title"><ShieldCheck size={15} style={{ color:"#1D9E75" }}/>Certificações e especializações</div>
+            <div className="section-title"><ShieldCheck size={15} style={{ color:"#0E7A5F" }}/>Certificações e especializações</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:16 }}>
-              {certifications.length === 0 && <p style={{ fontSize:13, color:"#4a6a6a", margin:0 }}>Sem certificações registadas.</p>}
+              {certifications.length === 0 && <p style={{ fontSize:13, color:"#94A3B8", margin:0 }}>Sem certificações registadas.</p>}
               {certifications.map(c => (
                 <span className="badge-pill" key={c.id}>{c.name} · {c.issuer||"—"}<button onClick={() => handleRemoveCertification(c.id)}><X size={13}/></button></span>
               ))}
@@ -1460,10 +1463,10 @@ export default function CompanyProfilePage() {
 
           {/* Documentos KYC */}
           <div className="cp-card">
-            <div className="section-title"><FileText size={15} style={{ color:"#5a6a7a" }}/>Documentos da empresa</div>
+            <div className="section-title"><FileText size={15} style={{ color:"#64748B" }}/>Documentos da empresa</div>
             {!kyc ? (
               <div className="empty-state" style={{ padding:"16px 0" }}>
-                <p style={{ fontSize:13, color:"#4a6a6a", margin:0 }}>Nenhum documento submetido ainda.</p>
+                <p style={{ fontSize:13, color:"#94A3B8", margin:0 }}>Nenhum documento submetido ainda.</p>
                 <button className="add-btn" onClick={() => setKycOpen(true)}><ShieldCheck size={13}/>Submeter KYC</button>
               </div>
             ) : (<>
@@ -1474,10 +1477,10 @@ export default function CompanyProfilePage() {
                 { name:"BI do representante",           url:kyc.representativeIdUrl },
               ].map((d, i) => (
                 <div className="invite-row" key={i}>
-                  <p style={{ fontSize:13, color:"#e2e8f0", margin:0 }}>{d.name}</p>
+                  <p style={{ fontSize:13, color:"#0F172A", margin:0 }}>{d.name}</p>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                     <span className="dot-badge">
-                      <span className="dot" style={{ background: kyc.status==="approved"?"#1D9E75":kyc.status==="rejected"?"#E24B4A":"#EF9F27" }}/>
+                      <span className="dot" style={{ background: kyc.status==="approved"?"#0E7A5F":kyc.status==="rejected"?"#DC2626":"#D97706" }}/>
                       {kyc.status==="approved"?"Aprovado":kyc.status==="rejected"?"Rejeitado":"Em análise"}
                     </span>
                     {d.url && <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ fontSize:11, color:"#378ADD" }}>Ver</a>}
@@ -1485,7 +1488,7 @@ export default function CompanyProfilePage() {
                 </div>
               ))}
               {kyc.status === "rejected" && kyc.rejectionReason && (
-                <p className="hint" style={{ marginTop:8, color:"#E24B4A" }}>Motivo: {kyc.rejectionReason}</p>
+                <p className="hint" style={{ marginTop:8, color:"#DC2626" }}>Motivo: {kyc.rejectionReason}</p>
               )}
               {kyc.status === "rejected" && (
                 <button className="add-btn" style={{ marginTop:12 }} onClick={() => setKycOpen(true)}>
@@ -1502,12 +1505,12 @@ export default function CompanyProfilePage() {
               {timeline.map((item, i) => (
                 <div className="tl-item" key={item.id}>
                   {i < timeline.length - 1 && <span className="tl-line"/>}
-                  <div className="tl-dot" style={{ background:item.achieved?"#1D9E7520":"#0d1117", border:`1px solid ${item.achieved?"#1D9E75":"#1a2535"}` }}>
-                    {item.achieved ? <Check size={11} style={{ color:"#1D9E75" }}/> : <span style={{ width:6, height:6, borderRadius:"50%", background:"#4a6a6a" }}/>}
+                  <div className="tl-dot" style={{ background:item.achieved?"#ECFDF5":"#F8FAFC", border:`1px solid ${item.achieved?"#0E7A5F":"#E2E8F0"}` }}>
+                    {item.achieved ? <Check size={11} style={{ color:"#0E7A5F" }}/> : <span style={{ width:6, height:6, borderRadius:"50%", background:"#CBD5E1" }}/>}
                   </div>
                   <div style={{ paddingTop:1, minWidth:0 }}>
-                    <p style={{ fontSize:13, fontWeight:600, color:item.achieved?"#e2e8f0":"#4a6a6a", margin:0 }}>{item.label}</p>
-                    {item.date && <p style={{ fontSize:11, color:"#4a6a6a", margin:0 }}>{item.date}</p>}
+                    <p style={{ fontSize:13, fontWeight:600, color:item.achieved?"#0F172A":"#94A3B8", margin:0 }}>{item.label}</p>
+                    {item.date && <p style={{ fontSize:11, color:"#94A3B8", margin:0 }}>{item.date}</p>}
                   </div>
                 </div>
               ))}
