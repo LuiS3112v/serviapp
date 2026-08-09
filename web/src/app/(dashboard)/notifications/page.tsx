@@ -29,18 +29,26 @@ function timeAgo(date: string): string {
   return new Date(date).toLocaleDateString("pt-PT");
 }
 
-const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string }> = {
-  message:           { icon: MessageCircle, color: "#1D9E75", bg: "#e3f5ee" },
-  service_accepted:  { icon: CheckCircle,   color: "#2563eb", bg: "#dbeafe" },
-  service_started:   { icon: CheckCircle,   color: "#7C3AED", bg: "#ede7fe" },
-  service_completed: { icon: CheckCircle,   color: "#1D9E75", bg: "#e3f5ee" },
-  service_cancelled: { icon: AlertCircle,   color: "#dc2626", bg: "#fef2f2" },
-  payment:           { icon: Wallet,        color: "#EF9F27", bg: "#fef3e2" },
-  wallet:            { icon: Wallet,        color: "#EF9F27", bg: "#fef3e2" },
-  kyc_approved:      { icon: CheckCircle,   color: "#1D9E75", bg: "#e3f5ee" },
-  kyc_rejected:      { icon: AlertCircle,   color: "#dc2626", bg: "#fef2f2" },
-  system:            { icon: Bell,          color: "#64748b", bg: "#f1f5f9" },
-  admin:             { icon: AlertCircle,   color: "#DB2777", bg: "#fce7f3" },
+// Cor única de acção/destaque desta página — usada só para sinalizar
+// "novo": indicador de não lida, borda de card não lido, tab activa.
+// Todos os ícones de notificação partilham o mesmo estilo neutro,
+// independentemente do tipo.
+const ACCENT = "#1D9E75";
+const ACCENT_SOFT = "#e3f5ee";
+const ACCENT_BORDER = "#a7e3cc";
+
+const TYPE_ICON: Record<string, any> = {
+  message: MessageCircle,
+  service_accepted: CheckCircle,
+  service_started: CheckCircle,
+  service_completed: CheckCircle,
+  service_cancelled: AlertCircle,
+  payment: Wallet,
+  wallet: Wallet,
+  kyc_approved: CheckCircle,
+  kyc_rejected: AlertCircle,
+  system: Bell,
+  admin: AlertCircle,
 };
 
 // ─── Notification Card ─────────────────────────────────────────────────────
@@ -52,8 +60,7 @@ function NotifCard({
   onRead: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const cfg = TYPE_CONFIG[n.type] ?? TYPE_CONFIG.system;
-  const Icon = cfg.icon;
+  const Icon = TYPE_ICON[n.type] ?? Bell;
   const isUnread = n.status === "unread";
 
   return (
@@ -62,7 +69,7 @@ function NotifCard({
         display: "flex", alignItems: "flex-start", gap: 14,
         padding: "16px", borderRadius: 14,
         background: isUnread ? "#ffffff" : "#fbfcfd",
-        border: `1px solid ${isUnread ? "#dbeafe" : "#eef1f5"}`,
+        border: `1px solid ${isUnread ? ACCENT_BORDER : "#eef1f5"}`,
         boxShadow: isUnread ? "0 2px 10px rgba(15,23,42,0.05)" : "none",
         cursor: "pointer", transition: "all 0.15s",
         position: "relative",
@@ -73,16 +80,16 @@ function NotifCard({
         <div style={{
           position: "absolute", top: 16, right: 16,
           width: 8, height: 8, borderRadius: "50%",
-          background: "#2563eb",
+          background: ACCENT,
         }}/>
       )}
 
       <div style={{
         width: 42, height: 42, borderRadius: 12,
-        background: cfg.bg, display: "flex",
+        background: "#f1f5f9", display: "flex",
         alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <Icon size={18} style={{ color: cfg.color }}/>
+        <Icon size={18} style={{ color: "#475569" }}/>
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -142,17 +149,15 @@ export default function NotificationsPage() {
         .tab {
           padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 500;
           cursor: pointer; border: none; background: none;
-          /* FIX 1: contraste melhorado — era #64748b, agora #475569 */
           color: #475569;
           transition: all 0.15s; font-family: inherit; white-space: nowrap
         }
         .tab:hover:not(.on) { background: #f1f5f9; color: #1e293b }
-        .tab.on { background: #2563eb; color: white }
+        .tab.on { background: ${ACCENT}; color: white }
 
-        /* FIX 4: badge visível quando tab está activa (fundo azul → badge branco) */
         .tab.on .notif-badge { background: rgba(255,255,255,0.25); color: white }
         .notif-badge {
-          margin-left: 6px; background: #2563eb; color: white;
+          margin-left: 6px; background: ${ACCENT}; color: white;
           font-size: 10px; font-weight: 700; padding: 1px 6px;
           border-radius: 99px; display: inline-block;
         }
@@ -165,7 +170,6 @@ export default function NotificationsPage() {
           color: #64748b; font-size: 13px; cursor: pointer; font-family: inherit;
           transition: all 0.15s;
         }
-        /* FIX 2: hover no botão Actualizar */
         .btn-refresh:hover:not(:disabled) { border-color: #cbd5e1; color: #334155; background: #f8fafc }
         .btn-refresh:disabled { opacity: 0.6; cursor: default }
 
@@ -180,7 +184,7 @@ export default function NotificationsPage() {
           color: #64748b; font-size: 13px; font-weight: 500;
           cursor: pointer; font-family: inherit; transition: all 0.15s
         }
-        .load-more-btn:hover { border-color: #2563eb; color: #2563eb }
+        .load-more-btn:hover { border-color: ${ACCENT}; color: ${ACCENT} }
 
         @media (max-width: 1024px) { .notif-main { margin-left: 0 } }
         @media (max-width: 640px)  { .notif-inner { padding: 70px 16px 20px } }
@@ -201,7 +205,6 @@ export default function NotificationsPage() {
                 </p>
               </div>
               <div style={{ display:"flex", gap:8 }}>
-                {/* FIX 2: hover tratado via className */}
                 <button
                   onClick={refresh}
                   disabled={loading}
@@ -213,7 +216,7 @@ export default function NotificationsPage() {
                 {unread > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px", borderRadius:12, border:"1px solid #dbeafe", background:"#eff6ff", color:"#2563eb", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
+                    style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px", borderRadius:12, border:`1px solid ${ACCENT_BORDER}`, background:ACCENT_SOFT, color:ACCENT, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
                   >
                     <Check size={13}/> Marcar todas
                   </button>
@@ -226,7 +229,6 @@ export default function NotificationsPage() {
               {(["all","unread","read"] as TabFilter[]).map(t => (
                 <button key={t} className={`tab${tab===t?" on":""}`} onClick={()=>setTab(t)}>
                   {t==="all"?"Todas":t==="unread"?"Não lidas":"Lidas"}
-                  {/* FIX 4: badge usa classe própria para override quando tab.on */}
                   {t==="unread" && unread > 0 && (
                     <span className="notif-badge">{unread}</span>
                   )}
@@ -274,7 +276,7 @@ export default function NotificationsPage() {
                   </p>
                 </div>
                 {tab!=="all" && (
-                  <button onClick={()=>setTab("all")} style={{ fontSize:13, color:"#2563eb", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>
+                  <button onClick={()=>setTab("all")} style={{ fontSize:13, color:ACCENT, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>
                     Ver todas
                   </button>
                 )}

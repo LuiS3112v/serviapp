@@ -468,6 +468,48 @@ function ReviewCard({
   );
 }
 
+// ── Overlay de zoom da foto do prestador (estilo Instagram) ─────────────────
+// Clicar na foto pequena abre isto; clicar em qualquer parte do overlay
+// (fundo escurecido ou a própria foto ampliada) fecha e volta ao estado
+// normal. Não introduz nenhum novo pedido à API — usa a mesma
+// service.provider.avatarUrl já carregada.
+function ProviderPhotoZoom({
+  avatarUrl, name, onClose,
+}: { avatarUrl: string; name: string; onClose: () => void }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position:"fixed", inset:0, zIndex:300,
+        background:"rgba(0,0,0,0.92)",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        padding:24, cursor:"zoom-out",
+        animation:"fadeInZoom 0.18s ease-out",
+      }}
+    >
+      <img
+        src={avatarUrl}
+        alt={name}
+        onClick={onClose}
+        style={{
+          width:"min(78vw, 420px)",
+          height:"min(78vw, 420px)",
+          borderRadius:"50%",
+          objectFit:"cover",
+          border:"3px solid rgba(255,255,255,0.15)",
+          boxShadow:"0 20px 60px rgba(0,0,0,0.5)",
+          cursor:"zoom-out",
+          animation:"scaleInZoom 0.2s ease-out",
+        }}
+      />
+      <style>{`
+        @keyframes fadeInZoom { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleInZoom { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      `}</style>
+    </div>
+  );
+}
+
 export default function ClientServiceDetailPage() {
   const { id } = useParams() as { id: string };
   const router  = useRouter();
@@ -486,6 +528,7 @@ export default function ClientServiceDetailPage() {
   const [showProofViewer, setShowProofViewer] = useState(false);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [showPhotoZoom, setShowPhotoZoom] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -623,6 +666,8 @@ export default function ClientServiceDetailPage() {
         .tl-dot  { width: 20px; height: 20px; border-radius: 50%; background: #0E7A5F;
                    border: 3px solid #D9F5F0; display: flex; align-items: center;
                    justify-content: center; flex-shrink: 0; z-index: 1; }
+        .provider-avatar-btn { transition: transform 0.15s ease; }
+        .provider-avatar-btn:hover { transform: scale(1.04); }
         @media(max-width:1024px) { .sd-main { margin-left: 0; } .sd-body { padding: 80px 20px 24px; } }
         @media(max-width:640px)  { .sd-body { padding: 70px 12px 20px; gap: 14px; }
                                    .info-grid { grid-template-columns: 1fr; } }
@@ -666,7 +711,6 @@ export default function ClientServiceDetailPage() {
                 {[
                   { l:"Categoria", v: service.category },
                   { l:"Morada",    v: service.address   },
-                  { l:"Prestador", v: service.provider?.fullName ?? "—" },
                   { l:"Data",      v: new Date(service.createdAt).toLocaleDateString("pt-PT") },
                 ].map((x,i) => (
                   <div className="info-item" key={i}>
@@ -674,6 +718,50 @@ export default function ClientServiceDetailPage() {
                     <p style={{ fontSize:13, color:"#111827", fontWeight:600 }}>{x.v}</p>
                   </div>
                 ))}
+
+                <div className="info-item">
+                  <p style={{ fontSize:11, color:"#4B5563", marginBottom:6 }}>Prestador</p>
+                  {service.provider ? (
+                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                      <div
+                        className={service.provider.avatarUrl ? "provider-avatar-btn" : undefined}
+                        onClick={() => { if (service.provider.avatarUrl) setShowPhotoZoom(true); }}
+                        style={{
+                          width:42, height:42, borderRadius:"50%", flexShrink:0,
+                          border:"1px solid #CBD5E1", overflow:"hidden",
+                          background:"#0E7A5F20", display:"flex",
+                          alignItems:"center", justifyContent:"center",
+                          cursor: service.provider.avatarUrl ? "pointer" : "default",
+                        }}
+                      >
+                        {service.provider.avatarUrl ? (
+                          <img
+                            src={service.provider.avatarUrl}
+                            alt={service.provider.fullName}
+                            style={{ width:"100%", height:"100%", objectFit:"cover" }}
+                          />
+                        ) : (
+                          <span style={{ fontSize:15, fontWeight:700, color:"#0E7A5F" }}>
+                            {(service.provider.fullName ?? "?").charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ minWidth:0 }}>
+                        <p style={{ fontSize:13, color:"#111827", fontWeight:600,
+                          whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                          {service.provider.fullName}
+                        </p>
+                        {service.provider.isVerified && (
+                          <p style={{ fontSize:10, color:"#0E7A5F", fontWeight:600, marginTop:1 }}>
+                            Prestador verificado
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize:13, color:"#111827", fontWeight:600 }}>—</p>
+                  )}
+                </div>
               </div>
 
               {service.description && (
@@ -848,6 +936,13 @@ export default function ClientServiceDetailPage() {
       )}
       {showProofViewer && activeProof && (
         <ProofViewerModal proofId={activeProof.id} fileType={activeProof.fileType} onClose={() => setShowProofViewer(false)} />
+      )}
+      {showPhotoZoom && service.provider?.avatarUrl && (
+        <ProviderPhotoZoom
+          avatarUrl={service.provider.avatarUrl}
+          name={service.provider.fullName}
+          onClose={() => setShowPhotoZoom(false)}
+        />
       )}
     </>
   );

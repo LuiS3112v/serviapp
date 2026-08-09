@@ -132,6 +132,60 @@ export class ServicesService {
     const service = await this.serviceRepo.findOne({
       where: { id },
       relations: { client: true, provider: true },
+      // Restringe explicitamente os campos das relações User carregadas
+      // junto com o Service. Sem este `select`, o TypeORM devolvia o
+      // User completo (incluindo password e twoFactorSecret) dentro de
+      // service.client e service.provider — exposto directamente pelo
+      // GET /services/:id e por qualquer chamador de findById/
+      // findByIdForUser. Aqui listamos todas as colunas reais de
+      // Service (conforme service.entity.ts) e, para as relações,
+      // apenas os campos não sensíveis necessários à UI.
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        address: true,
+        province: true,
+        budget: true,
+        agreedPrice: true,
+        proposedPrice: true,
+        proposedByProviderId: true,
+        status: true,
+        clientId: true,
+        providerId: true,
+        targetProviderId: true,
+        catalogItemId: true,
+        servicePin: true,
+        pinExpiresAt: true,
+        pinUsed: true,
+        warrantyDays: true,
+        warrantyExpiresAt: true,
+        cancelReason: true,
+        disputeReason: true,
+        clientRating: true,
+        clientReview: true,
+        scheduledAt: true,
+        acceptedAt: true,
+        paymentHeldAt: true,
+        startedAt: true,
+        providerCompletedAt: true,
+        completedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        client: {
+          id: true,
+          fullName: true,
+          avatarUrl: true,
+          isVerified: true,
+        },
+        provider: {
+          id: true,
+          fullName: true,
+          avatarUrl: true,
+          isVerified: true,
+        },
+      },
     });
     if (!service) throw new NotFoundException('Serviço não encontrado.');
     return service;
