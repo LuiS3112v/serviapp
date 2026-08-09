@@ -182,6 +182,25 @@
   color: #EF9F27;
 }
 
+/* Distintivo visível junto ao status quando a rota exibida é o
+   fallback Haversine (linha reta) e não uma rota real do OSRM.
+   Reforça, no painel de texto, a mesma distinção que a Polyline já
+   faz visualmente no mapa (cor sólida vs tracejada). */
+.activeServiceEstimateBadge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: rgba(239, 159, 39, 0.15);
+  color: #EF9F27;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
 .activeServiceStats {
   display: flex;
   gap: 16px;
@@ -221,6 +240,16 @@
 
 .providerInfoCardWrapper {
   animation: cardEnter 0.22s ease-out;
+}
+
+/* Linha de estado com ícone, usada na fase "reconnecting" do banner
+   de serviço ativo (ex: WifiOff + texto "Ligação perdida..."). Mantém
+   o ícone alinhado verticalmente com o texto sem quebrar o layout
+   existente do activeServiceStatusLabel. */
+.statusWithIcon {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 @media (max-width: 640px) {
