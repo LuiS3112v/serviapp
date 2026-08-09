@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Zap, Menu, X, ArrowRight, Shield, Target, Heart, Users, MapPin,
+  Zap, Menu, X, ArrowRight, Target, Heart, Users, MapPin,
   ShieldCheck, Lock, MessageCircle, Star, Handshake, Globe, Camera,
   Link2, CheckCircle2, Sparkles, Rocket, Building2, Clock, HelpCircle,
 } from "lucide-react";
 
-/* ─── Hook simples de scroll-reveal (sem dependências novas) ─────── */
+/* Hook simples de scroll-reveal, sem dependências novas */
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -32,8 +32,8 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
       ref={ref}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(20px)",
-        transition: `opacity 0.55s ease ${delay}ms, transform 0.55s ease ${delay}ms`,
+        transform: visible ? "translateY(0)" : "translateY(16px)",
+        transition: `opacity 0.5s ease ${delay}ms, transform 0.5s ease ${delay}ms`,
       }}
     >
       {children}
@@ -41,8 +41,13 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   );
 }
 
-const ACCENTS = ["#2563eb", "#1D9E75", "#EF9F27"];
-const RICH_ACCENTS = ["#2563eb", "#1D9E75", "#EF9F27", "#7C3AED", "#DB2777", "#0891B2"];
+/* Mesma linguagem visual da Homepage: cinza escuro como cor de acção,
+   verde só para estados de confirmação/verificação, roxo só no "app"
+   do logo (igual ao rodapé em todas as páginas). */
+const BRAND = "#1e293b";
+const CONFIRM = "#1D9E75";
+const INK = "#0f172a";
+const LOGO_ACCENT = "#7C6FE0";
 
 export default function SobrePage() {
   const router = useRouter();
@@ -60,10 +65,10 @@ export default function SobrePage() {
   const goHome = () => router.push("/");
 
   const values = [
-    { icon: ShieldCheck, color: "#2563eb", title: "Confiança em primeiro lugar", text: "Todos os prestadores passam por verificação de identidade (KYC) antes de poderem aceitar pedidos na plataforma." },
-    { icon: Handshake, color: "#1D9E75", title: "Justo para os dois lados", text: "Preços claros, sem letras pequenas. O cliente sabe o que paga e o prestador sabe o que recebe." },
-    { icon: Heart, color: "#EF9F27", title: "Feito para Angola", text: "Pensado de raiz para a realidade angolana: bairros, formas de pagamento e o dia a dia de quem contrata e de quem presta serviços." },
-    { icon: Rocket, color: "#7C3AED", title: "Sempre a melhorar", text: "Ouvimos quem usa a plataforma todos os dias para tornar cada pedido mais simples e rápido." },
+    { icon: ShieldCheck, title: "Confiança em primeiro lugar", text: "Todos os prestadores passam por verificação de identidade (KYC) antes de poderem aceitar pedidos na plataforma." },
+    { icon: Handshake, title: "Justo para os dois lados", text: "Preços claros, sem letras pequenas. O cliente sabe o que paga e o prestador sabe o que recebe." },
+    { icon: Heart, title: "Feito para Angola", text: "Pensado de raiz para a realidade angolana: bairros, formas de pagamento e o dia a dia de quem contrata e de quem presta serviços." },
+    { icon: Rocket, title: "Sempre a melhorar", text: "Ouvimos quem usa a plataforma todos os dias para tornar cada pedido mais simples e rápido." },
   ];
 
   const timeline = [
@@ -74,10 +79,10 @@ export default function SobrePage() {
   ];
 
   const howItWorks = [
-    { icon: Users, color: "#2563eb", title: "Duas comunidades, uma plataforma", text: "De um lado, pessoas e famílias que precisam de um serviço feito com qualidade. Do outro, profissionais que querem trabalho a sério, sem depender só do boca a boca." },
-    { icon: Lock, color: "#1D9E75", title: "Pagamento protegido (escrow)", text: "O valor combinado fica retido em segurança e só é entregue ao prestador depois de o cliente confirmar que o serviço foi concluído como esperado." },
-    { icon: MessageCircle, color: "#EF9F27", title: "Comunicação dentro da plataforma", text: "Cliente e prestador combinam todos os detalhes por um chat integrado, sem precisar de trocar contactos antes de terem confiança um no outro." },
-    { icon: Star, color: "#7C3AED", title: "Reputação construída com avaliações reais", text: "Cada avaliação vem de um serviço que foi mesmo realizado, o que ajuda a manter o padrão de qualidade dos prestadores na plataforma." },
+    { icon: Users, title: "Duas comunidades, uma plataforma", text: "De um lado, pessoas e famílias que precisam de um serviço feito com qualidade. Do outro, profissionais que querem trabalho a sério, sem depender só do boca a boca." },
+    { icon: Lock, title: "Pagamento protegido (escrow)", text: "O valor combinado fica retido em segurança e só é entregue ao prestador depois de o cliente confirmar que o serviço foi concluído como esperado." },
+    { icon: MessageCircle, title: "Comunicação dentro da plataforma", text: "Cliente e prestador combinam todos os detalhes por um chat integrado, sem precisar de trocar contactos antes de terem confiança um no outro." },
+    { icon: Star, title: "Reputação construída com avaliações reais", text: "Cada avaliação vem de um serviço que foi mesmo realizado, o que ajuda a manter o padrão de qualidade dos prestadores na plataforma." },
   ];
 
   const faqs = [
@@ -95,117 +100,113 @@ export default function SobrePage() {
         .lp{background:#ffffff;color:#111827;font-family:inherit;overflow-x:hidden}
         .lp-container{max-width:1180px;margin:0 auto;padding:0 24px}
 
-        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-        @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(37,99,235,0.35)}50%{box-shadow:0 0 0 10px rgba(37,99,235,0)}}
-
         /* Header */
-        .lp-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.88);backdrop-filter:blur(10px);border-bottom:1px solid #eef1f5;transition:box-shadow .2s}
+        .lp-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.9);backdrop-filter:blur(10px);border-bottom:1px solid #eef1f5;transition:box-shadow .2s}
         .lp-header.scrolled{box-shadow:0 2px 16px rgba(15,23,42,0.06)}
         .lp-header-inner{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
         .lp-logo{display:flex;align-items:center;gap:10px;cursor:pointer}
-        .lp-logo-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#2563eb,#3b82f6);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .lp-logo-mark{width:38px;height:38px;border-radius:11px;background:${BRAND};display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .lp-logo-text{font-size:19px;font-weight:800;color:#0f172a;letter-spacing:-0.02em}
         .lp-nav{display:flex;align-items:center;gap:32px}
-        .lp-nav a{font-size:14.5px;font-weight:600;color:#475569;text-decoration:none;transition:color .15s}
-        .lp-nav a:hover{color:#2563eb}
-        .lp-nav a.active{color:#2563eb}
+        .lp-nav a,.lp-nav a:visited{font-size:14.5px;font-weight:600;color:#475569;text-decoration:none;transition:color .15s}
+        .lp-nav a:hover{color:${BRAND}}
+        .lp-nav a.active{color:${BRAND}}
         .lp-header-actions{display:flex;align-items:center;gap:10px}
         .lp-btn-ghost{padding:10px 18px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
-        .lp-btn-ghost:hover{border-color:#2563eb;color:#2563eb}
-        .lp-btn-solid{padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s;font-family:inherit;box-shadow:0 4px 14px rgba(37,99,235,0.25)}
-        .lp-btn-solid:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,99,235,0.32)}
+        .lp-btn-ghost:hover{border-color:${BRAND};color:${BRAND}}
+        .lp-btn-solid{padding:10px 20px;border-radius:10px;border:none;background:${BRAND};color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s;font-family:inherit}
+        .lp-btn-solid:hover{transform:translateY(-1px)}
         .lp-menu-toggle{display:none;background:none;border:none;cursor:pointer;color:#0f172a}
 
         /* Hero da página Sobre */
-        .lp-about-hero{padding:64px 0 56px;text-align:center}
-        .lp-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;background:#eff6ff;color:#2563eb;font-size:12.5px;font-weight:700;margin-bottom:20px}
-        .lp-about-h1{font-size:42px;line-height:1.14;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin:0 auto 18px;max-width:720px}
-        .lp-about-h1 span{background:linear-gradient(135deg,#2563eb,#1D9E75);-webkit-background-clip:text;background-clip:text;color:transparent}
-        .lp-about-sub{font-size:17px;line-height:1.65;color:#64748b;max-width:600px;margin:0 auto}
+        .lp-about-hero{padding:60px 0 52px;text-align:center}
+        .lp-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;background:#f1f5f9;color:#475569;font-size:12.5px;font-weight:700;margin-bottom:20px}
+        .lp-about-h1{font-size:40px;line-height:1.16;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin:0 auto 18px;max-width:720px}
+        .lp-about-h1 span{color:${BRAND}}
+        .lp-about-sub{font-size:16.5px;line-height:1.65;color:#64748b;max-width:600px;margin:0 auto}
 
         /* Section shared */
         .lp-section{padding:76px 0}
         .lp-section-alt{background:#f8fafc}
-        .lp-section-head{text-align:center;max-width:640px;margin:0 auto 46px}
-        .lp-tag{display:inline-block;font-size:13px;font-weight:700;color:#2563eb;background:#eff6ff;padding:6px 14px;border-radius:99px;margin-bottom:16px}
-        .lp-h2{font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin-bottom:14px}
-        .lp-section-sub{font-size:15.5px;color:#64748b;line-height:1.65}
+        .lp-section-head{text-align:center;max-width:640px;margin:0 auto 44px}
+        .lp-tag{display:inline-block;font-size:13px;font-weight:700;color:${BRAND};margin-bottom:14px}
+        .lp-h2{font-size:29px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin-bottom:12px}
+        .lp-section-sub{font-size:15px;color:#64748b;line-height:1.65}
 
         /* Missão (dois blocos) */
-        .lp-mission-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-        .lp-mission-card{border-radius:26px;padding:36px 32px;background:linear-gradient(135deg,#f8fafc,#eff6ff);border:1px solid #eef1f5}
-        .lp-mission-card.alt{background:linear-gradient(135deg,#f8fafc,#f0fdf9)}
-        .lp-mission-icon{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
-        .lp-mission-card h3{font-size:19px;font-weight:800;color:#0f172a;margin-bottom:12px}
+        .lp-mission-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:18px;overflow:hidden}
+        .lp-mission-card{padding:36px 32px;background:#fff}
+        .lp-mission-icon{width:48px;height:48px;border-radius:13px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:#334155}
+        .lp-mission-card h3{font-size:18px;font-weight:800;color:#0f172a;margin-bottom:12px}
         .lp-mission-card p{font-size:14.5px;color:#475569;line-height:1.7}
 
         /* Timeline */
-        .lp-timeline{position:relative;max-width:820px;margin:0 auto}
-        .lp-timeline-line{position:absolute;left:24px;top:8px;bottom:8px;width:2px;background:linear-gradient(#2563eb,#1D9E75)}
-        .lp-timeline-item{position:relative;padding-left:64px;margin-bottom:38px}
+        .lp-timeline{position:relative;max-width:780px;margin:0 auto}
+        .lp-timeline-line{position:absolute;left:12px;top:8px;bottom:8px;width:1px;background:#e2e8f0}
+        .lp-timeline-item{position:relative;padding-left:48px;margin-bottom:36px}
         .lp-timeline-item:last-child{margin-bottom:0}
-        .lp-timeline-dot{position:absolute;left:14px;top:2px;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid #2563eb;z-index:2}
-        .lp-timeline-year{display:inline-block;font-size:12px;font-weight:800;color:#2563eb;background:#eff6ff;padding:4px 12px;border-radius:99px;margin-bottom:10px}
-        .lp-timeline-item h3{font-size:17px;font-weight:700;color:#0f172a;margin-bottom:8px}
+        .lp-timeline-dot{position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid ${BRAND};z-index:2}
+        .lp-timeline-year{display:block;font-size:12px;font-weight:700;color:#A15C3E;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+        .lp-timeline-item h3{font-size:16.5px;font-weight:700;color:#0f172a;margin-bottom:8px}
         .lp-timeline-item p{font-size:14px;color:#64748b;line-height:1.65;max-width:560px}
 
         /* Como funciona por dentro */
-        .lp-how-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
-        .lp-how-card{border-radius:26px;padding:32px 28px;border:1px solid #eef1f5;background:#fff;box-shadow:0 4px 18px rgba(15,23,42,0.05);transition:transform .2s,box-shadow .2s}
-        .lp-how-card:hover{transform:translateY(-5px);box-shadow:0 16px 32px rgba(15,23,42,0.09)}
-        .lp-how-icon{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
-        .lp-how-card h3{font-size:16.5px;font-weight:700;color:#0f172a;margin-bottom:10px}
-        .lp-how-card p{font-size:14px;color:#475569;line-height:1.65}
+        .lp-how-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:18px;overflow:hidden}
+        .lp-how-card{padding:30px 28px;background:#fff}
+        .lp-how-icon{width:46px;height:46px;border-radius:13px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:#334155}
+        .lp-how-card h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:10px}
+        .lp-how-card p{font-size:13.5px;color:#475569;line-height:1.65}
 
         /* Valores */
-        .lp-values-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-        .lp-value-card{background:#fff;border:1px solid #eef1f5;border-radius:22px;padding:28px 22px;transition:transform .2s,box-shadow .2s}
-        .lp-value-card:hover{transform:translateY(-4px);box-shadow:0 12px 26px rgba(15,23,42,0.08)}
-        .lp-value-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
-        .lp-value-card h3{font-size:15px;font-weight:700;color:#0f172a;margin-bottom:8px}
+        .lp-values-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:16px;overflow:hidden}
+        .lp-value-card{background:#fff;padding:26px 22px}
+        .lp-value-icon{width:42px;height:42px;border-radius:12px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:#334155}
+        .lp-value-card h3{font-size:14.5px;font-weight:700;color:#0f172a;margin-bottom:8px}
         .lp-value-card p{font-size:13px;color:#64748b;line-height:1.6}
 
         /* Números */
-        .lp-stats-band{border-radius:28px;padding:44px 40px;background:linear-gradient(120deg,#2563eb,#1D9E75);display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center}
-        .lp-stats-band .num{font-size:30px;font-weight:800;color:#fff}
-        .lp-stats-band .lbl{font-size:13px;color:#e0f2ef;margin-top:4px}
+        .lp-stats-band{border:1px solid #eef1f5;border-radius:18px;padding:36px 40px;display:grid;grid-template-columns:repeat(4,1fr);text-align:center}
+        .lp-stats-band > div{border-left:1px solid #eef1f5;padding:0 12px}
+        .lp-stats-band > div:first-child{border-left:none}
+        .lp-stats-band .num{font-size:27px;font-weight:800;color:${INK}}
+        .lp-stats-band .lbl{font-size:12.5px;color:#94a3b8;margin-top:4px}
 
         /* Cobertura */
-        .lp-coverage-panel{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;background:linear-gradient(135deg,#f8fafc,#eff6ff);border-radius:28px;padding:48px 44px}
+        .lp-coverage-panel{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;background:#f8fafc;border:1px solid #eef1f5;border-radius:20px;padding:44px 40px}
         .lp-coverage-list{display:flex;flex-direction:column;gap:14px}
         .lp-coverage-item{display:flex;align-items:flex-start;gap:12px}
         .lp-coverage-item span{font-size:14px;color:#334155;line-height:1.55}
-        .lp-coverage-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-        .lp-map-mini{position:relative;border-radius:20px;overflow:hidden;min-height:260px;border:1px solid #e2e8f0}
+        .lp-coverage-icon{width:28px;height:28px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#334155}
+        .lp-map-mini{position:relative;border-radius:16px;overflow:hidden;min-height:250px;border:1px solid #e2e8f0}
         .lp-map-mini svg{width:100%;height:100%;display:block}
-        .lp-map-pin{position:absolute;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(15,23,42,0.16);border:2px solid #fff}
+        .lp-map-pin{position:absolute;width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(15,23,42,0.14);border:1px solid #eef1f5}
 
         /* FAQ */
-        .lp-faq-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-        .lp-faq-item{background:#fff;border:1px solid #eef1f5;border-radius:18px;padding:22px 24px;cursor:pointer;transition:border-color .2s}
-        .lp-faq-item:hover{border-color:#bfdbfe}
-        .lp-faq-q{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:15.5px;font-weight:700;color:#0f172a}
+        .lp-faq-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+        .lp-faq-item{background:#fff;border:1px solid #eef1f5;border-radius:16px;padding:20px 22px;cursor:pointer;transition:border-color .2s}
+        .lp-faq-item:hover{border-color:#cbd5e1}
+        .lp-faq-q{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:15px;font-weight:700;color:#0f172a}
         .lp-faq-a{font-size:14px;color:#64748b;line-height:1.65;margin-top:12px}
 
         /* CTA final */
-        .lp-cta{background:linear-gradient(120deg,#2563eb,#1D9E75);border-radius:28px;padding:56px 48px;text-align:center;color:#fff}
-        .lp-cta h2{font-size:28px;font-weight:800;margin-bottom:14px;letter-spacing:-0.02em}
-        .lp-cta p{font-size:15.5px;color:#e0f2ef;max-width:480px;margin:0 auto 28px;line-height:1.6}
+        .lp-cta{background:${INK};border-radius:22px;padding:52px 48px;text-align:center;color:#fff}
+        .lp-cta h2{font-size:27px;font-weight:800;margin-bottom:14px;letter-spacing:-0.02em}
+        .lp-cta p{font-size:15px;color:#cbd5e1;max-width:480px;margin:0 auto 28px;line-height:1.6}
         .lp-cta-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-        .lp-btn-white{padding:15px 28px;border-radius:12px;border:none;background:#fff;color:#2563eb;font-size:15px;font-weight:800;cursor:pointer;transition:transform .15s;font-family:inherit}
+        .lp-btn-white{padding:15px 28px;border-radius:12px;border:none;background:#fff;color:${INK};font-size:15px;font-weight:800;cursor:pointer;transition:transform .15s;font-family:inherit}
         .lp-btn-white:hover{transform:translateY(-2px)}
-        .lp-btn-outline-white{padding:15px 28px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.6);background:transparent;color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
-        .lp-btn-outline-white:hover{background:rgba(255,255,255,0.12)}
+        .lp-btn-outline-white{padding:15px 28px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.35);background:transparent;color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
+        .lp-btn-outline-white:hover{background:rgba(255,255,255,0.1)}
 
         /* Footer */
         .lp-footer{background:#0f172a;color:#cbd5e1;padding:56px 0 28px}
         .lp-footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;margin-bottom:40px}
         .lp-footer h4{font-size:13.5px;font-weight:700;color:#fff;margin-bottom:16px}
-        .lp-footer a{display:block;font-size:13.5px;color:#94a3b8;text-decoration:none;margin-bottom:10px;transition:color .15s}
+        .lp-footer a,.lp-footer a:visited{display:block;font-size:13.5px;color:#94a3b8;text-decoration:none;margin-bottom:10px;transition:color .15s}
         .lp-footer a:hover{color:#fff}
         .lp-footer-social{display:flex;gap:10px;margin-top:16px}
-        .lp-footer-social a{width:36px;height:36px;border-radius:10px;background:#1e293b;display:flex;align-items:center;justify-content:center;margin:0}
-        .lp-footer-social a:hover{background:#2563eb}
+        .lp-footer-social a,.lp-footer-social a:visited{width:36px;height:36px;border-radius:10px;background:#1e293b;display:flex;align-items:center;justify-content:center;margin:0}
+        .lp-footer-social a:hover{background:${BRAND}}
         .lp-footer-bottom{border-top:1px solid #1e293b;padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
         .lp-footer-bottom p{font-size:12.5px;color:#64748b}
         .lp-coverage-note{font-size:12.5px;color:#64748b;max-width:420px;text-align:right}
@@ -216,21 +217,24 @@ export default function SobrePage() {
           .lp-menu-toggle{display:block}
           .lp-mission-grid,.lp-how-grid{grid-template-columns:1fr}
           .lp-values-grid{grid-template-columns:repeat(2,1fr)}
-          .lp-stats-band{grid-template-columns:repeat(2,1fr)}
-          .lp-coverage-panel{grid-template-columns:1fr;padding:36px 28px}
+          .lp-stats-band{grid-template-columns:repeat(2,1fr);row-gap:20px}
+          .lp-stats-band > div:nth-child(3){border-left:none}
+          .lp-coverage-panel{grid-template-columns:1fr;padding:32px 26px}
           .lp-footer-grid{grid-template-columns:1fr 1fr}
           .lp-footer-bottom{flex-direction:column;align-items:flex-start}
           .lp-coverage-note{text-align:left}
         }
         @media(max-width:600px){
-          .lp-about-h1{font-size:28px}
+          .lp-about-h1{font-size:27px}
           .lp-h2{font-size:22px}
           .lp-values-grid{grid-template-columns:1fr}
-          .lp-stats-band{grid-template-columns:1fr;padding:32px 24px}
-          .lp-cta{padding:40px 22px}
+          .lp-stats-band{grid-template-columns:1fr;padding:28px 24px}
+          .lp-stats-band > div{border-left:none;border-top:1px solid #eef1f5;padding-top:16px}
+          .lp-stats-band > div:first-child{border-top:none;padding-top:0}
+          .lp-cta{padding:38px 22px}
           .lp-footer-grid{grid-template-columns:1fr}
-          .lp-coverage-panel{padding:28px 20px}
-          .lp-timeline-item{padding-left:52px}
+          .lp-coverage-panel{padding:24px 18px}
+          .lp-timeline-item{padding-left:40px}
         }
       `}</style>
 
@@ -240,7 +244,7 @@ export default function SobrePage() {
           <div className="lp-header-inner">
             <div className="lp-logo" onClick={goHome}>
               <div className="lp-logo-mark"><Zap size={19} color="#fff" /></div>
-              <span className="lp-logo-text">Servi<span style={{ color: "#2563eb" }}>app</span></span>
+              <span className="lp-logo-text">Servi<span style={{ color: LOGO_ACCENT }}>app</span></span>
             </div>
             <nav className="lp-nav">
               <a href="/#como-funciona">Como funciona</a>
@@ -283,22 +287,20 @@ export default function SobrePage() {
         {/* Missão e visão */}
         <section className="lp-section lp-section-alt">
           <div className="lp-container">
-            <div className="lp-mission-grid">
-              <Reveal>
+            <Reveal>
+              <div className="lp-mission-grid">
                 <div className="lp-mission-card">
-                  <div className="lp-mission-icon" style={{ background: "#2563eb18" }}><Target size={26} color="#2563eb" /></div>
+                  <div className="lp-mission-icon"><Target size={22} /></div>
                   <h3>A nossa missão</h3>
                   <p>Tornar simples e seguro encontrar um profissional de confiança para qualquer serviço do dia a dia da canalização à limpeza, da eletricidade à beleza sem depender só de contactos ou do boca a boca.</p>
                 </div>
-              </Reveal>
-              <Reveal delay={100}>
-                <div className="lp-mission-card alt">
-                  <div className="lp-mission-icon" style={{ background: "#1D9E7518" }}><Sparkles size={26} color="#1D9E75" /></div>
+                <div className="lp-mission-card">
+                  <div className="lp-mission-icon"><Sparkles size={22} /></div>
                   <h3>A nossa visão</h3>
                   <p>Ser a plataforma de referência para serviços em Angola, valorizando o talento local e dando a milhares de profissionais uma forma justa e digital de fazer crescer o seu trabalho.</p>
                 </div>
-              </Reveal>
-            </div>
+              </div>
+            </Reveal>
           </div>
         </section>
 
@@ -315,7 +317,7 @@ export default function SobrePage() {
             <div className="lp-timeline">
               <div className="lp-timeline-line" />
               {timeline.map((t, i) => (
-                <Reveal key={i} delay={i * 90}>
+                <Reveal key={i} delay={i * 80}>
                   <div className="lp-timeline-item">
                     <div className="lp-timeline-dot" />
                     <span className="lp-timeline-year">{t.year}</span>
@@ -338,20 +340,17 @@ export default function SobrePage() {
                 <p className="lp-section-sub">Cada detalhe da plataforma foi pensado para proteger tanto quem contrata como quem presta o serviço.</p>
               </div>
             </Reveal>
-            <div className="lp-how-grid">
-              {howItWorks.map((h, i) => {
-                const color = RICH_ACCENTS[i % RICH_ACCENTS.length];
-                return (
-                  <Reveal key={i} delay={i * 80}>
-                    <div className="lp-how-card">
-                      <div className="lp-how-icon" style={{ background: `${color}16` }}><h.icon size={26} color={color} /></div>
-                      <h3>{h.title}</h3>
-                      <p>{h.text}</p>
-                    </div>
-                  </Reveal>
-                );
-              })}
-            </div>
+            <Reveal>
+              <div className="lp-how-grid">
+                {howItWorks.map((h, i) => (
+                  <div className="lp-how-card" key={i}>
+                    <div className="lp-how-icon"><h.icon size={22} /></div>
+                    <h3>{h.title}</h3>
+                    <p>{h.text}</p>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
           </div>
         </section>
 
@@ -364,17 +363,17 @@ export default function SobrePage() {
                 <h2 className="lp-h2">Os nossos valores</h2>
               </div>
             </Reveal>
-            <div className="lp-values-grid">
-              {values.map((v, i) => (
-                <Reveal key={i} delay={i * 70}>
-                  <div className="lp-value-card">
-                    <div className="lp-value-icon" style={{ background: `${v.color}18` }}><v.icon size={21} color={v.color} /></div>
+            <Reveal>
+              <div className="lp-values-grid">
+                {values.map((v, i) => (
+                  <div className="lp-value-card" key={i}>
+                    <div className="lp-value-icon"><v.icon size={19} /></div>
                     <h3>{v.title}</h3>
                     <p>{v.text}</p>
                   </div>
-                </Reveal>
-              ))}
-            </div>
+                ))}
+              </div>
+            </Reveal>
           </div>
         </section>
 
@@ -398,28 +397,28 @@ export default function SobrePage() {
             <Reveal>
               <div className="lp-coverage-panel">
                 <div>
-                  <span className="lp-tag" style={{ background: "#fff" }}>Onde estamos</span>
+                  <span className="lp-tag">Onde estamos</span>
                   <h2 className="lp-h2" style={{ marginTop: 4 }}>Hoje em Luanda, amanhã em Angola</h2>
                   <p className="lp-section-sub" style={{ marginBottom: 24 }}>Começámos por Luanda para garantir que cada prestador é bem verificado e cada serviço corre bem, antes de crescer para novas zonas.</p>
                   <div className="lp-coverage-list">
                     <div className="lp-coverage-item">
-                      <div className="lp-coverage-icon" style={{ background: "#2563eb18" }}><CheckCircle2 size={15} color="#2563eb" /></div>
+                      <div className="lp-coverage-icon"><CheckCircle2 size={14} /></div>
                       <span>Já disponível em várias zonas de Luanda, incluindo Talatona, Maianga, Ingombota e Samba.</span>
                     </div>
                     <div className="lp-coverage-item">
-                      <div className="lp-coverage-icon" style={{ background: "#1D9E7518" }}><Clock size={15} color="#1D9E75" /></div>
+                      <div className="lp-coverage-icon"><Clock size={14} /></div>
                       <span>Expansão progressiva planeada para outras províncias de Angola nos próximos passos da plataforma.</span>
                     </div>
                     <div className="lp-coverage-item">
-                      <div className="lp-coverage-icon" style={{ background: "#EF9F2718" }}><Building2 size={15} color="#EF9F27" /></div>
+                      <div className="lp-coverage-icon"><Building2 size={14} /></div>
                       <span>Equipa local dedicada a acompanhar prestadores e clientes em cada nova zona.</span>
                     </div>
                   </div>
                 </div>
                 <div className="lp-map-mini">
                   <svg viewBox="0 0 400 280" preserveAspectRatio="xMidYMid slice">
-                    <rect width="400" height="280" fill="#eaf2fb" />
-                    <g fill="#dde9f7">
+                    <rect width="400" height="280" fill="#f1f5f9" />
+                    <g fill="#e6ebf1">
                       <rect x="20" y="20" width="110" height="80" rx="6" />
                       <rect x="160" y="14" width="90" height="70" rx="6" />
                       <rect x="270" y="24" width="110" height="90" rx="6" />
@@ -429,7 +428,6 @@ export default function SobrePage() {
                       <rect x="30" y="230" width="120" height="40" rx="6" />
                       <rect x="180" y="235" width="100" height="35" rx="6" />
                     </g>
-                    <rect x="170" y="90" width="70" height="50" rx="10" fill="#d9f0e4" />
                     <g stroke="#ffffff" strokeWidth="8" fill="none" strokeLinecap="round">
                       <path d="M0,110 H400" />
                       <path d="M0,220 H400" />
@@ -437,9 +435,9 @@ export default function SobrePage() {
                       <path d="M260,0 V280" />
                     </g>
                   </svg>
-                  <div className="lp-map-pin" style={{ background: "#eff6ff", top: "24%", left: "18%" }}><MapPin size={17} color="#2563eb" /></div>
-                  <div className="lp-map-pin" style={{ background: "#f0fdf9", top: "56%", left: "48%" }}><MapPin size={17} color="#1D9E75" /></div>
-                  <div className="lp-map-pin" style={{ background: "#fef3e2", top: "34%", right: "12%" }}><MapPin size={17} color="#EF9F27" /></div>
+                  <div className="lp-map-pin" style={{ top: "24%", left: "18%" }}><MapPin size={16} color="#334155" /></div>
+                  <div className="lp-map-pin" style={{ top: "56%", left: "48%" }}><MapPin size={16} color="#334155" /></div>
+                  <div className="lp-map-pin" style={{ top: "34%", right: "12%" }}><MapPin size={16} color="#334155" /></div>
                 </div>
               </div>
             </Reveal>
@@ -458,7 +456,7 @@ export default function SobrePage() {
             </Reveal>
             <div className="lp-faq-list">
               {faqs.map((f, i) => (
-                <Reveal key={i} delay={i * 50}>
+                <Reveal key={i} delay={i * 40}>
                   <details className="lp-faq-item">
                     <summary className="lp-faq-q" style={{ listStyle: "none", cursor: "pointer" }}>
                       {f.q}
@@ -495,7 +493,7 @@ export default function SobrePage() {
               <div>
                 <div className="lp-logo" style={{ marginBottom: 14 }} onClick={goHome}>
                   <div className="lp-logo-mark"><Zap size={17} color="#fff" /></div>
-                  <span className="lp-logo-text" style={{ color: "#fff" }}>Servi<span style={{ color: "#60a5fa" }}>app</span></span>
+                  <span className="lp-logo-text" style={{ color: "#fff" }}>Servi<span style={{ color: LOGO_ACCENT }}>app</span></span>
                 </div>
                 <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6, maxWidth: 260 }}>A plataforma que liga clientes a prestadores de serviços de confiança.</p>
                 <div className="lp-footer-social">
