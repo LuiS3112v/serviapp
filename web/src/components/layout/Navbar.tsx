@@ -11,14 +11,9 @@ export default function Navbar() {
   const [unreadChat, setUnreadChat] = useState(0);
   const [unreadNotif, setUnreadNotif] = useState(0);
 
-  // FIX hydration mismatch — getSession() lê localStorage que não existe no servidor
-  // Antes: const user = getSession() no topo → servidor retorna null → inicial "C"
-  //        cliente lê localStorage → inicial diferente → MISMATCH
-  // Depois: sempre começa com "?" no servidor E no cliente, só actualiza após mount
   const [initials, setInitials] = useState("?");
 
   useEffect(() => {
-    // Lê sessão apenas no cliente após hydration completa
     const user = getSession();
     setInitials(user?.fullName?.charAt(0)?.toUpperCase() ?? "C");
 

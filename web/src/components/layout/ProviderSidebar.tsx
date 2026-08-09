@@ -34,9 +34,6 @@ const NAV = [
   {
     section: "Financeiro",
     items: [
-      // FIX: "Transacções" removida — o histórico de ganhos já vive
-      // dentro de /provider/wallet, que mostra tudo o que essa página
-      // mostraria, e essa página nunca teve backend ligado.
       { label: "Wallet", icon: Wallet, href: "/provider/wallet" },
     ],
   },
@@ -70,14 +67,14 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       {/* ── Logo header ───────────────────────────────────────────────── */}
       <div style={{ padding:"24px 20px 20px", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ width:36, height:36, borderRadius:10, background:"#EF9F27", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(239,159,39,0.32)" }}>
+          <div style={{ width:36, height:36, borderRadius:10, background:"#0F172A", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(15,23,42,0.24)" }}>
             <Zap size={20} color="#fff"/>
           </div>
           <div>
             <span style={{ fontSize:18, fontWeight:700, color:"#0F172A" }}>
               Servi<span style={{ color:"#EF9F27" }}>app</span>
             </span>
-            <div style={{ fontSize:10, color:"#EF9F27", fontWeight:600, letterSpacing:"0.07em", marginTop:1 }}>PAINEL PRESTADOR</div>
+            <div style={{ fontSize:10, color:"#94A3B8", fontWeight:600, letterSpacing:"0.07em", marginTop:1 }}>PAINEL PRESTADOR</div>
           </div>
         </div>
         {onClose && (
@@ -115,7 +112,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
  
       {/* ── Footer ────────────────────────────────────────────────────── */}
       <div style={{ margin:"8px 12px 12px", padding:"12px 14px", background:"#FFFFFF", border:"1px solid #E2E8F0", borderRadius:14, boxShadow:"0 1px 3px rgba(15,23,42,0.05)", display:"flex", alignItems:"center", gap:12 }}>
-        <div style={{ width:36, height:36, borderRadius:"50%", background:"linear-gradient(135deg,#EF9F27,#e07b10)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#fff", flexShrink:0, boxShadow:"0 2px 6px rgba(239,159,39,0.28)" }}>P</div>
+        <div style={{ width:36, height:36, borderRadius:"50%", background:"#0F172A", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#fff", flexShrink:0, boxShadow:"0 2px 6px rgba(15,23,42,0.24)" }}>P</div>
         <div style={{ flex:1, minWidth:0 }}>
           <p style={{ fontSize:13, fontWeight:600, color:"#0F172A", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginBottom:2 }}>Prestador</p>
           <p style={{ fontSize:11, color:"#64748B" }}>Conta activa</p>
@@ -155,7 +152,7 @@ export default function ProviderSidebar() {
           color: #475569; box-shadow: 0 2px 8px rgba(15,23,42,0.08);
           transition: all 0.15s;
         }
-        .psb-mb:hover { border-color: #EF9F27; color: #EF9F27; }
+        .psb-mb:hover { border-color: #0F172A; color: #0F172A; }
 
         /* ── Overlay ──────────────────────────────────────────────────── */
         .psb-ov {
@@ -195,16 +192,16 @@ export default function ProviderSidebar() {
           border-radius: 0 10px 10px 0;
           text-decoration: none; transition: background 0.15s ease, border-color 0.15s ease;
         }
-        .psb-link:hover { background: #FEF3C7; }
+        .psb-link:hover { background: #F1F5F9; }
         .psb-link .psb-link-icon { color: #64748B; transition: color 0.15s ease; flex-shrink: 0; }
-        .psb-link:hover .psb-link-icon { color: #EF9F27; }
+        .psb-link:hover .psb-link-icon { color: #0F172A; }
         .psb-link .psb-link-text { color: #475569; transition: color 0.15s ease; }
-        .psb-link:hover .psb-link-text { color: #d97b10; }
+        .psb-link:hover .psb-link-text { color: #0F172A; }
 
         /* ── Active state ─────────────────────────────────────────────── */
-        .psb-link--active { background: #FEF3C7; border-left-color: #EF9F27; }
-        .psb-link--active .psb-link-icon { color: #EF9F27; }
-        .psb-link--active .psb-link-text { color: #b45309; font-weight: 600; }
+        .psb-link--active { background: #EEF0F3; border-left-color: #0F172A; }
+        .psb-link--active .psb-link-icon { color: #0F172A; }
+        .psb-link--active .psb-link-text { color: #0F172A; font-weight: 600; }
 
         /* ── Close button (mobile drawer) ─────────────────────────────── */
         .psb-close-btn {
