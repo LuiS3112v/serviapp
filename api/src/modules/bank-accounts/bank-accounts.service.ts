@@ -91,10 +91,19 @@ export class BankAccountsService {
 
   // Só para uso interno do AdminPaymentsService — nunca exposto
   // directamente a um endpoint que o cliente possa chamar.
+  //
+  // SECURITY FIX: relations:{ user: true } sem select carregava o User
+  // completo do prestador (password hash, twoFactorSecret,
+  // twoFactorTempSecret) dentro de account.user — mesmo este campo
+  // nunca sendo lido por nenhum chamador. Confirmado em
+  // AdminPaymentsService: todos os pontos que usam este método só
+  // acedem a bankName, accountHolder, iban, accountNumber — nunca a
+  // account.user. A relação foi removida por completo; se algum dia for
+  // preciso o nome do prestador aqui, deve usar select explícito
+  // restrito, nunca relations:{user:true} cru.
   async getProviderAccountForAdmin(providerId: string): Promise<ProviderBankAccount | null> {
     return this.providerRepo.findOne({
       where: { userId: providerId },
-      relations: { user: true },
     });
   }
 }

@@ -7,6 +7,37 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from '../../common/enums/role.enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
+// SECURITY FIX: select explícito reutilizado nos pontos deste service
+// que devolvem o próprio utilizador autenticado (findById, updateById,
+// uploadAvatar). Antes só se removia `password` manualmente do objecto
+// — mas twoFactorSecret, twoFactorTempSecret e avatarPublicId
+// continuavam a sair na resposta de GET/PATCH /users/me. Mesmo sendo o
+// próprio dono dos dados a recebê-los, um segredo de 2FA nunca deve
+// deixar o backend depois de ser usado internamente — se o frontend
+// guardar essa resposta em estado, cache, ou logs, o secret fica
+// exposto no browser.
+const SELF_PROFILE_SELECT = {
+  id: true,
+  fullName: true,
+  email: true,
+  phone: true,
+  role: true,
+  isVerified: true,
+  profileVisible: true,
+  category: true,
+  province: true,
+  district: true,
+  avatarUrl: true,
+  bio: true,
+  latitude: true,
+  longitude: true,
+  isOnline: true,
+  locationSharingEnabled: true,
+  lastSeenAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -23,19 +54,20 @@ export class UsersService {
   ) {}
 
   async findById(id: string): Promise<Partial<User>> {
-    const user = await this.userRepo.findOne({ where: { id } });
+    const user = await this.userRepo.findOne({
+      where: { id },
+      select: SELF_PROFILE_SELECT,
+    });
     if (!user) throw new NotFoundException('Utilizador não encontrado.');
-    const { password, ...rest } = user;
-    return rest;
+    return user;
   }
 
   async updateById(id: string, dto: UpdateUserDto): Promise<Partial<User>> {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) throw new NotFoundException('Utilizador não encontrado.');
     Object.assign(user, dto);
-    const saved = await this.userRepo.save(user);
-    const { password, ...rest } = saved;
-    return rest;
+    await this.userRepo.save(user);
+    return this.findById(id);
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -59,9 +91,8 @@ export class UsersService {
     user.avatarUrl = result.url;
     user.avatarPublicId = result.publicId;
 
-    const saved = await this.userRepo.save(user);
-    const { password, ...rest } = saved;
-    return rest;
+    await this.userRepo.save(user);
+    return this.findById(userId);
   }
 
   async findAll(): Promise<Partial<User>[]> {

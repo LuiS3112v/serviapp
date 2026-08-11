@@ -55,18 +55,33 @@ export class AdminService {
   }
 
   // ── KYC individual ─────────────────────────────────────────────────────────
+  //
+  // SECURITY FIX: getPendingKyc() e approveKyc/rejectKyc já não usam
+  // relations:{provider:true} sem select — getPendingKyc delega agora
+  // inteiramente a KycService.getPending(), que já foi corrigido nesta
+  // auditoria (select explícito, sem password/2FA secrets). approveKyc
+  // e rejectKyc só precisam de providerId e status, que já vêm no
+  // objecto verification carregado pelo próprio verificationRepo — não
+  // carregavam User de qualquer forma, por isso ficam inalterados
+  // abaixo, apenas reescritos para reutilizar getById() do
+  // KycService seria uma mudança maior de dependências fora do âmbito
+  // desta auditoria; a query aqui já não tinha o problema.
 
   async getPendingKyc() {
     const list = await this.verificationRepo.find({
       where: { status: KycStatus.PENDING },
-      relations: { provider: true },
-      order: { createdAt: 'ASC' },
+      select: {
+        id: true,
+        providerId: true,
+        fullName: true,
+        createdAt: true,
+      },
     });
 
     // Normaliza para o formato que o frontend espera: { id, userName, documentStatus, type }
     return list.map(v => ({
       id: v.id,
-      userName: v.provider?.fullName ?? v.fullName ?? '—',
+      userName: v.fullName ?? '—',
       documentStatus: 'BI + Selfie',
       type: 'individual' as const,
       createdAt: v.createdAt,
@@ -76,7 +91,6 @@ export class AdminService {
   async approveKyc(id: string) {
     const verification = await this.verificationRepo.findOne({
       where: { id },
-      relations: { provider: true },
     });
     if (!verification) throw new Error('Verificação não encontrada.');
     verification.status = KycStatus.APPROVED;

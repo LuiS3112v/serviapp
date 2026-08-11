@@ -16,6 +16,24 @@ import { ServicesService } from '../services/services.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProviderCatalogService } from '../provider-catalog/provider-catalog.service';
 
+// SECURITY FIX: select explícito reutilizado em todas as queries deste
+// service que carregam client/provider de um Payment ou Service para o
+// painel administrativo. Antes, `relations: { client: true, provider:
+// true }` (sem `select`) carregava o User completo — incluindo
+// password hash, twoFactorSecret e twoFactorTempSecret — em cinco
+// pontos diferentes (listPendingProofs, listConfirmedPayments,
+// listPendingPayouts, listDisputedServices, getPaymentDetail). O facto
+// de mapPaymentForAdmin() só escolher alguns campos ao construir a
+// resposta final não protegia nada: a query já tinha trazido o User
+// completo da base de dados para dentro do objecto `payment.client` /
+// `payment.provider` antes disso — o mesmo padrão de leak já corrigido
+// no chat, KYC e payment-proof, mas que ainda não tinha chegado aqui.
+const ADMIN_SAFE_USER_SELECT = {
+  id: true,
+  fullName: true,
+  phone: true,
+} as const;
+
 @Injectable()
 export class AdminPaymentsService {
   private readonly logger = new Logger(AdminPaymentsService.name);
@@ -38,6 +56,16 @@ export class AdminPaymentsService {
     const payments = await this.paymentRepo.find({
       where: { status: PaymentStatus.PROOF_SUBMITTED },
       relations: { client: true, provider: true, service: true, proofs: true },
+      select: {
+        id: true, serviceId: true, clientId: true, providerId: true,
+        amount: true, platformFee: true, providerAmount: true,
+        commissionPercentageUsed: true, status: true,
+        confirmedAt: true, releasedAt: true, createdAt: true,
+        client: ADMIN_SAFE_USER_SELECT,
+        provider: ADMIN_SAFE_USER_SELECT,
+        service: { id: true, title: true },
+        proofs: { id: true, fileType: true, createdAt: true },
+      },
       order: { createdAt: 'DESC' },
     });
     return payments.map(p => this.mapPaymentForAdmin(p));
@@ -47,6 +75,15 @@ export class AdminPaymentsService {
     const payments = await this.paymentRepo.find({
       where: { status: PaymentStatus.CONFIRMED },
       relations: { client: true, provider: true, service: true },
+      select: {
+        id: true, serviceId: true, clientId: true, providerId: true,
+        amount: true, platformFee: true, providerAmount: true,
+        commissionPercentageUsed: true, status: true,
+        confirmedAt: true, releasedAt: true, createdAt: true,
+        client: ADMIN_SAFE_USER_SELECT,
+        provider: ADMIN_SAFE_USER_SELECT,
+        service: { id: true, title: true },
+      },
       order: { confirmedAt: 'DESC' },
     });
     return payments.map(p => this.mapPaymentForAdmin(p));
@@ -56,6 +93,15 @@ export class AdminPaymentsService {
     const payments = await this.paymentRepo.find({
       where: { status: PaymentStatus.PENDING_PAYOUT },
       relations: { client: true, provider: true, service: true },
+      select: {
+        id: true, serviceId: true, clientId: true, providerId: true,
+        amount: true, platformFee: true, providerAmount: true,
+        commissionPercentageUsed: true, status: true,
+        confirmedAt: true, releasedAt: true, createdAt: true,
+        client: ADMIN_SAFE_USER_SELECT,
+        provider: ADMIN_SAFE_USER_SELECT,
+        service: { id: true, title: true },
+      },
       order: { updatedAt: 'DESC' },
     });
 
@@ -83,11 +129,21 @@ export class AdminPaymentsService {
   // extrair o latestProof — exactamente como listPendingProofs já fazia
   // — e devolvê-lo junto com o resto dos dados de disputa, permitindo ao
   // admin ver o comprovativo directamente no card de disputa.
+  //
+  // SECURITY FIX: relations:{client:true,provider:true} no serviceRepo
+  // substituído por select explícito — mesma correcção que o resto do
+  // ficheiro.
   // ══════════════════════════════════════════════════════════════════════
   async listDisputedServices() {
     const services = await this.serviceRepo.find({
       where: { status: ServiceStatus.DISPUTED },
       relations: { client: true, provider: true },
+      select: {
+        id: true, title: true, disputeReason: true, updatedAt: true,
+        clientId: true, providerId: true,
+        client: ADMIN_SAFE_USER_SELECT,
+        provider: { id: true, fullName: true },
+      },
       order: { updatedAt: 'DESC' },
     });
 
@@ -212,6 +268,15 @@ export class AdminPaymentsService {
     const payment = await this.paymentRepo.findOne({
       where: { id: paymentId },
       relations: { client: true, provider: true, service: true },
+      select: {
+        id: true, serviceId: true, clientId: true, providerId: true,
+        amount: true, platformFee: true, providerAmount: true,
+        commissionPercentageUsed: true, status: true,
+        confirmedAt: true, releasedAt: true, createdAt: true,
+        client: ADMIN_SAFE_USER_SELECT,
+        provider: ADMIN_SAFE_USER_SELECT,
+        service: { id: true, title: true },
+      },
     });
     if (!payment) throw new NotFoundException('Pagamento não encontrado.');
 

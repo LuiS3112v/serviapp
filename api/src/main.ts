@@ -19,10 +19,31 @@ async function bootstrap() {
   app.use(helmet());
 
   // ── CORS ───────────────────────────────────────────────────────────────────
+  // SECURITY FIX: o fallback anterior (`origin: true` quando
+  // ALLOWED_ORIGINS estava vazia) reflectia automaticamente qualquer
+  // Origin recebida como permitida — combinado com credentials:true,
+  // isto equivale a origin:'*' com credentials, exactamente o padrão
+  // que nunca deve coexistir. Bastava a env var não estar definida
+  // (erro de configuração de deploy, não um ataque) para o CORS abrir
+  // por completo. Agora: em produção, a ausência de ALLOWED_ORIGINS
+  // falha o arranque de forma visível em vez de abrir silenciosamente;
+  // fora de produção, mantém-se um fallback permissivo apenas para
+  // desenvolvimento local.
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
     .split(',')
     .map(o => o.trim())
     .filter(Boolean);
+
+  if (allowedOrigins.length === 0) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'ALLOWED_ORIGINS não está definida em produção. Define a variável de ambiente antes de arrancar o servidor — nunca usar CORS aberto com credentials em produção.',
+      );
+    }
+    console.warn(
+      '⚠️  ALLOWED_ORIGINS não definida — CORS aberto apenas para desenvolvimento local.',
+    );
+  }
 
   app.enableCors({
     origin: allowedOrigins.length > 0 ? allowedOrigins : true,

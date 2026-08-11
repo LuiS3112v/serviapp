@@ -28,13 +28,23 @@ export class UsersController {
   // Endpoint multipart próprio, separado do PATCH /users/me (JSON),
   // seguindo o mesmo padrão de POST /company/:companyId/logo. O campo
   // do FormData tem de se chamar "avatar" — é o nome passado a
-  // FileInterceptor. Não requer nenhuma configuração extra de módulo:
-  // FileInterceptor já funciona out-of-the-box neste projecto (é o
-  // mesmo mecanismo que já serve logo/banner/galeria da empresa, sem
-  // MulterModule.register() nenhum).
+  // FileInterceptor.
+  //
+  // SECURITY FIX: adicionado limits.fileSize, mesmo padrão já usado em
+  // KycController e PaymentProofController. Antes, a única validação de
+  // tamanho acontecia dentro de CloudinaryService.uploadBuffer
+  // (max_bytes) — o que significa que o ficheiro inteiro já tinha sido
+  // recebido e mantido em memória (buffer) pelo processo Node antes de
+  // qualquer rejeição. Um upload de várias centenas de MB já consumia
+  // memória do servidor antes do Cloudinary sequer ser chamado. Com o
+  // limite no próprio FileInterceptor, o multer rejeita a stream assim
+  // que o limite é excedido, sem materializar o ficheiro completo em
+  // memória.
   @Post('me/avatar')
   @UseGuards(JwtGuard)
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(FileInterceptor('avatar', {
+    limits: { fileSize: 5 * 1024 * 1024 },
+  }))
   uploadAvatar(@CurrentUser() user: any, @UploadedFile() file: Express.Multer.File) {
     return this.usersService.uploadAvatar(user.id, file);
   }
