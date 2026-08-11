@@ -60,29 +60,29 @@ const IOS_SAFARI_STEPS: Step[] = [
   },
 ];
 
-/** iOS fora do Safari (Chrome, Firefox, Edge no iPhone): a Apple não
- * permite instalar PWAs a partir de nenhum outro navegador, porque
- * todos correm sobre o motor WebKit do sistema sem essa opção exposta.
- * A única forma é abrir o link no Safari. */
+/** iOS fora do Safari (Chrome, Firefox, Edge no iPhone): estes navegadores
+ * também conseguem adicionar a Serviapp ao ecrã principal, através do
+ * próprio menu deles (não é preciso mudar para o Safari). A diferença é
+ * apenas onde fica o botão de partilha/menu. */
 function iosOtherBrowserSteps(browserLabel: string): Step[] {
   return [
     {
-      icon: Compass,
-      label: "Passo 1",
-      title: `Abra este link no Safari`,
-      text: `No iPhone, o ${browserLabel} não permite instalar aplicações. Copie o link e abra-o no Safari.`,
-    },
-    {
       icon: Share,
-      label: "Passo 2",
-      title: "Toque em Partilhar",
-      text: "Já no Safari, toque no ícone de partilha na barra do navegador.",
+      label: "Passo 1",
+      title: "Toque no ícone de partilha ou no menu",
+      text: `No ${browserLabel}, toque no ícone de partilha (ou nos três pontos, consoante a versão).`,
     },
     {
       icon: SquarePlus,
-      label: "Passo 3",
+      label: "Passo 2",
       title: "Adicionar ao Ecrã Principal",
-      text: "Percorra as opções e escolha esta opção na lista.",
+      text: "Procure esta opção na lista que aparece e toque nela.",
+    },
+    {
+      icon: CheckCircle2,
+      label: "Pronto",
+      title: "A app está instalada",
+      text: "Abra a Serviapp a partir do ícone no seu ecrã inicial, como uma aplicação normal.",
     },
   ];
 }
@@ -616,22 +616,9 @@ function IOSMock({ step, browser }: { step: number; browser: string }) {
   const isSafari = browser === "safari";
 
   if (!isSafari) {
-    // iOS fora do Safari: passo 0 mostra o aviso, passo 1/2 reutilizam
-    // o fluxo do Safari (partilhar → adicionar ao ecrã principal).
+    // iOS fora do Safari: mesmo fluxo (partilhar/menu → adicionar ao
+    // ecrã principal), só que a partir do próprio navegador instalado.
     if (step === 0) {
-      return (
-        <div className="lp-install-mock-page center">
-          <div className="lp-install-mock-appicon" style={{ background: "#94a3b8" }}>
-            <Compass size={22} color="#fff" />
-          </div>
-          <p className="lp-install-mock-applabel">Abrir no Safari</p>
-          <p className="lp-install-mock-donetext" style={{ color: "#64748b" }}>
-            Este navegador não instala apps
-          </p>
-        </div>
-      );
-    }
-    if (step === 1) {
       return (
         <div className="lp-install-mock-page">
           <div className="lp-install-mock-browserbar">
@@ -649,19 +636,28 @@ function IOSMock({ step, browser }: { step: number; browser: string }) {
         </div>
       );
     }
-    return (
-      <div className="lp-install-mock-page">
-        <div className="lp-install-mock-sheet">
-          <p className="lp-install-mock-sheet-title">Partilhar</p>
-          <div className="lp-install-mock-sheet-row highlight">
-            <SquarePlus size={16} color="#fff" />
-            <span>Adicionar ao Ecrã Principal</span>
-          </div>
-          <div className="lp-install-mock-sheet-row">
-            <div className="lp-install-mock-dot" />
-            <span>Copiar</span>
+    if (step === 1) {
+      return (
+        <div className="lp-install-mock-page">
+          <div className="lp-install-mock-sheet">
+            <p className="lp-install-mock-sheet-title">Partilhar</p>
+            <div className="lp-install-mock-sheet-row highlight">
+              <SquarePlus size={16} color="#fff" />
+              <span>Adicionar ao Ecrã Principal</span>
+            </div>
+            <div className="lp-install-mock-sheet-row">
+              <div className="lp-install-mock-dot" />
+              <span>Copiar</span>
+            </div>
           </div>
         </div>
+      );
+    }
+    return (
+      <div className="lp-install-mock-page center">
+        <div className="lp-install-mock-appicon">S</div>
+        <p className="lp-install-mock-applabel">Serviapp</p>
+        <p className="lp-install-mock-donetext">Adicionado ao ecrã principal</p>
       </div>
     );
   }

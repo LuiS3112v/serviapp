@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Download, Share, Compass } from "lucide-react";
+import { X, Download, Share } from "lucide-react";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 
 const BRAND = "#1D9E75"; // token --teal do design system (globals.css)
@@ -10,18 +10,17 @@ const INK = "#0f172a";
  * Banner discreto de instalação. Não é modal, não bloqueia o Home.
  * Só renderiza quando shouldShowInstallUI é true (ver hook).
  * Android/Chrome/Edge/Samsung Internet: mostra botão que dispara o prompt nativo.
- * iOS/Safari: mostra instrução textual curta (sem prompt nativo disponível).
- * iOS noutro navegador (Chrome/Firefox/Edge no iPhone): a Apple não permite
- * instalar a partir daí, por isso pedimos para abrir no Safari.
+ * iOS (qualquer navegador): mostra instrução textual curta — todos os
+ * navegadores no iPhone conseguem "Adicionar ao Ecrã Principal", só que
+ * pelo próprio menu deles (não há prompt nativo em nenhum caso).
  */
 export function InstallPrompt() {
-  const { platform, browser, canPromptInstall, shouldShowInstallUI, promptInstall, dismiss } =
+  const { platform, canPromptInstall, shouldShowInstallUI, promptInstall, dismiss } =
     usePwaInstall();
 
   if (!shouldShowInstallUI) return null;
 
   const isIOS = platform === "ios";
-  const isSafari = browser === "safari";
 
   return (
     <div
@@ -58,15 +57,11 @@ export function InstallPrompt() {
         }}
         aria-hidden="true"
       >
-        {isIOS && !isSafari ? (
-          <Compass size={18} color="#fff" />
-        ) : (
-          <Download size={18} color="#fff" />
-        )}
+        <Download size={18} color="#fff" />
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        {isIOS && isSafari ? (
+        {isIOS ? (
           <>
             <p style={{ fontSize: 13.5, fontWeight: 700, color: INK, margin: 0 }}>
               Instale a aplicação
@@ -84,15 +79,6 @@ export function InstallPrompt() {
               }}
             >
               Toque em <Share size={13} style={{ display: "inline", verticalAlign: "middle" }} aria-label="Partilhar" /> e depois em &quot;Adicionar ao Ecrã Principal&quot;
-            </p>
-          </>
-        ) : isIOS && !isSafari ? (
-          <>
-            <p style={{ fontSize: 13.5, fontWeight: 700, color: INK, margin: 0 }}>
-              Abra no Safari para instalar
-            </p>
-            <p style={{ fontSize: 12.5, color: "#64748b", margin: "3px 0 0", lineHeight: 1.4 }}>
-              No iPhone, só o Safari permite adicionar a Serviapp ao ecrã principal.
             </p>
           </>
         ) : (
