@@ -89,8 +89,13 @@ export class CompanyKycService {
 
       return await this.verificationRepo.save(verification);
     } catch (error: any) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       console.error('❌ COMPANY KYC SUBMIT ERROR:', error);
-      throw new InternalServerErrorException(error?.message || 'Erro ao processar KYC da empresa');
+      throw new InternalServerErrorException(
+        'Erro ao processar a verificação da empresa. Tenta novamente.',
+      );
     }
   }
 
