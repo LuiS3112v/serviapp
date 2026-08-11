@@ -9,6 +9,7 @@ import {
   CheckCircle2, Percent, BarChart3, MessageCircle, Building2,
   Globe, Camera, Link2, UserCheck, Star as StarIcon, Wifi, Battery, Signal,
 } from "lucide-react";
+import { InstallGuideSection } from "@/components/pwa/InstallGuideSection";
 
 /* Hook simples de scroll-reveal, sem dependências novas */
 function useReveal() {
@@ -688,6 +689,9 @@ export default function HomePage() {
             </Reveal>
           </div>
         </section>
+
+        {/* Aplicação (PWA) */}
+        <InstallGuideSection />
 
         {/* CTA final */}
         <section className="lp-section">

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Source_Serif_4 } from "next/font/google";
+import { PWA_CONFIG } from "@/lib/pwa-config";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -21,6 +22,15 @@ export const metadata: Metadata = {
   title: "Serviapp — O serviço certo, já.",
   description:
     "Plataforma que liga clientes a prestadores de serviços verificados em Angola.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: PWA_CONFIG.shortName,
+  },
+  icons: {
+    apple: PWA_CONFIG.icons.appleTouchIcon,
+  },
 };
 
 export const viewport: Viewport = {
@@ -29,6 +39,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: PWA_CONFIG.themeColor,
 };
 
 export default function RootLayout({
