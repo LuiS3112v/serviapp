@@ -217,7 +217,7 @@ export default function HomePage() {
 
         /* Segurança: jornada em 4 etapas, split copy + linha do tempo */
         .lp-journey{display:flex;flex-direction:column}
-        .lp-journey-item{display:grid;grid-template-columns:120px 40px 1fr;gap:0;padding:24px 0}
+        .lp-journey-item{display:grid;grid-template-columns:120px 40px 1fr;column-gap:16px;padding:24px 0}
         .lp-journey-label{font-size:13px;font-weight:700;color:#94a3b8;padding-top:2px}
         .lp-journey-line{display:flex;flex-direction:column;align-items:center}
         .lp-journey-dot{width:34px;height:34px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:${BRAND};flex-shrink:0}
@@ -282,7 +282,7 @@ export default function HomePage() {
           .lp-tool-row,.lp-tool-row.reverse{grid-template-columns:1fr;gap:24px}
           .lp-tool-row.reverse .lp-tool-copy,.lp-tool-row.reverse .lp-tool-visual{order:initial}
           .lp-tool-visual{order:-1}
-          .lp-journey-item{grid-template-columns:90px 34px 1fr}
+          .lp-journey-item{grid-template-columns:90px 34px 1fr;column-gap:14px}
           .lp-provider-panel{padding:40px 28px}
           .lp-provider-top{grid-template-columns:1fr;gap:32px}
           .lp-provider-copy{max-width:100%}
@@ -301,7 +301,7 @@ export default function HomePage() {
           .lp-stats{gap:18px}
           .lp-provider-panel{padding:28px 18px}
           .lp-provider-grid{grid-template-columns:1fr}
-          .lp-journey-item{grid-template-columns:70px 30px 1fr}
+          .lp-journey-item{grid-template-columns:60px 34px 1fr;column-gap:14px}
           .lp-journey-label{font-size:12px}
           .lp-chain{padding:20px 16px}
         }
