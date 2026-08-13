@@ -29,7 +29,6 @@ export const metadata: Metadata = {
     title: PWA_CONFIG.shortName,
   },
   icons: {
-    icon: "/favicon.ico",
     apple: PWA_CONFIG.icons.appleTouchIcon,
   },
 };
