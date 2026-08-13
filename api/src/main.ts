@@ -70,7 +70,7 @@ async function bootstrap() {
   // ── Listen ─────────────────────────────────────────────────────────────────
   const port = process.env.PORT ?? 3001;
   await app.listen(port, '0.0.0.0');
-  console.log(`✅ ServiApp API → http://0.0.0.0:${port}/api`);
+  console.log(`✅ Mestroo API → http://0.0.0.0:${port}/api`);
 }
 
 bootstrap();

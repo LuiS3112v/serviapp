@@ -1,7 +1,7 @@
 {
-  "name": "serviapp-api",
+  "name": "mestroo-api",
   "version": "1.0.0",
-  "description": "ServiApp NestJS Backend",
+  "description": "Mestroo NestJS Backend",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
