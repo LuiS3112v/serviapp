@@ -56,12 +56,12 @@ const IOS_SAFARI_STEPS: Step[] = [
     icon: CheckCircle2,
     label: "Pronto",
     title: "A app está instalada",
-    text: "Abra a Serviapp a partir do ícone no seu ecrã inicial, como uma aplicação normal.",
+    text: "Abra a Mestroo a partir do ícone no seu ecrã inicial, como uma aplicação normal.",
   },
 ];
 
 /** iOS fora do Safari (Chrome, Firefox, Edge no iPhone): estes navegadores
- * também conseguem adicionar a Serviapp ao ecrã principal, através do
+ * também conseguem adicionar a Mestroo ao ecrã principal, através do
  * próprio menu deles (não é preciso mudar para o Safari). A diferença é
  * apenas onde fica o botão de partilha/menu. */
 function iosOtherBrowserSteps(browserLabel: string): Step[] {
@@ -82,7 +82,7 @@ function iosOtherBrowserSteps(browserLabel: string): Step[] {
       icon: CheckCircle2,
       label: "Pronto",
       title: "A app está instalada",
-      text: "Abra a Serviapp a partir do ícone no seu ecrã inicial, como uma aplicação normal.",
+      text: "Abra a Mestroo a partir do ícone no seu ecrã inicial, como uma aplicação normal.",
     },
   ];
 }
@@ -104,7 +104,7 @@ const ANDROID_CHROMIUM_STEPS: Step[] = [
     icon: CheckCircle2,
     label: "Pronto",
     title: "A app está instalada",
-    text: "Abra a Serviapp a partir do ícone no seu ecrã inicial, como uma aplicação normal.",
+    text: "Abra a Mestroo a partir do ícone no seu ecrã inicial, como uma aplicação normal.",
   },
 ];
 
@@ -127,7 +127,7 @@ const ANDROID_FIREFOX_STEPS: Step[] = [
     icon: CheckCircle2,
     label: "Pronto",
     title: "Atalho criado",
-    text: "Abra a Serviapp a partir do ícone no seu ecrã inicial.",
+    text: "Abra a Mestroo a partir do ícone no seu ecrã inicial.",
   },
 ];
 
@@ -141,14 +141,14 @@ const DESKTOP_CHROMIUM_STEPS: Step[] = [
   {
     icon: SquarePlus,
     label: "Passo 2",
-    title: "Instalar Serviapp",
-    text: "Escolha \"Instalar Serviapp...\" no menu.",
+    title: "Instalar Mestroo",
+    text: "Escolha \"Instalar Mestroo...\" no menu.",
   },
   {
     icon: CheckCircle2,
     label: "Pronto",
     title: "A app está instalada",
-    text: "A Serviapp abre agora na sua própria janela, com atalho no ambiente de trabalho.",
+    text: "A Mestroo abre agora na sua própria janela, com atalho no ambiente de trabalho.",
   },
 ];
 
@@ -159,7 +159,7 @@ function desktopOtherBrowserSteps(browserLabel: string): Step[] {
       icon: Compass,
       label: "Sem instalação",
       title: `O ${browserLabel} não instala aplicações`,
-      text: "No computador, apenas o Chrome e o Edge permitem instalar a Serviapp como aplicação.",
+      text: "No computador, apenas o Chrome e o Edge permitem instalar a Mestroo como aplicação.",
     },
     {
       icon: SquarePlus,
@@ -171,7 +171,7 @@ function desktopOtherBrowserSteps(browserLabel: string): Step[] {
       icon: CheckCircle2,
       label: "Ou",
       title: "Use o Chrome ou o Edge",
-      text: "Abra este endereço num desses navegadores para instalar a Serviapp como aplicação.",
+      text: "Abra este endereço num desses navegadores para instalar a Mestroo como aplicação.",
     },
   ];
 }
@@ -240,7 +240,7 @@ export function InstallGuideSection() {
       <div className="lp-container">
         <div className="lp-section-head">
           <span className="lp-tag">Aplicação</span>
-          <h2 className="lp-h2">Leve a Serviapp consigo</h2>
+          <h2 className="lp-h2">Leve a Mestroo consigo</h2>
           <p className="lp-section-sub">
             Instale a aplicação e tenha acesso mais rápido a pedidos, chat e
             notificações, sem precisar de abrir o navegador todas as vezes.
@@ -622,7 +622,7 @@ function IOSMock({ step, browser }: { step: number; browser: string }) {
       return (
         <div className="lp-install-mock-page">
           <div className="lp-install-mock-browserbar">
-            <span>serviapp.ao</span>
+            <span>mestroo.ao</span>
           </div>
           <div className="lp-install-mock-content" />
           <div className="lp-install-mock-toolbar">
@@ -656,7 +656,7 @@ function IOSMock({ step, browser }: { step: number; browser: string }) {
     return (
       <div className="lp-install-mock-page center">
         <div className="lp-install-mock-appicon">S</div>
-        <p className="lp-install-mock-applabel">Serviapp</p>
+        <p className="lp-install-mock-applabel">Mestroo</p>
         <p className="lp-install-mock-donetext">Adicionado ao ecrã principal</p>
       </div>
     );
@@ -666,7 +666,7 @@ function IOSMock({ step, browser }: { step: number; browser: string }) {
     return (
       <div className="lp-install-mock-page">
         <div className="lp-install-mock-browserbar">
-          <span>serviapp.ao</span>
+          <span>mestroo.ao</span>
         </div>
         <div className="lp-install-mock-content" />
         <div className="lp-install-mock-toolbar">
@@ -704,7 +704,7 @@ function IOSMock({ step, browser }: { step: number; browser: string }) {
   return (
     <div className="lp-install-mock-page center">
       <div className="lp-install-mock-appicon">S</div>
-      <p className="lp-install-mock-applabel">Serviapp</p>
+      <p className="lp-install-mock-applabel">Mestroo</p>
       <p className="lp-install-mock-donetext">Adicionado ao ecrã principal</p>
     </div>
   );
@@ -717,7 +717,7 @@ function AndroidMock({ step, browser }: { step: number; browser: string }) {
     return (
       <div className="lp-install-mock-page">
         <div className="lp-install-mock-browserbar">
-          <span>serviapp.ao</span>
+          <span>mestroo.ao</span>
           <div className="lp-install-mock-toolbar-icon highlight" style={{ marginLeft: "auto" }}>
             <MenuIcon size={14} color="#fff" />
           </div>
@@ -749,7 +749,7 @@ function AndroidMock({ step, browser }: { step: number; browser: string }) {
   return (
     <div className="lp-install-mock-page center">
       <div className="lp-install-mock-appicon">S</div>
-      <p className="lp-install-mock-applabel">Serviapp</p>
+      <p className="lp-install-mock-applabel">Mestroo</p>
       <p className="lp-install-mock-donetext">
         {browser === "firefox" ? "Atalho criado" : "Aplicação instalada"}
       </p>
@@ -769,7 +769,7 @@ function DesktopMock({ step, browser }: { step: number; browser: string }) {
           <span className="lp-desktop-dot" />
           <span className="lp-desktop-dot" />
           <div className="lp-desktop-addressbar">
-            <span>serviapp.ao</span>
+            <span>mestroo.ao</span>
           </div>
         </div>
         <div className="lp-desktop-body">
@@ -797,7 +797,7 @@ function DesktopMock({ step, browser }: { step: number; browser: string }) {
           <span className="lp-desktop-dot" />
           <span className="lp-desktop-dot" />
           <div className="lp-desktop-addressbar">
-            <span>serviapp.ao</span>
+            <span>mestroo.ao</span>
             <div className="lp-desktop-menu-icon highlight">
               <MoreVertical size={13} />
             </div>
@@ -815,14 +815,14 @@ function DesktopMock({ step, browser }: { step: number; browser: string }) {
           <span className="lp-desktop-dot" />
           <span className="lp-desktop-dot" />
           <div className="lp-desktop-addressbar">
-            <span>serviapp.ao</span>
+            <span>mestroo.ao</span>
           </div>
         </div>
         <div className="lp-desktop-body">
           <div className="lp-desktop-menu-panel">
             <div className="lp-desktop-menu-row">Nova aba</div>
             <div className="lp-desktop-menu-row">Histórico</div>
-            <div className="lp-desktop-menu-row highlight">Instalar Serviapp...</div>
+            <div className="lp-desktop-menu-row highlight">Instalar Mestroo...</div>
             <div className="lp-desktop-menu-row">Definições</div>
           </div>
         </div>
@@ -833,8 +833,8 @@ function DesktopMock({ step, browser }: { step: number; browser: string }) {
     <div className="lp-desktop-window">
       <div className="lp-desktop-body">
         <div className="lp-desktop-center">
-          <div className="lp-install-mock-appicon">S</div>
-          <p className="lp-install-mock-applabel">Serviapp</p>
+          <div className="lp-install-mock-appicon">M</div>
+          <p className="lp-install-mock-applabel">Mestroo</p>
           <p className="lp-install-mock-donetext">Aplicação instalada</p>
         </div>
       </div>

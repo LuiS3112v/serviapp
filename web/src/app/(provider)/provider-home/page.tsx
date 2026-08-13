@@ -29,7 +29,7 @@ import { kycApi } from "@/lib/api/kyc.api";
    #64748B / #94A3B8, bordas #E2E8F0. Os NÚMEROS são sempre #0F172A.
    O âmbar (#EF9F27) da identidade Provider fica reservado a: botão
    principal, badge "activo", ícone do passo com ação pendente e CTA de
-   empresa. O verde do ServiApp aparece só no ícone de pagamento/escrow.
+   empresa. O verde da Mestroo aparece só no ícone de pagamento/escrow.
    Nada de roxo, rosa ou azul elétrico.
 
    Nenhuma API, rota, lógica de estado, polling ou dado foi alterado —

@@ -19,7 +19,7 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "Serviapp — O serviço certo, já.",
+  title: "Mestroo — O serviço certo, já.",
   description:
     "Plataforma que liga clientes a prestadores de serviços verificados em Angola.",
   manifest: "/manifest.webmanifest",

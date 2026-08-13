@@ -73,7 +73,7 @@ export default function SobrePage() {
 
   const timeline = [
     { year: "A ideia", title: "Um problema do dia a dia", text: "Encontrar um eletricista, uma faxineira ou um canalizador de confiança em Luanda era, muitas vezes, uma questão de sorte ou de perguntar a amigos." },
-    { year: "O projeto", title: "Nasce a Serviapp", text: "Criámos uma plataforma simples onde qualquer pessoa pode descrever o que precisa e receber propostas de prestadores verificados perto de si." },
+    { year: "O projeto", title: "Nasce a Mestroo", text: "Criámos uma plataforma simples onde qualquer pessoa pode descrever o que precisa e receber propostas de prestadores verificados perto de si." },
     { year: "Hoje", title: "A crescer em Luanda", text: "Já ligamos centenas de prestadores a clientes em várias zonas de Luanda, com avaliações reais e pagamento seguro." },
     { year: "O futuro", title: "Todo o país pela frente", text: "O objetivo é expandir progressivamente para outras províncias de Angola, mantendo o mesmo nível de confiança e qualidade." },
   ];
@@ -86,10 +86,10 @@ export default function SobrePage() {
   ];
 
   const faqs = [
-    { q: "Quanto custa usar a Serviapp?", a: "Criar conta e pedir orçamentos é gratuito para clientes. Os prestadores pagam uma taxa de serviço apenas sobre os pagamentos que recebem através da plataforma." },
+    { q: "Quanto custa usar a Mestroo?", a: "Criar conta e pedir orçamentos é gratuito para clientes. Os prestadores pagam uma taxa de serviço apenas sobre os pagamentos que recebem através da plataforma." },
     { q: "Como sei que o prestador é de confiança?", a: "Todos os prestadores passam por verificação de identidade (KYC) antes de poderem ser contactados, e o seu histórico de avaliações fica visível no perfil." },
     { q: "O que acontece se eu não ficar satisfeito com o serviço?", a: "O pagamento só é libertado ao prestador depois de o cliente confirmar a conclusão do serviço, e a nossa equipa de suporte está disponível para ajudar a resolver qualquer situação." },
-    { q: "A Serviapp já está disponível em toda Angola?", a: "Neste momento operamos em Luanda, com planos de expansão progressiva para outras províncias do país." },
+    { q: "A Mestroo já está disponível em toda Angola?", a: "Neste momento operamos em Luanda, com planos de expansão progressiva para outras províncias do país." },
     { q: "Como posso tornar-me prestador?", a: "Basta criar uma conta, submeter os seus dados para verificação e definir os serviços que pretende oferecer. Depois de aprovado, já pode começar a receber pedidos." },
   ];
 
@@ -277,7 +277,7 @@ export default function SobrePage() {
         <section className="lp-about-hero">
           <div className="lp-container">
             <Reveal>
-              <div className="lp-eyebrow" style={{ marginLeft: "auto", marginRight: "auto" }}><MapPin size={13} /> Sobre a Serviapp</div>
+              <div className="lp-eyebrow" style={{ marginLeft: "auto", marginRight: "auto" }}><MapPin size={13} /> Sobre a Mestroo</div>
               <h1 className="lp-about-h1">Ligamos pessoas a <span>profissionais de confiança</span>, em Luanda e, em breve, em todo o país</h1>
               <p className="lp-about-sub">Somos uma plataforma angolana que facilita encontrar e ser encontrado por quem precisa de um serviço bem feito. Aqui explicamos quem somos, como trabalhamos e porque pode confiar em nós.</p>
             </Reveal>
@@ -310,7 +310,7 @@ export default function SobrePage() {
             <Reveal>
               <div className="lp-section-head">
                 <span className="lp-tag">A nossa história</span>
-                <h2 className="lp-h2">Como surgiu a Serviapp</h2>
+                <h2 className="lp-h2">Como surgiu a Mestroo</h2>
                 <p className="lp-section-sub">De um problema comum em Luanda a uma plataforma pensada para crescer com o país.</p>
               </div>
             </Reveal>
@@ -475,7 +475,7 @@ export default function SobrePage() {
           <div className="lp-container">
             <Reveal>
               <div className="lp-cta">
-                <h2>Faça parte da Serviapp</h2>
+                <h2>Faça parte da Mestroo</h2>
                 <p>Quer contratar um serviço de confiança ou quer começar a receber novos clientes? Crie a sua conta gratuita agora.</p>
                 <div className="lp-cta-actions">
                   <button className="lp-btn-white" onClick={goRegisterClient}>Criar conta</button>
@@ -516,7 +516,7 @@ export default function SobrePage() {
               </div>
             </div>
             <div className="lp-footer-bottom">
-              <p>© 2026 Serviapp. Todos os direitos reservados.</p>
+              <p>© 2026 Mestroo. Todos os direitos reservados.</p>
               <p className="lp-coverage-note">De momento disponível em Luanda, com expansão progressiva para outras cidades.</p>
             </div>
           </div>

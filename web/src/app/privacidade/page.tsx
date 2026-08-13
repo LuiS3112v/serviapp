@@ -101,7 +101,7 @@ export default function PrivacidadePage() {
               <div className="legal-hero-icon"><Lock size={20} color="#fff"/></div>
               <div>
                 <p className="legal-hero-title">Política de Privacidade</p>
-                <p className="legal-hero-sub">Última actualização: 2026 · Serviapp Angola · 7 secções</p>
+                <p className="legal-hero-sub">Última actualização: 2026 · Mestroo Angola · 7 secções</p>
               </div>
             </div>
 
@@ -131,14 +131,14 @@ export default function PrivacidadePage() {
                 <p className="legal-cta-title">Ainda tens dúvidas?</p>
                 <p className="legal-cta-sub">A nossa equipa de suporte está disponível para esclarecer qualquer questão sobre a tua privacidade.</p>
               </div>
-              <a className="legal-cta-btn" href="mailto:suporte@serviapp.ao">Falar com o suporte <ArrowRight size={15}/></a>
+              <a className="legal-cta-btn" href="mailto:suporte@mestroo.ao">Falar com o suporte <ArrowRight size={15}/></a>
             </div>
           </div>
         </main>
 
         <footer className="legal-footer">
           <div className="legal-footer-inner">
-            <p>© 2026 Serviapp. Todos os direitos reservados.</p>
+            <p>© 2026 Mestroo. Todos os direitos reservados.</p>
             <div className="legal-footer-links">
               <a href="/">Início</a>
               <a href="/termos">Termos de uso</a>

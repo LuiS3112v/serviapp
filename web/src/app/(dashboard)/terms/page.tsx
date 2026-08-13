@@ -5,13 +5,13 @@ import Navbar from "@/components/layout/Navbar";
 import { Shield, ArrowLeft } from "lucide-react";
 
 const sections = [
-  {title:"1. Aceitação dos Termos",text:"Ao aceder e utilizar a plataforma Serviapp, concordas com estes Termos de Serviço. Se não concordares, não deves utilizar a plataforma."},
-  {title:"2. Descrição do Serviço",text:"A Serviapp é uma plataforma digital que facilita a ligação entre clientes e prestadores de serviços em Angola. Não somos prestadores de serviços — somos um intermediário digital."},
+  {title:"1. Aceitação dos Termos",text:"Ao aceder e utilizar a plataforma Mestroo, concordas com estes Termos de Serviço. Se não concordares, não deves utilizar a plataforma."},
+  {title:"2. Descrição do Serviço",text:"A Mestroo é uma plataforma digital que facilita a ligação entre clientes e prestadores de serviços em Angola. Não somos prestadores de serviços — somos um intermediário digital."},
   {title:"3. Registo e Conta",text:"Para utilizar a plataforma deves criar uma conta com informações verdadeiras. És responsável pela confidencialidade da tua senha e por todas as actividades realizadas na tua conta."},
   {title:"4. Pagamentos e Escrow",text:"Todos os pagamentos digitais são processados através do nosso sistema de escrow. O valor fica retido até ambas as partes confirmarem a conclusão do serviço."},
-  {title:"5. Comissões",text:"A Serviapp cobra uma comissão sobre cada transacção processada pela plataforma. A percentagem varia entre 10% e 20% consoante a categoria e região."},
+  {title:"5. Comissões",text:"A Mestroo cobra uma comissão sobre cada transacção processada pela plataforma. A percentagem varia entre 10% e 20% consoante a categoria e região."},
   {title:"6. Verificação de Identidade",text:"Os prestadores de serviços são obrigados a completar o processo de verificação de identidade (KYC) antes de poderem oferecer os seus serviços na plataforma."},
-  {title:"7. Responsabilidades",text:"A Serviapp não se responsabiliza pela qualidade dos serviços prestados. Encorajamos os utilizadores a avaliar os prestadores após cada serviço."},
+  {title:"7. Responsabilidades",text:"A Mestroo não se responsabiliza pela qualidade dos serviços prestados. Encorajamos os utilizadores a avaliar os prestadores após cada serviço."},
   {title:"8. Rescisão",text:"Reservamo-nos o direito de suspender ou terminar contas que violem estes termos, a nosso critério e sem aviso prévio."},
 ];
 
@@ -41,7 +41,7 @@ export default function TermsPage() {
               <Shield size={20} style={{color:"#1D9E75",flexShrink:0}}/>
               <div>
                 <p style={{fontSize:14,fontWeight:600,color:"#0f172a"}}>Termos de Serviço</p>
-                <p style={{fontSize:12,color:"#0f766e"}}>Última actualização: 2026 · Serviapp Angola</p>
+                <p style={{fontSize:12,color:"#0f766e"}}>Última actualização: 2026 · Mestroo Angola</p>
               </div>
             </div>
             {sections.map((s,i)=>(

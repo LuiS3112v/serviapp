@@ -113,7 +113,7 @@ function LoginPageContent() {
               </div>
               <div>
                 <p className="auth-title">Entrar na conta</p>
-                <p className="auth-subtitle">Bem-vindo de volta à Serviapp</p>
+                <p className="auth-subtitle">Bem-vindo de volta à Mestroo</p>
               </div>
             </div>
 

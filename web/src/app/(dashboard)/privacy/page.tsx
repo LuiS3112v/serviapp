@@ -40,7 +40,7 @@ export default function PrivacyPage() {
               <Lock size={20} style={{color:"#2563eb",flexShrink:0}}/>
               <div>
                 <p style={{fontSize:14,fontWeight:600,color:"#0f172a"}}>Política de Privacidade</p>
-                <p style={{fontSize:12,color:"#1e40af"}}>Última actualização: 2026 · Serviapp Angola</p>
+                <p style={{fontSize:12,color:"#1e40af"}}>Última actualização: 2026 · Mestroo Angola</p>
               </div>
             </div>
             {sections.map((s,i)=>(

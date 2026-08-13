@@ -294,7 +294,7 @@ export default function HomePage() {
                 <span className="h-eyebrow">
                   <span className="h-eyebrow-dot" />
                   <span style={{ fontSize: 12, fontWeight: 700, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                    Serviapp · Angola
+                    Mestroo · Angola
                   </span>
                 </span>
                 <h1 className="h-title">Encontra o serviço<br /><em>certo, perto de ti.</em></h1>
@@ -412,7 +412,7 @@ export default function HomePage() {
               <div className="sec-hdr">
                 <div>
                   <span className="sec-eyebrow">Vantagens</span>
-                  <h2 className="sec-title">Porquê a Serviapp?</h2>
+                  <h2 className="sec-title">Porquê a Mestroo?</h2>
                   <p className="sec-sub">A plataforma mais segura de Angola</p>
                 </div>
               </div>

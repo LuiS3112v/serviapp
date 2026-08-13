@@ -45,7 +45,7 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 }
 
 /* Uma só cor de acção (azul da marca) + verde só para estados de confirmação/verificação.
-   Nada de cor própria por categoria ou por card, a identidade é do Serviapp, não do item. */
+   Nada de cor própria por categoria ou por card, a identidade é do Mestroo, não do item. */
 const BRAND = "#1e293b";
 const CONFIRM = "#1D9E75";
 const INK = "#0f172a";
@@ -91,7 +91,7 @@ export default function HomePage() {
 
   const journey = [
     { label: "Antes", title: "Saiba com quem está a contratar", text: "Cada prestador passa por verificação de identidade (KYC) antes de poder receber pedidos.", icon: UserCheck },
-    { label: "Durante", title: "Fale sem sair da Serviapp", text: "Combine horários, detalhes e alterações pelo chat integrado, fica tudo registado.", icon: MessageCircle },
+    { label: "Durante", title: "Fale sem sair da Mestroo", text: "Combine horários, detalhes e alterações pelo chat integrado, fica tudo registado.", icon: MessageCircle },
     { label: "Pagamento", title: "O dinheiro fica retido até o serviço terminar", text: "O valor entra em escrow e só é libertado ao prestador depois de confirmar a conclusão.", icon: Lock },
     { label: "Depois", title: "Avalie o que foi feito", text: "A sua avaliação fica ligada a um serviço real e ajuda o próximo cliente a escolher.", icon: Star },
   ];
@@ -313,7 +313,7 @@ export default function HomePage() {
           <div className="lp-header-inner">
             <div className="lp-logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
               <div className="lp-logo-mark"><Zap size={19} color="#fff" /></div>
-              <span className="lp-logo-text">Servi<span style={{ color: LOGO_ACCENT }}>app</span></span>
+              <span className="lp-logo-text">Mestr<span style={{ color: LOGO_ACCENT }}>oo</span></span>
             </div>
             <nav className="lp-nav">
               <a href="#como-funciona">Como funciona</a>
@@ -524,7 +524,7 @@ export default function HomePage() {
               <div className="lp-tool-row reverse">
                 <div className="lp-tool-copy">
                   <p className="lp-tool-eyebrow">Chat</p>
-                  <h3>Combine tudo sem sair da Serviapp</h3>
+                  <h3>Combine tudo sem sair da Mestroo</h3>
                   <p>Fale com o cliente ou o prestador para acertar horários, endereço e detalhes do serviço. Tudo fica guardado numa só conversa.</p>
                 </div>
                 <div className="lp-tool-visual">
@@ -698,7 +698,7 @@ export default function HomePage() {
           <div className="lp-container">
             <Reveal>
               <div className="lp-cta">
-                <h2>Comece a usar a Serviapp</h2>
+                <h2>Comece a usar a Mestroo</h2>
                 <p>Crie a sua conta gratuita e ligue-se a quem precisa de si ou a quem pode resolver o seu problema.</p>
                 <button className="lp-btn-white" onClick={goRegisterClient}>Criar conta</button>
               </div>
@@ -713,7 +713,7 @@ export default function HomePage() {
               <div>
                 <div className="lp-logo" style={{ marginBottom: 14 }}>
                   <div className="lp-logo-mark"><Zap size={17} color="#fff" /></div>
-                  <span className="lp-logo-text" style={{ color: "#fff" }}>Servi<span style={{ color: LOGO_ACCENT }}>app</span></span>
+                  <span className="lp-logo-text" style={{ color: "#fff" }}>Mestr<span style={{ color: LOGO_ACCENT }}>oo</span></span>
                 </div>
                 <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6, maxWidth: 260 }}>A plataforma que liga clientes a prestadores de serviços de confiança.</p>
                 <div className="lp-footer-social">
@@ -736,7 +736,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="lp-footer-bottom">
-              <p>© 2026 Serviapp. Todos os direitos reservados.</p>
+              <p>© 2026 Mestroo. Todos os direitos reservados.</p>
               <p className="lp-coverage-note">De momento disponível em Luanda, com expansão progressiva para outras cidades.</p>
             </div>
           </div>

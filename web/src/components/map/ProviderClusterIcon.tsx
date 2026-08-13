@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 const CLUSTER_COLOR = '#1D9E75';
 
 // Círculo cheio com o número dentro — a mesma forma do cluster do
-// mockup de referência, mas na paleta verde/teal do ServiApp em vez do
+// mockup de referência, mas na paleta verde/teal da Mestroo em vez do
 // azul original, para bater com a identidade visual dos pins.
 export function buildClusterIcon(childCount: number): L.DivIcon {
   const size = childCount < 10 ? 40 : childCount < 50 ? 48 : 56;

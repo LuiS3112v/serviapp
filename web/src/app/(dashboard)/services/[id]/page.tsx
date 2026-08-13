@@ -356,7 +356,7 @@ function SupportedBanksCard() {
         <CreditCard size={16} style={{ color:"#8B5CF6" }} /> Bancos suportados
       </p>
       <p style={{ fontSize:12, color:"#4B5563", lineHeight:1.6, marginBottom:14 }}>
-        Podes transferir a partir de qualquer um destes bancos para a conta da ServiApp.
+        Podes transferir a partir de qualquer um destes bancos para a conta da Mestroo.
       </p>
       <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
         {banks.map(b => (

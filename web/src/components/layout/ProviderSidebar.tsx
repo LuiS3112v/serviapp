@@ -72,7 +72,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           </div>
           <div>
             <span style={{ fontSize:18, fontWeight:700, color:"#0F172A" }}>
-              Servi<span style={{ color:"#EF9F27" }}>app</span>
+              Mestroo
             </span>
             <div style={{ fontSize:10, color:"#94A3B8", fontWeight:600, letterSpacing:"0.07em", marginTop:1 }}>PAINEL PRESTADOR</div>
           </div>

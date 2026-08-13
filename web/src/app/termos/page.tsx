@@ -10,13 +10,13 @@ const INK = "#0f172a";
 const LOGO_ACCENT = "#7C6FE0";
 
 const sections = [
-  { icon: CheckCircle2, title: "1. Aceitação dos Termos", text: "Ao aceder e utilizar a plataforma Serviapp, concordas com estes Termos de Serviço. Se não concordares, não deves utilizar a plataforma." },
-  { icon: Info, title: "2. Descrição do Serviço", text: "A Serviapp é uma plataforma digital que facilita a ligação entre clientes e prestadores de serviços em Angola. Não somos prestadores de serviços — somos um intermediário digital." },
+  { icon: CheckCircle2, title: "1. Aceitação dos Termos", text: "Ao aceder e utilizar a plataforma Mestroo, concordas com estes Termos de Serviço. Se não concordares, não deves utilizar a plataforma." },
+  { icon: Info, title: "2. Descrição do Serviço", text: "A Mestroo é uma plataforma digital que facilita a ligação entre clientes e prestadores de serviços em Angola. Não somos prestadores de serviços — somos um intermediário digital." },
   { icon: UserCircle, title: "3. Registo e Conta", text: "Para utilizar a plataforma deves criar uma conta com informações verdadeiras. És responsável pela confidencialidade da tua senha e por todas as actividades realizadas na tua conta." },
   { icon: Wallet, title: "4. Pagamentos e Escrow", text: "Todos os pagamentos digitais são processados através do nosso sistema de escrow. O valor fica retido até ambas as partes confirmarem a conclusão do serviço." },
-  { icon: Percent, title: "5. Comissões", text: "A Serviapp cobra uma comissão sobre cada transacção processada pela plataforma. A percentagem varia entre 10% e 20% consoante a categoria e região." },
+  { icon: Percent, title: "5. Comissões", text: "A Mestroo cobra uma comissão sobre cada transacção processada pela plataforma. A percentagem varia entre 10% e 20% consoante a categoria e região." },
   { icon: ShieldCheck, title: "6. Verificação de Identidade", text: "Os prestadores de serviços são obrigados a completar o processo de verificação de identidade (KYC) antes de poderem oferecer os seus serviços na plataforma." },
-  { icon: AlertTriangle, title: "7. Responsabilidades", text: "A Serviapp não se responsabiliza pela qualidade dos serviços prestados. Encorajamos os utilizadores a avaliar os prestadores após cada serviço." },
+  { icon: AlertTriangle, title: "7. Responsabilidades", text: "A Mestroo não se responsabiliza pela qualidade dos serviços prestados. Encorajamos os utilizadores a avaliar os prestadores após cada serviço." },
   { icon: XCircle, title: "8. Rescisão", text: "Reservamo-nos o direito de suspender ou terminar contas que violem estes termos, a nosso critério e sem aviso prévio." },
 ];
 
@@ -88,7 +88,7 @@ export default function TermosPage() {
           <div className="legal-topbar-inner">
             <div className="legal-logo" onClick={() => router.push("/")}>
               <div className="legal-logo-mark"><Zap size={17} color="#fff"/></div>
-              <span className="legal-logo-text">Servi<span style={{ color: LOGO_ACCENT }}>app</span></span>
+              <span className="legal-logo-text">Mestroo<span style={{ color: LOGO_ACCENT }}>app</span></span>
             </div>
             <button className="legal-topbar-back" onClick={() => router.push("/")}>
               <ArrowLeft size={15}/> Voltar ao início
@@ -102,7 +102,7 @@ export default function TermosPage() {
               <div className="legal-hero-icon"><Shield size={20} color="#fff"/></div>
               <div>
                 <p className="legal-hero-title">Termos de Serviço</p>
-                <p className="legal-hero-sub">Última actualização: 2026 · Serviapp Angola · 8 secções</p>
+                <p className="legal-hero-sub">Última actualização: 2026 · Mestroo Angola · 8 secções</p>
               </div>
             </div>
 
@@ -132,14 +132,14 @@ export default function TermosPage() {
                 <p className="legal-cta-title">Ainda tens dúvidas?</p>
                 <p className="legal-cta-sub">A nossa equipa de suporte está disponível para esclarecer qualquer questão sobre estes termos.</p>
               </div>
-              <a className="legal-cta-btn" href="mailto:suporte@serviapp.ao">Falar com o suporte <ArrowRight size={15}/></a>
+              <a className="legal-cta-btn" href="mailto:suporte@mestroo.ao">Falar com o suporte <ArrowRight size={15}/></a>
             </div>
           </div>
         </main>
 
         <footer className="legal-footer">
           <div className="legal-footer-inner">
-            <p>© 2026 Serviapp. Todos os direitos reservados.</p>
+            <p>© 2026 Mestroo. Todos os direitos reservados.</p>
             <div className="legal-footer-links">
               <a href="/">Início</a>
               <a href="/termos">Termos de uso</a>

@@ -28,7 +28,7 @@ function fDate(d: string) {
 // Esta página deixou de ser uma "Wallet" com saldo/depósito — nesse
 // modelo o dinheiro nunca fica guardado numa carteira do cliente, cada
 // serviço tem a sua própria transferência bancária directa para a conta
-// da ServiApp. Esta página passa a mostrar o HISTÓRICO de pagamentos que
+// da Mestroo. Esta página passa a mostrar o HISTÓRICO de pagamentos que
 // o cliente já fez, ligados a cada serviço, sem nenhum saldo fictício.
 export default function ClientPaymentsHistoryPage() {
   const router = useRouter();

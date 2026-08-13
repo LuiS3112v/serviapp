@@ -46,7 +46,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             <Zap size={20} color="white"/>
           </div>
           <span style={{ fontSize:20, fontWeight:700, color:"#0F172A" }}>
-            Servi<span style={{ color:"#2563EB" }}>app</span>
+            Mestroo
           </span>
         </div>
         {onClose && (

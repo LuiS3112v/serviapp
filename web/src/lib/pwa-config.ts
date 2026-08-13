@@ -11,10 +11,10 @@
 
 export const PWA_CONFIG = {
   /** Nome completo da aplicação (usado no manifest e no apple-web-app-title) */
-  name: "Serviapp",
+  name: "Mestroo",
 
   /** Nome curto — usado como label do ícone no ecrã inicial (máx. ~12 caracteres) */
-  shortName: "Serviapp",
+  shortName: "Mestroo",
 
   /** Descrição curta usada no manifest */
   description:

@@ -134,7 +134,7 @@ export default function ProviderServiceDetailPage() {
       setPriceIn(String(s.budget ?? ""));
 
       // Carrega o estado do pagamento (sem dados bancários — o prestador
-      // nunca vê a conta da ServiApp nem a sua própria seria mostrada
+      // nunca vê a conta da Mestroo nem a sua própria seria mostrada
       // aqui, isso fica só na área do admin).
       const existingPayment = await servicesDetailApi.getPayment(id).catch(() => null);
       if (existingPayment) {

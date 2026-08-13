@@ -291,7 +291,7 @@ export default function ProviderSettingsPage() {
           </button>
         </div>
 
-        <p style={{fontSize:12,color:"#cbd5e1",textAlign:"center"}}>Serviapp v1.0.0 · Angola</p>
+        <p style={{fontSize:12,color:"#cbd5e1",textAlign:"center"}}>Mestroo v1.0.0 · Angola</p>
       </div>
     </>
   );
