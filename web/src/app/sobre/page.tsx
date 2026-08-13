@@ -244,7 +244,7 @@ export default function SobrePage() {
           <div className="lp-header-inner">
             <div className="lp-logo" onClick={goHome}>
               <div className="lp-logo-mark"><Zap size={19} color="#fff" /></div>
-              <span className="lp-logo-text">Servi<span style={{ color: LOGO_ACCENT }}>app</span></span>
+              <span className="lp-logo-text">Mestr<span style={{ color: LOGO_ACCENT }}>oo</span></span>
             </div>
             <nav className="lp-nav">
               <a href="/#como-funciona">Como funciona</a>
@@ -493,7 +493,7 @@ export default function SobrePage() {
               <div>
                 <div className="lp-logo" style={{ marginBottom: 14 }} onClick={goHome}>
                   <div className="lp-logo-mark"><Zap size={17} color="#fff" /></div>
-                  <span className="lp-logo-text" style={{ color: "#fff" }}>Servi<span style={{ color: LOGO_ACCENT }}>app</span></span>
+                  <span className="lp-logo-text" style={{ color: "#fff" }}>Mestr<span style={{ color: LOGO_ACCENT }}>oo</span></span>
                 </div>
                 <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6, maxWidth: 260 }}>A plataforma que liga clientes a prestadores de serviços de confiança.</p>
                 <div className="lp-footer-social">

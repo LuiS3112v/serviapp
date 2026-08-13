@@ -11,7 +11,7 @@ const LOGO_ACCENT = "#7C6FE0";
 
 const sections = [
   { icon: CheckCircle2, title: "1. Aceitação dos Termos", text: "Ao aceder e utilizar a plataforma Mestroo, concordas com estes Termos de Serviço. Se não concordares, não deves utilizar a plataforma." },
-  { icon: Info, title: "2. Descrição do Serviço", text: "A Mestroo é uma plataforma digital que facilita a ligação entre clientes e prestadores de serviços em Angola. Não somos prestadores de serviços — somos um intermediário digital." },
+  { icon: Info, title: "2. Descrição do Serviço", text: "A Mestroo é uma plataforma digital que facilita a ligação entre clientes e prestadores de serviços em Angola. Não somos prestadores de serviços somos um intermediário digital." },
   { icon: UserCircle, title: "3. Registo e Conta", text: "Para utilizar a plataforma deves criar uma conta com informações verdadeiras. És responsável pela confidencialidade da tua senha e por todas as actividades realizadas na tua conta." },
   { icon: Wallet, title: "4. Pagamentos e Escrow", text: "Todos os pagamentos digitais são processados através do nosso sistema de escrow. O valor fica retido até ambas as partes confirmarem a conclusão do serviço." },
   { icon: Percent, title: "5. Comissões", text: "A Mestroo cobra uma comissão sobre cada transacção processada pela plataforma. A percentagem varia entre 10% e 20% consoante a categoria e região." },
@@ -88,7 +88,7 @@ export default function TermosPage() {
           <div className="legal-topbar-inner">
             <div className="legal-logo" onClick={() => router.push("/")}>
               <div className="legal-logo-mark"><Zap size={17} color="#fff"/></div>
-              <span className="legal-logo-text">Mestroo<span style={{ color: LOGO_ACCENT }}>app</span></span>
+              <span className="legal-logo-text">Mestr<span style={{ color: LOGO_ACCENT }}>oo</span></span>
             </div>
             <button className="legal-topbar-back" onClick={() => router.push("/")}>
               <ArrowLeft size={15}/> Voltar ao início

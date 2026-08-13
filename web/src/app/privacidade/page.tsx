@@ -87,7 +87,7 @@ export default function PrivacidadePage() {
           <div className="legal-topbar-inner">
             <div className="legal-logo" onClick={() => router.push("/")}>
               <div className="legal-logo-mark"><Zap size={17} color="#fff"/></div>
-              <span className="legal-logo-text">Servi<span style={{ color: LOGO_ACCENT }}>app</span></span>
+              <span className="legal-logo-text">Mestr<span style={{ color: LOGO_ACCENT }}>oo</span></span>
             </div>
             <button className="legal-topbar-back" onClick={() => router.push("/")}>
               <ArrowLeft size={15}/> Voltar ao início
