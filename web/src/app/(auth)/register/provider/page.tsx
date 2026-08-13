@@ -170,7 +170,7 @@ export default function RegisterProviderPage() {
             <button
               type="button"
               className="auth-back"
-              onClick={() => step === 1 ? router.back() : setStep(s => s - 1)}
+              onClick={() => step === 1 ? router.push("/") : setStep(s => s - 1)}
             >
               <ArrowLeft size={15} /> {step === 1 ? "Voltar" : "Passo anterior"}
             </button>
