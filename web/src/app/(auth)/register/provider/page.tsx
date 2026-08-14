@@ -170,7 +170,22 @@ export default function RegisterProviderPage() {
             <button
               type="button"
               className="auth-back"
-              onClick={() => step === 1 ? router.push("/") : setStep(s => s - 1)}
+              onClick={() => {
+                if (step === 1) {
+                  // FIX (bug "Voltar na Step 1"): se a conta já foi criada
+                  // (o utilizador avançou até ao Passo 3+ e recuou até aqui),
+                  // limpa a sessão local antes de sair — tal como o handler
+                  // de "Entrar" já faz — para não deixar o utilizador
+                  // autenticado sem saber. A conta no backend continua a
+                  // existir (não é apagada), mas a sessão local é removida.
+                  if (accountCreated) {
+                    clearSession();
+                  }
+                  router.push("/");
+                } else {
+                  setStep(s => s - 1);
+                }
+              }}
             >
               <ArrowLeft size={15} /> {step === 1 ? "Voltar" : "Passo anterior"}
             </button>
