@@ -19,9 +19,32 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "Mestroo — O serviço certo, já.",
+  metadataBase: new URL("https://mestroo-two.vercel.app"),
+  title: {
+    default: "Mestroo — O serviço certo, já.",
+    template: "%s | Mestroo",
+  },
   description:
-    "Plataforma que liga clientes a prestadores de serviços verificados em Angola.",
+    "Plataforma que liga clientes a prestadores de serviços verificados em Luanda, Angola. Eletricista, canalizador, limpeza, jardinagem e mais.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: "website",
+    locale: "pt_AO",
+    url: "https://mestroo-two.vercel.app",
+    siteName: "Mestroo",
+    title: "Mestroo — O serviço certo, já.",
+    description:
+      "Plataforma que liga clientes a prestadores de serviços verificados em Luanda, Angola.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mestroo — O serviço certo, já.",
+    description:
+      "Plataforma que liga clientes a prestadores de serviços verificados em Luanda, Angola.",
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
