@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Source_Serif_4 } from "next/font/google";
+import { Manrope, Source_Serif_4 } from "next/font/google";
 import { PWA_CONFIG } from "@/lib/pwa-config";
 import "./globals.css";
 
-const archivo = Archivo({
+const manrope = Manrope({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-dm-sans",
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const sourceSerif = Source_Serif_4({
@@ -71,7 +71,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt" className={`${archivo.variable} ${sourceSerif.variable}`}>
+    <html lang="pt" className={`${manrope.variable} ${sourceSerif.variable}`}>
       <body>{children}</body>
     </html>
   );

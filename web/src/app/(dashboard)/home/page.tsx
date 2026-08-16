@@ -65,7 +65,7 @@ const CATS = [
 const STEPS = [
   { Icon: Search,        title: "Pesquisa",                    desc: "Encontra prestadores verificados por categoria, nome ou localização no mapa." },
   { Icon: FileText,      title: "Serviço personalizado",       desc: "Descreves o serviço em detalhe, defines o orçamento e envias o pedido a um prestador específico." },
-  { Icon: Zap,           title: "Serviço rápido",               desc: "Escolhes categoria e morada — vários prestadores da área enviam propostas de preço." },
+  { Icon: Zap,           title: "Serviço rápido",               desc: "Escolhes categoria e morada vários prestadores da área enviam propostas de preço." },
   { Icon: Shield,        title: "Combina e paga em segurança",  desc: "Acorda o preço pelo chat, paga por transferência e o dinheiro fica protegido até confirmares." },
   { Icon: Navigation,    title: "Acompanha em tempo real",      desc: "Vê o prestador a chegar no mapa, com distância e tempo estimado." },
   { Icon: KeyRound,      title: "Confirma com PIN",             desc: "No local, dás um código único ao prestador para confirmar o início do serviço." },
