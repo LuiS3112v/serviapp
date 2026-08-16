@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Source_Serif_4 } from "next/font/google";
+import { Archivo, Source_Serif_4 } from "next/font/google";
 import { PWA_CONFIG } from "@/lib/pwa-config";
 import "./globals.css";
 
-const dmSans = DM_Sans({
+const archivo = Archivo({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-dm-sans",
@@ -48,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt" className={`${dmSans.variable} ${sourceSerif.variable}`}>
+    <html lang="pt" className={`${archivo.variable} ${sourceSerif.variable}`}>
       <body>{children}</body>
     </html>
   );
