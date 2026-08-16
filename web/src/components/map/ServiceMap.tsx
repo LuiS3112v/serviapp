@@ -61,6 +61,25 @@ const NO_LOCATION_TIMEOUT_MS = 15000;
 // alarme cedo demais.
 const STALE_THRESHOLD_MS = 60000;
 
+// Margem (em pixels) deixada entre os pontos extremos enquadrados por
+// fitBounds e a borda do container do mapa, para que os marcadores nas
+// pontas não fiquem colados/cortados na margem visível. Valor par em
+// todos os lados — não precisa de tratamento especial por termos o
+// FloatingSearchBar/filtros como children absolutos por cima do mapa,
+// não dentro da área de bounds em si.
+const FIT_BOUNDS_PADDING: [number, number] = [56, 56];
+
+// Zoom máximo permitido quando fitBounds está a enquadrar poucos
+// pontos muito próximos entre si (ex: cliente + 1 prestador a 200m).
+// Sem este limite, o Leaflet aproximaria ao máximo possível, o que
+// deixa de fazer sentido para descoberta de prestadores — perderíamos
+// contexto de rua/bairro à volta. mapProviderConfig.discoveryZoom já é
+// o zoom usado noutros pontos (ex: handleRecenter) como "zoom razoável
+// de bairro", por isso reaproveitamos o mesmo valor aqui como teto.
+function getFitBoundsMaxZoom(): number {
+  return mapProviderConfig.discoveryZoom;
+}
+
 // Fases visíveis ao cliente durante o Active Service Mode. Substituem
 // o antigo par de booleanos (providerSnapshot presente/ausente,
 // providerStale true/false), que não conseguia distinguir "ainda não
@@ -154,6 +173,15 @@ export function ServiceMap({
   const staleCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const noLocationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRouteOriginRef = useRef<MapCoordinates | null>(null);
+
+  // Evita repetir fitBounds para o mesmo conjunto de pontos — guarda
+  // uma assinatura simples (ids + cliente) do último enquadramento
+  // aplicado. Sem isto, qualquer re-render que produza um novo array
+  // de discoveryMarkers com o mesmo conteúdo (ex: poll de 25s que
+  // devolve os mesmos prestadores) faria o mapa "saltar" de volta ao
+  // enquadramento automático mesmo que o utilizador tivesse acabado de
+  // fazer zoom/pan manualmente — o que seria intrusivo.
+  const lastFitBoundsSignatureRef = useRef<string | null>(null);
 
   const initialCenter = clientCoordinates ?? defaultMapCenter;
 
@@ -411,6 +439,66 @@ export function ServiceMap({
     () => buildMarkerCollection(discoveryProviders),
     [discoveryProviders],
   );
+
+  // ITEM 4 — enquadra automaticamente o mapa (cliente + todos os
+  // prestadores encontrados) sempre que a lista de discoveryMarkers
+  // muda, em vez de manter sempre o mesmo defaultZoom fixo centrado no
+  // cliente. Só corre em modo discovery — em active-service o
+  // enquadramento continua a ser o comportamento existente (centrado no
+  // cliente, com recenter manual via handleRecenter).
+  //
+  // Guardas aplicadas:
+  // - Precisa de leafletReady e do mapRef já montado (whenReady).
+  // - Se não há clientCoordinates nem markers, não há nada para
+  //   enquadrar — mantém o comportamento anterior (defaultMapCenter).
+  // - Assinatura (ids ordenados + posição do cliente arredondada)
+  //   evita repetir fitBounds para o mesmo conjunto de pontos em
+  //   re-renders que não mudam realmente os dados (ex: poll de 25s
+  //   devolvendo os mesmos prestadores) — não força o mapa a "saltar"
+  //   de volta ao enquadramento automático depois de o utilizador ter
+  //   feito zoom/pan manual.
+  // - maxZoom limitado via getFitBoundsMaxZoom(), para não aproximar
+  //   demasiado quando há poucos pontos muito próximos.
+  useEffect(() => {
+    if (mode !== 'discovery' || !leafletReady || !mapRef.current) return;
+
+    const points: [number, number][] = [];
+
+    if (clientCoordinates && isValidCoordinate(clientCoordinates)) {
+      points.push([clientCoordinates.latitude, clientCoordinates.longitude]);
+    }
+
+    discoveryMarkers.forEach(({ coordinates }) => {
+      if (isValidCoordinate(coordinates)) {
+        points.push([coordinates.latitude, coordinates.longitude]);
+      }
+    });
+
+    if (points.length === 0) return;
+
+    const signature =
+      discoveryMarkers.map((m) => m.id).sort().join(',') +
+      '|' +
+      (clientCoordinates
+        ? `${clientCoordinates.latitude.toFixed(3)},${clientCoordinates.longitude.toFixed(3)}`
+        : 'none');
+
+    if (lastFitBoundsSignatureRef.current === signature) return;
+    lastFitBoundsSignatureRef.current = signature;
+
+    if (points.length === 1) {
+      // Um único ponto (ex: só o cliente, sem prestadores ainda
+      // carregados): fitBounds não faz sentido para um ponto isolado,
+      // usa-se setView com o zoom de descoberta habitual.
+      mapRef.current.setView(points[0], mapProviderConfig.discoveryZoom);
+      return;
+    }
+
+    mapRef.current.fitBounds(points, {
+      padding: FIT_BOUNDS_PADDING,
+      maxZoom: getFitBoundsMaxZoom(),
+    });
+  }, [mode, leafletReady, clientCoordinates, discoveryMarkers]);
 
   const handleRecenter = useCallback(() => {
     if (!mapRef.current) return;

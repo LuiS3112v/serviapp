@@ -26,6 +26,24 @@ const CATEGORIES = [
 
 const RADIUS_OPTIONS = [2, 5, 10, 20];
 
+// Intervalo de refresh do GPS do cliente enquanto um serviço está
+// ativo (prestador a caminho / em execução). Não usamos watchPosition
+// contínuo aqui: um refresh pontual a cada 30s dá posição fresca o
+// suficiente para a rota/ETA no ServiceMap sem manter o sensor de GPS
+// ligado permanentemente — trade-off deliberado a favor da bateria do
+// cliente. No modo discovery este timer não corre (ver useEffect mais
+// abaixo, condicionado a activeService != null).
+const ACTIVE_SERVICE_LOCATION_REFRESH_MS = 30000;
+
+// Distância mínima (em km) que a posição do cliente precisa de se
+// afastar da última posição usada numa pesquisa de descoberta, para
+// justificar uma nova chamada a fetchNearbyProviders. 0.05km = 50m
+// absorve o ruído normal do GPS (variações de poucos metros entre
+// leituras) sem deixar de reagir a uma mudança real de local. Mesma
+// ideia que o ServiceMap.tsx já aplica com MOVEMENT_THRESHOLD_KM para
+// decidir quando recalcular a rota do prestador.
+const DISCOVERY_MOVEMENT_THRESHOLD_KM = 0.05;
+
 // Esta página tem 3 pontos de retorno diferentes (loading / serviço
 // activo / descoberta), por isso as classes .hw/.hm/.hi — que definem
 // a estrutura sidebar+navbar+conteúdo — ficam aqui como uma string
@@ -73,6 +91,29 @@ function getActiveServicePhaseLabel(status: string): string {
   return 'Prestador a caminho';
 }
 
+// Distância aproximada (Haversine) entre duas coordenadas, em km.
+// Usada só para decidir se uma nova posição do cliente se afastou o
+// suficiente da última pesquisa para justificar recarregar prestadores
+// (ver DISCOVERY_MOVEMENT_THRESHOLD_KM). Não é usada para nada visível
+// ao utilizador — o backend continua a ser a fonte da distância real
+// mostrada nos cards de prestador.
+function haversineKm(a: MapCoordinates, b: MapCoordinates): number {
+  const earthRadiusKm = 6371;
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+
+  const dLat = toRadians(b.latitude - a.latitude);
+  const dLon = toRadians(b.longitude - a.longitude);
+
+  const sinDLat = Math.sin(dLat / 2) ** 2;
+  const sinDLon = Math.sin(dLon / 2) ** 2;
+
+  const h =
+    sinDLat +
+    Math.cos(toRadians(a.latitude)) * Math.cos(toRadians(b.latitude)) * sinDLon;
+
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
 export default function MapPage() {
   const router = useRouter();
 
@@ -102,6 +143,26 @@ export default function MapPage() {
 
   const activePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const discoveryPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeServiceLocationRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ITEM 1 — evita setState em componente desmontado. Os callbacks
+  // assíncronos de getCurrentPosition podem resolver depois de o
+  // utilizador já ter saído da página (navegação rápida, GPS lento).
+  // Todos os callbacks de geolocalização verificam esta ref antes de
+  // qualquer setState.
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // ITEM 2 — guarda a última posição do cliente efetivamente usada
+  // numa pesquisa de descoberta, para o useEffect de loadDiscoveryProviders
+  // poder comparar e decidir se uma nova leitura de GPS representa
+  // movimento real ou apenas ruído do sensor.
+  const lastDiscoverySearchOriginRef = useRef<MapCoordinates | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -139,7 +200,7 @@ export default function MapPage() {
 
   const requestClientLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      setLocationState('unsupported');
+      if (isMountedRef.current) setLocationState('unsupported');
       return;
     }
 
@@ -147,6 +208,7 @@ export default function MapPage() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (!isMountedRef.current) return;
         setClientCoordinates({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -154,11 +216,106 @@ export default function MapPage() {
         setLocationState('granted');
       },
       () => {
+        if (!isMountedRef.current) return;
         setLocationState('denied');
       },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
     );
   }, []);
+
+  // Refresh silencioso de localização — usado pelo timer do modo
+  // active-service abaixo. Distinto de requestClientLocation: não mexe
+  // em locationState em caso de sucesso (não queremos "A obter
+  // localização" a piscar no botão a cada 30s), e maximumAge mais baixo
+  // garante uma leitura mais fresca do que a cache de 60s usada no
+  // pedido inicial.
+  //
+  // ITEM 3 — se o erro for especificamente PERMISSION_DENIED (código 1),
+  // já não faz sentido continuar a tentar de 30 em 30s: a permissão foi
+  // revogada a meio do serviço ativo. Nesse caso paramos o interval (via
+  // callback fornecido pelo useEffect que chama esta função) e refletimos
+  // isso em locationState, para a mensagem "Não foi possível obter a tua
+  // localização" já existente na UI passar a aparecer também neste
+  // cenário. Outros erros (timeout, posição indisponível) continuam
+  // silenciosos — são normalmente temporários e não deve interromper o
+  // refresh periódico.
+  const refreshClientLocationSilently = useCallback((onPermissionDenied: () => void) => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (!isMountedRef.current) return;
+        setClientCoordinates({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      (error) => {
+        if (!isMountedRef.current) return;
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationState('denied');
+          onPermissionDenied();
+        }
+        // Outros códigos de erro (TIMEOUT, POSITION_UNAVAILABLE):
+        // silencioso de propósito, mantém a última posição conhecida.
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 15000 },
+    );
+  }, []);
+
+  // CORRIGIDO: pede a localização automaticamente assim que a página
+  // monta, em vez de depender exclusivamente do clique manual no botão
+  // "Ativar localização". Sem isto, um utilizador que já tinha concedido
+  // permissão numa sessão anterior ficava com o mapa preso à última
+  // coordenada obtida manualmente, mesmo tendo mudado fisicamente de
+  // local — o botão de ativação desaparece assim que locationState
+  // passa a 'granted', pelo que não havia nenhum outro gatilho para
+  // pedir uma leitura fresca do GPS. O browser decide sozinho se mostra
+  // o prompt de permissão (já concedida = sem prompt, ainda não pedida
+  // = mostra o prompt, bloqueada = erro imediato no callback), por isso
+  // isto não introduz nenhum pedido de permissão duplicado ou inesperado.
+  useEffect(() => {
+    requestClientLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refresh periódico da localização do cliente, só enquanto existe um
+  // serviço ativo (prestador a caminho / em execução). Escolhido em vez
+  // de watchPosition contínuo por consumir bastante menos bateria —
+  // watchPosition mantém o sensor de GPS ligado permanentemente, um
+  // refresh a cada 30s é suficiente para manter a rota/ETA do
+  // ServiceMap razoavelmente atualizados sem esse custo. Só corre no
+  // modo active-service porque é o único onde clientCoordinates
+  // desatualizado tem impacto direto e contínuo (cálculo de rota/ETA
+  // no ServiceMap, via routingProvider). No modo discovery mantém-se o
+  // comportamento anterior: 1 leitura ao entrar + botão manual.
+  useEffect(() => {
+    if (!activeService) {
+      if (activeServiceLocationRefreshRef.current) {
+        clearInterval(activeServiceLocationRefreshRef.current);
+        activeServiceLocationRefreshRef.current = null;
+      }
+      return;
+    }
+
+    activeServiceLocationRefreshRef.current = setInterval(() => {
+      refreshClientLocationSilently(() => {
+        // Permissão revogada a meio do serviço: já não vale a pena
+        // continuar a tentar a cada 30s até o serviço terminar.
+        if (activeServiceLocationRefreshRef.current) {
+          clearInterval(activeServiceLocationRefreshRef.current);
+          activeServiceLocationRefreshRef.current = null;
+        }
+      });
+    }, ACTIVE_SERVICE_LOCATION_REFRESH_MS);
+
+    return () => {
+      if (activeServiceLocationRefreshRef.current) {
+        clearInterval(activeServiceLocationRefreshRef.current);
+        activeServiceLocationRefreshRef.current = null;
+      }
+    };
+  }, [activeService?.serviceId, refreshClientLocationSilently]);
 
   const loadDiscoveryProviders = useCallback(async () => {
     if (activeService) return;
@@ -180,25 +337,48 @@ export default function MapPage() {
           status: status !== 'all' ? status : undefined,
           availableOnly,
         });
+        lastDiscoverySearchOriginRef.current = searchOrigin;
       } else {
         let raw = await fetchProviders(category !== 'Todos' ? category : undefined);
         if (status === 'online') raw = raw.filter((p) => p.isOnline);
         if (status === 'offline') raw = raw.filter((p) => !p.isOnline);
         if (availableOnly) raw = raw.filter((p) => p.isOnline);
         data = raw.filter((p) => p.latitude != null && p.longitude != null);
+        lastDiscoverySearchOriginRef.current = null;
       }
 
+      if (!isMountedRef.current) return;
       setProviders(data);
       setShowSearchThisArea(false);
     } catch (error: any) {
+      if (!isMountedRef.current) return;
       setProvidersError(error.message ?? 'Erro ao carregar prestadores.');
     } finally {
-      setLoadingProviders(false);
+      if (isMountedRef.current) setLoadingProviders(false);
     }
   }, [activeService, category, status, availableOnly, radiusKm, clientCoordinates, pendingMapCenter]);
 
+  // ITEM 2 — só recarrega prestadores por causa de uma mudança de
+  // clientCoordinates se essa mudança representar movimento real
+  // (> DISCOVERY_MOVEMENT_THRESHOLD_KM desde a última pesquisa feita).
+  // category/status/availableOnly/radiusKm continuam a disparar recarga
+  // sempre, como antes — só a posição GPS passou a ter este filtro,
+  // porque é a única destas dependências sujeita a ruído do sensor
+  // entre leituras sucessivas.
   useEffect(() => {
-    loadDiscoveryProviders();
+    if (!clientCoordinates) {
+      loadDiscoveryProviders();
+      return;
+    }
+
+    const lastOrigin = lastDiscoverySearchOriginRef.current;
+    const movedSignificantly =
+      !lastOrigin || haversineKm(lastOrigin, clientCoordinates) > DISCOVERY_MOVEMENT_THRESHOLD_KM;
+
+    if (movedSignificantly) {
+      loadDiscoveryProviders();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, status, availableOnly, radiusKm, clientCoordinates]);
 
   useEffect(() => {
