@@ -655,7 +655,7 @@ function IOSMock({ step, browser }: { step: number; browser: string }) {
     }
     return (
       <div className="lp-install-mock-page center">
-        <div className="lp-install-mock-appicon">S</div>
+        <div className="lp-install-mock-appicon">M</div>
         <p className="lp-install-mock-applabel">Mestroo</p>
         <p className="lp-install-mock-donetext">Adicionado ao ecrã principal</p>
       </div>
@@ -703,7 +703,7 @@ function IOSMock({ step, browser }: { step: number; browser: string }) {
   }
   return (
     <div className="lp-install-mock-page center">
-      <div className="lp-install-mock-appicon">S</div>
+      <div className="lp-install-mock-appicon">M</div>
       <p className="lp-install-mock-applabel">Mestroo</p>
       <p className="lp-install-mock-donetext">Adicionado ao ecrã principal</p>
     </div>
@@ -748,7 +748,7 @@ function AndroidMock({ step, browser }: { step: number; browser: string }) {
   }
   return (
     <div className="lp-install-mock-page center">
-      <div className="lp-install-mock-appicon">S</div>
+      <div className="lp-install-mock-appicon">M</div>
       <p className="lp-install-mock-applabel">Mestroo</p>
       <p className="lp-install-mock-donetext">
         {browser === "firefox" ? "Atalho criado" : "Aplicação instalada"}
