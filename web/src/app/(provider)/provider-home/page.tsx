@@ -55,14 +55,14 @@ const STEPS = [
   { Icon: Zap,         title: "Recebe o primeiro pedido",     desc: "Quando o perfil estiver activo, os clientes vão encontrar-te.",        action: "Ver pedidos",     href: "/provider/services", tone: "neutral" },
   { Icon: MapPin,      title: "Activa a tua localização",     desc: "Liga a partilha de localização no teu painel para apareceres no mapa e receberes pedidos perto de ti.", tone: "neutral" },
   { Icon: Handshake,   title: "Aceita e negoceia",            desc: "Analisa o pedido, propõe um preço se quiseres, e aceita para começar.", tone: "neutral" },
-  { Icon: KeyRound,    title: "Valida o PIN no local",        desc: "O cliente dá-te um código quando chegares — introduz para iniciares o serviço com segurança.", tone: "neutral" },
+  { Icon: KeyRound,    title: "Valida o PIN no local",        desc: "O cliente dá-te um código quando chegares introduz para iniciares o serviço com segurança.", tone: "neutral" },
   { Icon: Wallet,      title: "Recebe o pagamento protegido", desc: "O valor fica reservado desde o início; depois de confirmado, a comissão é descontada automaticamente e transferido para ti.", tone: "green" },
   { Icon: TrendingUp,  title: "Constrói a tua reputação",     desc: "Cada serviço concluído soma avaliações e aumenta a tua visibilidade nas pesquisas.", tone: "neutral" },
 ];
 
 const FEATS = [
   { Icon: Wallet,     title: "Wallet integrada",   desc: "Recebe pagamentos directamente na tua wallet. Levanta quando quiseres." },
-  { Icon: Shield,     title: "Pagamento garantido", desc: "O escrow protege-te — o valor é retido até confirmares a conclusão." },
+  { Icon: Shield,     title: "Pagamento garantido", desc: "O escrow protege-te o valor é retido até confirmares a conclusão." },
   { Icon: Users,      title: "Gestão de equipa",    desc: "Tens uma empresa? Adiciona funcionários e distribui os serviços." },
   { Icon: TrendingUp, title: "Sistema de ranking",  desc: "Quanto mais serviços via app, maior a tua visibilidade e ranking." },
 ];
