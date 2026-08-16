@@ -145,10 +145,10 @@ export default function MapPage() {
   const discoveryPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeServiceLocationRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ITEM 1 — evita setState em componente desmontado. Os callbacks
-  // assíncronos de getCurrentPosition podem resolver depois de o
-  // utilizador já ter saído da página (navegação rápida, GPS lento).
-  // Todos os callbacks de geolocalização verificam esta ref antes de
+  // Evita setState em componente desmontado. Os callbacks assíncronos
+  // de getCurrentPosition e das chamadas à API podem resolver depois
+  // de o utilizador já ter saído da página (navegação rápida, GPS
+  // lento). Todos os callbacks assíncronos verificam esta ref antes de
   // qualquer setState.
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -158,11 +158,20 @@ export default function MapPage() {
     };
   }, []);
 
-  // ITEM 2 — guarda a última posição do cliente efetivamente usada
-  // numa pesquisa de descoberta, para o useEffect de loadDiscoveryProviders
+  // Guarda a última posição do cliente efetivamente usada numa
+  // pesquisa de descoberta, para o useEffect de loadDiscoveryProviders
   // poder comparar e decidir se uma nova leitura de GPS representa
   // movimento real ou apenas ruído do sensor.
   const lastDiscoverySearchOriginRef = useRef<MapCoordinates | null>(null);
+
+  // NOVO — guarda o AbortController do pedido de descoberta em curso.
+  // Sempre que loadDiscoveryProviders é chamada de novo (troca rápida
+  // de categoria/filtro), o pedido anterior é abortado antes do novo
+  // começar. Sem isto, se a resposta de um filtro antigo chegasse
+  // depois da resposta de um filtro mais recente, o resultado errado
+  // (do filtro antigo) sobrescrevia o resultado correto no ecrã — uma
+  // race condition real ao trocar filtros rapidamente.
+  const discoveryRequestControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -230,8 +239,8 @@ export default function MapPage() {
   // garante uma leitura mais fresca do que a cache de 60s usada no
   // pedido inicial.
   //
-  // ITEM 3 — se o erro for especificamente PERMISSION_DENIED (código 1),
-  // já não faz sentido continuar a tentar de 30 em 30s: a permissão foi
+  // Se o erro for especificamente PERMISSION_DENIED (código 1), já não
+  // faz sentido continuar a tentar de 30 em 30s: a permissão foi
   // revogada a meio do serviço ativo. Nesse caso paramos o interval (via
   // callback fornecido pelo useEffect que chama esta função) e refletimos
   // isso em locationState, para a mensagem "Não foi possível obter a tua
@@ -263,32 +272,21 @@ export default function MapPage() {
     );
   }, []);
 
-  // CORRIGIDO: pede a localização automaticamente assim que a página
-  // monta, em vez de depender exclusivamente do clique manual no botão
-  // "Ativar localização". Sem isto, um utilizador que já tinha concedido
-  // permissão numa sessão anterior ficava com o mapa preso à última
-  // coordenada obtida manualmente, mesmo tendo mudado fisicamente de
-  // local — o botão de ativação desaparece assim que locationState
-  // passa a 'granted', pelo que não havia nenhum outro gatilho para
-  // pedir uma leitura fresca do GPS. O browser decide sozinho se mostra
-  // o prompt de permissão (já concedida = sem prompt, ainda não pedida
-  // = mostra o prompt, bloqueada = erro imediato no callback), por isso
-  // isto não introduz nenhum pedido de permissão duplicado ou inesperado.
+  // Pede a localização automaticamente assim que a página monta, em
+  // vez de depender exclusivamente do clique manual no botão "Ativar
+  // localização". O browser decide sozinho se mostra o prompt de
+  // permissão (já concedida = sem prompt, ainda não pedida = mostra o
+  // prompt, bloqueada = erro imediato no callback).
   useEffect(() => {
     requestClientLocation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refresh periódico da localização do cliente, só enquanto existe um
-  // serviço ativo (prestador a caminho / em execução). Escolhido em vez
-  // de watchPosition contínuo por consumir bastante menos bateria —
-  // watchPosition mantém o sensor de GPS ligado permanentemente, um
-  // refresh a cada 30s é suficiente para manter a rota/ETA do
-  // ServiceMap razoavelmente atualizados sem esse custo. Só corre no
-  // modo active-service porque é o único onde clientCoordinates
-  // desatualizado tem impacto direto e contínuo (cálculo de rota/ETA
-  // no ServiceMap, via routingProvider). No modo discovery mantém-se o
-  // comportamento anterior: 1 leitura ao entrar + botão manual.
+  // serviço ativo (prestador a caminho / em execução). Um refresh a
+  // cada 30s é suficiente para manter a rota/ETA do ServiceMap
+  // razoavelmente atualizados sem o custo de bateria de um
+  // watchPosition contínuo.
   useEffect(() => {
     if (!activeService) {
       if (activeServiceLocationRefreshRef.current) {
@@ -300,8 +298,6 @@ export default function MapPage() {
 
     activeServiceLocationRefreshRef.current = setInterval(() => {
       refreshClientLocationSilently(() => {
-        // Permissão revogada a meio do serviço: já não vale a pena
-        // continuar a tentar a cada 30s até o serviço terminar.
         if (activeServiceLocationRefreshRef.current) {
           clearInterval(activeServiceLocationRefreshRef.current);
           activeServiceLocationRefreshRef.current = null;
@@ -317,8 +313,20 @@ export default function MapPage() {
     };
   }, [activeService?.serviceId, refreshClientLocationSilently]);
 
+  // NOVO — cada chamada aborta o pedido de descoberta anterior (se
+  // ainda estiver em curso) antes de iniciar um novo. Isto garante que,
+  // ao trocar rapidamente entre categorias/filtros, apenas a resposta
+  // do pedido mais recente pode atualizar `providers` — uma resposta
+  // antiga que chegue depois é sempre ignorada (AbortError), nunca
+  // sobrescreve um resultado mais novo.
   const loadDiscoveryProviders = useCallback(async () => {
     if (activeService) return;
+
+    if (discoveryRequestControllerRef.current) {
+      discoveryRequestControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    discoveryRequestControllerRef.current = controller;
 
     setLoadingProviders(true);
     setProvidersError(null);
@@ -336,10 +344,10 @@ export default function MapPage() {
           category: category !== 'Todos' ? category : undefined,
           status: status !== 'all' ? status : undefined,
           availableOnly,
-        });
+        }, controller.signal);
         lastDiscoverySearchOriginRef.current = searchOrigin;
       } else {
-        let raw = await fetchProviders(category !== 'Todos' ? category : undefined);
+        let raw = await fetchProviders(category !== 'Todos' ? category : undefined, controller.signal);
         if (status === 'online') raw = raw.filter((p) => p.isOnline);
         if (status === 'offline') raw = raw.filter((p) => !p.isOnline);
         if (availableOnly) raw = raw.filter((p) => p.isOnline);
@@ -347,24 +355,36 @@ export default function MapPage() {
         lastDiscoverySearchOriginRef.current = null;
       }
 
+      // Se este pedido foi entretanto abortado (um mais recente já
+      // começou), a chamada acima já teria rejeitado com AbortError e
+      // caído no catch — mas esta verificação extra cobre o caso raro
+      // de a resposta chegar no exato instante da troca de controller.
+      if (controller.signal.aborted) return;
       if (!isMountedRef.current) return;
+
       setProviders(data);
       setShowSearchThisArea(false);
     } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        // Pedido cancelado porque um mais recente já começou — não é
+        // um erro real, não deve aparecer ao utilizador.
+        return;
+      }
       if (!isMountedRef.current) return;
       setProvidersError(error.message ?? 'Erro ao carregar prestadores.');
     } finally {
-      if (isMountedRef.current) setLoadingProviders(false);
+      if (isMountedRef.current && discoveryRequestControllerRef.current === controller) {
+        setLoadingProviders(false);
+      }
     }
   }, [activeService, category, status, availableOnly, radiusKm, clientCoordinates, pendingMapCenter]);
 
-  // ITEM 2 — só recarrega prestadores por causa de uma mudança de
+  // Só recarrega prestadores por causa de uma mudança de
   // clientCoordinates se essa mudança representar movimento real
   // (> DISCOVERY_MOVEMENT_THRESHOLD_KM desde a última pesquisa feita).
   // category/status/availableOnly/radiusKm continuam a disparar recarga
-  // sempre, como antes — só a posição GPS passou a ter este filtro,
-  // porque é a única destas dependências sujeita a ruído do sensor
-  // entre leituras sucessivas.
+  // sempre — cada mudança de filtro/categoria é uma intenção explícita
+  // do utilizador e deve refletir imediatamente no mapa.
   useEffect(() => {
     if (!clientCoordinates) {
       loadDiscoveryProviders();
@@ -395,6 +415,17 @@ export default function MapPage() {
       if (discoveryPollRef.current) clearInterval(discoveryPollRef.current);
     };
   }, [activeService, loadDiscoveryProviders]);
+
+  // Limpa qualquer pedido de descoberta em curso ao desmontar a página,
+  // para não deixar um fetch pendente a tentar atualizar state depois
+  // do componente já ter saído.
+  useEffect(() => {
+    return () => {
+      if (discoveryRequestControllerRef.current) {
+        discoveryRequestControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const handleMapMoved = useCallback((center: MapCoordinates) => {
     setPendingMapCenter(center);

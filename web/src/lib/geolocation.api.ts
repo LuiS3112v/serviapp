@@ -1,5 +1,4 @@
 // src/lib/geolocation.api.ts
-// UPDATE existing file — adds sharing toggle support, keeps everything else intact
 
 import { api } from './api';
 
@@ -56,8 +55,12 @@ export async function updateLocationSharing(enabled: boolean): Promise<ProviderL
   return api.patch<ProviderLocation>('/geolocation/sharing', { enabled });
 }
 
+// `signal` opcional — permite ao chamador (map/page.tsx) cancelar um
+// pedido em curso quando um filtro/categoria muda antes da resposta
+// anterior chegar. Sem alteração de comportamento para quem não o passa.
 export async function fetchNearbyProviders(
   query: NearbyQuery,
+  signal?: AbortSignal,
 ): Promise<ProviderWithDistance[]> {
   const params = new URLSearchParams();
   params.set('latitude', String(query.latitude));
@@ -72,12 +75,12 @@ export async function fetchNearbyProviders(
   if (query.availableOnly) {
     params.set('availableOnly', 'true');
   }
-  return api.get<ProviderWithDistance[]>(`/geolocation/providers/nearby?${params}`);
+  return api.get<ProviderWithDistance[]>(`/geolocation/providers/nearby?${params}`, signal);
 }
 
-export async function fetchProviders(category?: string): Promise<ProviderLocation[]> {
+export async function fetchProviders(category?: string, signal?: AbortSignal): Promise<ProviderLocation[]> {
   const params = category && category !== 'Todos'
     ? `?category=${encodeURIComponent(category)}`
     : '';
-  return api.get<ProviderLocation[]>(`/users/providers${params}`);
+  return api.get<ProviderLocation[]>(`/users/providers${params}`, signal);
 }
