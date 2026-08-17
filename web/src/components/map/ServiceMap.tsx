@@ -236,6 +236,42 @@ export function ServiceMap({
     };
   }, [leafletReady]);
 
+  // NOVO — ResizeObserver sobre o próprio container do mapa.
+  // O listener de 'resize' da window acima cobre mudanças de tamanho
+  // da JANELA, mas numa PWA em modo standalone o container pode mudar
+  // de tamanho (ex: barra do browser a desaparecer, viewport a
+  // assentar no tamanho final) sem que a janela em si dispare um
+  // evento de resize. O ResizeObserver deteta diretamente mudanças no
+  // elemento onde o Leaflet está montado, cobrindo esse cenário.
+  // Um só observer por instância (guardado em ref, desligado no
+  // cleanup) evita observers duplicados ou fugas de memória.
+  useEffect(() => {
+    if (!leafletReady || !containerRef.current) return;
+
+    const el = containerRef.current;
+    let frame: number | null = null;
+
+    const observer = new ResizeObserver(() => {
+      // requestAnimationFrame evita chamar invalidateSize() múltiplas
+      // vezes em sequência quando o ResizeObserver dispara vários
+      // callbacks muito próximos (ex: durante uma transição de
+      // layout) — só a última medição de cada frame é aplicada.
+      if (frame != null) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+        }
+      });
+    });
+
+    observer.observe(el);
+
+    return () => {
+      if (frame != null) cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [leafletReady]);
+
   // Snapshot inicial via REST — corre em paralelo com a ligação
   // WebSocket, não em vez dela. Cobre exatamente o caso em que o
   // cliente entra na página antes do WebSocket ter tido oportunidade

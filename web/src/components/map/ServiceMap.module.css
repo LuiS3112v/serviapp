@@ -1,26 +1,12 @@
 .map-container {
   position: relative;
   width: 100%;
-  height: 480px;
+  height: 100%;
   min-height: 480px;
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid #1a2535;
   background-color: #131b27;
-}
-
-/* Mobile: o cartão do mapa deve acompanhar a altura real do seu
-   wrapper (que no mobile cresce mais do que 480px, porque .page/.hi
-   ocupam 100% da altura disponível do ecrã). Sem isto, sobrava sempre
-   uma faixa cinzenta abaixo do mapa — a diferença entre a altura fixa
-   de 480px e a altura real do wrapper. O "min-height:480px" da regra
-   base acima continua válido aqui (cascata), garantindo que o mapa
-   nunca fica mais baixo que 480px mesmo em ecrãs muito curtos.
-   Desktop (>1024px) não é afectado — mantém os 480px fixos de sempre. */
-@media (max-width: 1024px) {
-  .map-container {
-    height: 100%;
-  }
 }
 
 .leafletRoot {
@@ -182,10 +168,6 @@
   color: #EF9F27;
 }
 
-/* Distintivo visível junto ao status quando a rota exibida é o
-   fallback Haversine (linha reta) e não uma rota real do OSRM.
-   Reforça, no painel de texto, a mesma distinção que a Polyline já
-   faz visualmente no mapa (cor sólida vs tracejada). */
 .activeServiceEstimateBadge {
   display: inline-flex;
   align-items: center;
@@ -242,10 +224,6 @@
   animation: cardEnter 0.22s ease-out;
 }
 
-/* Linha de estado com ícone, usada na fase "reconnecting" do banner
-   de serviço ativo (ex: WifiOff + texto "Ligação perdida..."). Mantém
-   o ícone alinhado verticalmente com o texto sem quebrar o layout
-   existente do activeServiceStatusLabel. */
 .statusWithIcon {
   display: inline-flex;
   align-items: center;
