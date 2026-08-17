@@ -1,21 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Source_Serif_4 } from "next/font/google";
+import { Manrope } from "next/font/google";
 import { PWA_CONFIG } from "@/lib/pwa-config";
 import "./globals.css";
 
 const manrope = Manrope({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-dm-sans",
+  variable: "--font-manrope",
   weight: ["400", "500", "600", "700", "800"],
-});
-
-const sourceSerif = Source_Serif_4({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-serif",
-  weight: ["400", "600", "700"],
-  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -71,7 +63,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt" className={`${manrope.variable} ${sourceSerif.variable}`}>
+    <html lang="pt" className={manrope.variable}>
       <body>{children}</body>
     </html>
   );
