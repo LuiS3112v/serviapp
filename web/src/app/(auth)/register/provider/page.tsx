@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Upload, Loader2 } from "lucide-react";
-import { authApi, saveSession, getToken, clearSession } from "@/lib/auth.api";
+import { Suspense, useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Upload, Loader2, Sparkles } from "lucide-react";
+import { authApi, saveSession, getToken, clearSession, resolvePostGoogleAuthRoute } from "@/lib/auth.api";
 import { refreshUserInStorage } from "@/lib/user.api";
+import { renderGoogleButton } from "@/lib/google-auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
@@ -14,40 +15,100 @@ const categories = [
   "Automóvel", "Pintura", "Construção", "Segurança",
 ];
 
+// Wrapper com Suspense — necessário no Next.js 16 sempre que a página
+// usa useSearchParams() (mesmo padrão já aplicado em login/page.tsx).
 export default function RegisterProviderPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterProviderPageContent />
+    </Suspense>
+  );
+}
+
+function RegisterProviderPageContent() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const searchParams = useSearchParams();
+
+  // NOVO — se a conta já foi criada via Google (choose-role redireciona
+  // para cá com ?source=google&step=2), a conta já existe: não há
+  // Passo 1 (dados de acesso) a preencher, porque não há password.
+  const isGoogleFlow = searchParams.get("source") === "google";
+  const requestedStep = Number(searchParams.get("step"));
+  const firstStep = isGoogleFlow ? 2 : 1;
+  const initialStep = isGoogleFlow && requestedStep >= 2 && requestedStep <= 4
+    ? requestedStep
+    : firstStep;
+
+  const [step, setStep] = useState(initialStep);
   const [show, setShow] = useState(false);
   const [selectedCat, setSelectedCat] = useState("");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", bio: "" });
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const googleBusyRef = useRef(false);
 
-  // FIX (bug #6): a conta é criada em handleContinueFromStep2. Se o
-  // utilizador recuar do Passo 3 para o Passo 2 (para mudar categoria/bio,
-  // por exemplo) e avançar outra vez, sem este estado o código tentava
-  // chamar authApi.register() uma segunda vez com o mesmo email — o
-  // backend rejeita por email duplicado e o utilizador só via um erro
-  // genérico sem perceber que a conta já existia. Agora, assim que a
-  // conta é criada com sucesso uma vez, novos avanços do Passo 2 para o
-  // Passo 3 só re-validam os campos e navegam, sem repetir o registo.
-  const [accountCreated, setAccountCreated] = useState(false);
+  // Se veio do Google, a conta JÁ existe — não repetir authApi.register().
+  const [accountCreated, setAccountCreated] = useState(isGoogleFlow);
 
-  // ── Novo: só para permitir escolher os ficheiros do BI e da selfie ──
   const [biFile, setBiFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const biInputRef = useRef<HTMLInputElement>(null);
   const selfieInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Foto de perfil (Passo 3) — AGORA OBRIGATÓRIA ─────────────────────
-  // Reutiliza exactamente o endpoint POST /users/me/avatar já criado —
-  // nenhum sistema de upload novo. Só pode acontecer depois de
-  // handleContinueFromStep2 ter criado a conta e guardado sessão, já
-  // que o endpoint exige um token válido.
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // NOVO — foto sugerida a partir da conta Google (rule e: nunca
+  // aplicada automaticamente, só como sugestão que o utilizador pode
+  // confirmar ou substituir).
+  const [suggestedAvatarUrl, setSuggestedAvatarUrl] = useState<string | null>(null);
+  const [applyingSuggestion, setApplyingSuggestion] = useState(false);
+
+  // Botão Google só faz sentido no Passo 1 (entrada normal). Se
+  // isGoogleFlow, o Passo 1 nunca é renderizado, por isso este efeito
+  // simplesmente não encontra o container e não faz nada.
+  useEffect(() => {
+    if (isGoogleFlow) return;
+    renderGoogleButton({
+      containerId: "google-btn-register-provider",
+      onCredential: async (idToken) => {
+        if (googleBusyRef.current) return;
+        googleBusyRef.current = true;
+        setGoogleLoading(true);
+        setError("");
+        try {
+          const data = await authApi.google(idToken);
+          saveSession(data);
+          if (typeof window !== "undefined" && data.googlePicture) {
+            sessionStorage.setItem("mestroo_google_picture", data.googlePicture);
+          }
+          router.push(resolvePostGoogleAuthRoute(data.user, data.kycStatus));
+        } catch (e: unknown) {
+          setError(e instanceof Error ? e.message : "Erro ao criar conta com Google.");
+          setGoogleLoading(false);
+          googleBusyRef.current = false;
+        }
+      },
+      onError: (err) => setError(err.message),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // NOVO — lê a foto sugerida da Google (guardada temporariamente em
+  // sessionStorage por login/register no momento da autenticação) e
+  // limpa-a de seguida — é só um valor de passagem entre páginas, não
+  // fica persistido em lado nenhum.
+  useEffect(() => {
+    if (!isGoogleFlow || typeof window === "undefined") return;
+    const stored = sessionStorage.getItem("mestroo_google_picture");
+    if (stored) {
+      setSuggestedAvatarUrl(stored);
+      sessionStorage.removeItem("mestroo_google_picture");
+    }
+  }, [isGoogleFlow]);
 
   const handleAvatarSelect = async (file: File | null) => {
     if (!file) return;
@@ -81,17 +142,31 @@ export default function RegisterProviderPage() {
     }
   };
 
-  // Cria a conta ao sair do Passo 2 — já temos tudo que o RegisterDto exige.
-  // O Passo 3 (foto) e o Passo 4 (upload KYC) precisam de sessão válida,
-  // por isso o registo tem de acontecer antes de lá chegar.
-  //
-  // FIX (bug #6): se a conta já foi criada nesta sessão de registo (o
-  // utilizador recuou do Passo 3 e está a avançar de novo), não repete
-  // authApi.register() — só valida os campos e avança para o Passo 3.
+  // NOVO — "Usar esta foto": busca a imagem pública da conta Google e
+  // reutiliza o MESMO caminho de upload já existente (handleAvatarSelect
+  // → POST /users/me/avatar → Cloudinary). A foto só se torna oficial
+  // depois deste passo — nunca é aplicada sozinha.
+  const handleUseSuggestedAvatar = async () => {
+    if (!suggestedAvatarUrl) return;
+    setApplyingSuggestion(true);
+    setAvatarError("");
+    try {
+      const res = await fetch(suggestedAvatarUrl);
+      if (!res.ok) throw new Error("Não foi possível obter a foto da Google.");
+      const blob = await res.blob();
+      const file = new File([blob], "google-avatar.jpg", { type: blob.type || "image/jpeg" });
+      await handleAvatarSelect(file);
+    } catch {
+      setAvatarError("Não foi possível usar a foto da Google. Escolhe outra.");
+    } finally {
+      setApplyingSuggestion(false);
+    }
+  };
+
   const handleContinueFromStep2 = async () => {
     setError("");
 
-    if (form.password.length < 6) {
+    if (!isGoogleFlow && form.password.length < 6) {
       setError("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
@@ -145,6 +220,8 @@ export default function RegisterProviderPage() {
         .auth-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg,#EF9F27,#f5b955); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(239,159,39,0.25); font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .auth-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(239,159,39,0.32); }
         .auth-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+        .auth-btn-secondary { width: 100%; padding: 13px; border-radius: 12px; border: 1.5px solid #EF9F27; background: #fffbf3; color: #b96f0f; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: all .15s; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
+        .auth-btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
         .auth-error { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #b91c1c; margin-bottom: 16px; }
         .progress-bar { height: 5px; border-radius: 99px; background: #eef1f5; margin-bottom: 26px; overflow: hidden; }
         .progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg,#EF9F27,#f5b955); transition: width 0.3s; }
@@ -159,6 +236,13 @@ export default function RegisterProviderPage() {
         .auth-perk-row { display: flex; align-items: center; gap: 8px; }
         .auth-footer-text { text-align: center; font-size: 13px; color: #64748b; margin-top: 20px; }
         .auth-link-btn { color: #1D9E75; font-weight: 700; background: none; border: none; cursor: pointer; padding: 0; font-family: inherit; font-size: inherit; }
+        .auth-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0 20px; }
+        .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: #eef1f5; }
+        .auth-divider span { font-size: 12px; color: #94a3b8; font-weight: 600; }
+        .google-btn-wrap { position: relative; display: flex; justify-content: center; min-height: 44px; margin-bottom: 16px; }
+        .google-btn-wrap.disabled { opacity: 0.6; pointer-events: none; }
+        .suggested-avatar-row { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: #f8fafc; border: 1px solid #eef1f5; margin-bottom: 16px; }
+        .suggested-avatar-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 480px) { .auth-card { padding: 30px 22px; } .cat-grid { grid-template-columns: repeat(2,1fr); } }
       `}</style>
@@ -171,13 +255,7 @@ export default function RegisterProviderPage() {
               type="button"
               className="auth-back"
               onClick={() => {
-                if (step === 1) {
-                  // FIX (bug "Voltar na Step 1"): se a conta já foi criada
-                  // (o utilizador avançou até ao Passo 3+ e recuou até aqui),
-                  // limpa a sessão local antes de sair — tal como o handler
-                  // de "Entrar" já faz — para não deixar o utilizador
-                  // autenticado sem saber. A conta no backend continua a
-                  // existir (não é apagada), mas a sessão local é removida.
+                if (step === firstStep) {
                   if (accountCreated) {
                     clearSession();
                   }
@@ -187,7 +265,7 @@ export default function RegisterProviderPage() {
                 }
               }}
             >
-              <ArrowLeft size={15} /> {step === 1 ? "Voltar" : "Passo anterior"}
+              <ArrowLeft size={15} /> {step === firstStep ? "Voltar" : "Passo anterior"}
             </button>
 
             <div className="auth-logo-row">
@@ -204,9 +282,14 @@ export default function RegisterProviderPage() {
 
             {error && <div className="auth-error">{error}</div>}
 
-            {/* ── Passo 1: Dados de acesso ─────────────────────────────── */}
+            {/* ── Passo 1: Dados de acesso (só entrada normal) ─────────── */}
             {step === 1 && (
               <div>
+                <div className={`google-btn-wrap${googleLoading ? " disabled" : ""}`}>
+                  <div id="google-btn-register-provider" style={{ width: "100%" }} />
+                </div>
+                <div className="auth-divider"><span>ou</span></div>
+
                 <label className="auth-label">Nome completo</label>
                 <input className="auth-input" placeholder="O teu nome" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
 
@@ -275,6 +358,31 @@ export default function RegisterProviderPage() {
                   A tua foto ajuda os clientes a reconhecerem-te e a confiarem no teu perfil. É obrigatória para continuares o registo.
                 </p>
 
+                {suggestedAvatarUrl && !avatarUrl && (
+                  <div className="suggested-avatar-row">
+                    <img src={suggestedAvatarUrl} alt="" className="suggested-avatar-img" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a", marginBottom: 2 }}>
+                        Foto da tua conta Google
+                      </p>
+                      <p style={{ fontSize: 11.5, color: "#94a3b8" }}>Podes usar esta ou escolher outra abaixo</p>
+                    </div>
+                  </div>
+                )}
+
+                {suggestedAvatarUrl && !avatarUrl && (
+                  <button
+                    type="button"
+                    className="auth-btn-secondary"
+                    disabled={applyingSuggestion}
+                    onClick={handleUseSuggestedAvatar}
+                  >
+                    {applyingSuggestion
+                      ? <><Loader2 size={14} className="animate-spin" /> A aplicar...</>
+                      : <><Sparkles size={14} /> Usar foto da conta Google</>}
+                  </button>
+                )}
+
                 <input
                   ref={avatarInputRef}
                   type="file"
@@ -304,7 +412,7 @@ export default function RegisterProviderPage() {
                 </div>
 
                 <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", marginBottom: 20 }}>
-                  {avatarUrl ? "Foto enviada — clica para trocar" : "Clica para escolher uma foto"}
+                  {avatarUrl ? "Foto enviada — clica para trocar" : "Ou clica para escolher outra foto"}
                 </p>
 
                 <button type="button" className="auth-btn" disabled={avatarUploading || !avatarUrl} onClick={() => setStep(4)}>
@@ -321,7 +429,6 @@ export default function RegisterProviderPage() {
                   Para garantir a segurança dos clientes, precisamos verificar a tua identidade.
                 </p>
 
-                {/* Inputs escondidos, acionados pelo clique nos cartões */}
                 <input
                   ref={biInputRef}
                   type="file"
@@ -390,18 +497,6 @@ export default function RegisterProviderPage() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  // FIX: se a conta já foi criada (Passo 2 concluído), já
-                  // existe um token/cookie de sessão válido guardado por
-                  // saveSession(). O proxy trata "/login" como rota
-                  // exclusiva para visitantes sem sessão — ao detetar esse
-                  // token, redireciona automaticamente para a home do role
-                  // (provider-home), em vez de mostrar o login. Isso fazia
-                  // parecer que o clique em "Entrar" saltava passos e ia
-                  // parar à home. Limpar a sessão local antes de navegar
-                  // faz o proxy tratar o pedido como visitante e mostrar
-                  // o login normalmente. A conta em si não é apagada —
-                  // só a sessão local; o utilizador volta a entrar com
-                  // email e senha.
                   if (accountCreated) {
                     clearSession();
                   }

@@ -1,17 +1,12 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Zap, Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
-import { authApi, saveSession } from "@/lib/auth.api";
+import { authApi, saveSession, resolvePostGoogleAuthRoute } from "@/lib/auth.api";
+import { renderGoogleButton } from "@/lib/google-auth";
 
-// FIX (build): useSearchParams() exige um <Suspense> boundary no App
-// Router, senão o Next.js falha o build de produção ("should be wrapped
-// in a suspense boundary"). O componente por defeito da página passa a
-// ser só um wrapper com Suspense; todo o conteúdo e lógica que já
-// existiam (incluindo o novo ?type=provider) ficam intactos dentro de
-// LoginPageContent.
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
@@ -26,18 +21,43 @@ function LoginPageContent() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  // FIX: passa a ler ?type=provider|client da URL para pré-selecionar o
-  // separador certo. Ex.: o botão "Já tens conta? Entrar" no registo do
-  // Provider agora navega para /login?type=provider, evitando que o
-  // utilizador tenha de clicar manualmente em "Sou prestador" depois de
-  // vir desse fluxo. Sem o parâmetro (ex: /login direto), mantém-se o
-  // valor por defeito "client", exatamente como já era antes.
+  const [googleLoading, setGoogleLoading] = useState(false);
   const initialType = searchParams.get("type") === "provider" ? "provider" : "client";
   const [accountType, setAccountType] = useState<"client" | "provider">(initialType);
   const [form, setForm] = useState({ email: "", password: "" });
+  const googleBusyRef = useRef(false);
 
   const accent = accountType === "client" ? "#2563eb" : "#EF9F27";
   const accentSoft = accountType === "client" ? "#3b82f6" : "#f5b955";
+
+  // Renderiza o botão oficial da Google. Re-renderiza sempre que
+  // accountType muda, para o container manter a largura correcta do
+  // cartão actual — o próprio helper limpa o conteúdo anterior.
+  useEffect(() => {
+    renderGoogleButton({
+      containerId: "google-btn-login",
+      onCredential: async (idToken) => {
+        if (googleBusyRef.current) return;
+        googleBusyRef.current = true;
+        setGoogleLoading(true);
+        setError("");
+        try {
+          const data = await authApi.google(idToken);
+          saveSession(data);
+          if (typeof window !== "undefined" && data.googlePicture) {
+            sessionStorage.setItem("mestroo_google_picture", data.googlePicture);
+          }
+          router.push(resolvePostGoogleAuthRoute(data.user, data.kycStatus));
+        } catch (e: unknown) {
+          setError(e instanceof Error ? e.message : "Erro ao entrar com Google.");
+          setGoogleLoading(false);
+          googleBusyRef.current = false;
+        }
+      },
+      onError: (err) => setError(err.message),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountType]);
 
   const handleLogin = async () => {
     if (!form.email || !form.password) { setError("Preenche todos os campos."); return; }
@@ -92,6 +112,11 @@ function LoginPageContent() {
         .auth-error { display: flex; align-items: flex-start; gap: 8px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 11px 14px; font-size: 13px; color: #dc2626; margin-bottom: 16px; line-height: 1.5; }
         .auth-footer-text { text-align: center; font-size: 13px; color: #64748b; margin-top: 22px; }
         .auth-link-btn { color: var(--accent); font-weight: 700; background: none; border: none; cursor: pointer; padding: 0; font-family: inherit; font-size: inherit; }
+        .auth-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+        .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: #eef1f5; }
+        .auth-divider span { font-size: 12px; color: #94a3b8; font-weight: 600; }
+        .google-btn-wrap { position: relative; display: flex; justify-content: center; min-height: 44px; }
+        .google-btn-wrap.disabled { opacity: 0.6; pointer-events: none; }
         @media (max-width: 480px) { .auth-card { padding: 30px 22px; } }
       `}</style>
       <div className="auth" style={{ "--accent": accent, "--accent-soft": accentSoft, "--accent-shadow": accountType === "client" ? "rgba(37,99,235,0.25)" : "rgba(239,159,39,0.28)" } as CSSProperties}>
@@ -140,6 +165,12 @@ function LoginPageContent() {
                 <span>{error}</span>
               </div>
             )}
+
+            <div className={`google-btn-wrap${googleLoading ? " disabled" : ""}`}>
+              <div id="google-btn-login" style={{ width: "100%" }} />
+            </div>
+
+            <div className="auth-divider"><span>ou</span></div>
 
             <div>
               <label className="auth-label">Email</label>

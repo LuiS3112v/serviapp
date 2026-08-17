@@ -21,8 +21,12 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
-  password: string;
+  // ALTERADO: agora nullable. Contas criadas via Google não têm
+  // password — o login para essas contas só pode acontecer por Google.
+  // AuthService.login() tem uma guarda explícita para nunca deixar uma
+  // conta sem password tentar autenticar pelo fluxo tradicional.
+  @Column({ nullable: true })
+  password: string | null;
 
   @Column({ nullable: true })
   phone: string;
@@ -92,13 +96,16 @@ export class User {
   @Column({ nullable: true, type: 'timestamp' })
   lastSeenAt: Date;
 
-  // NOVO: marca de eliminação de conta (soft delete). Null = conta
-  // activa. Quando preenchido, AuthService.validateUser() e
-  // AuthService.login() tratam a conta como inexistente — nenhum
-  // token antigo nem tentativa de login volta a funcionar contra ela.
-  // Ver SecurityService.deleteAccount() para o fluxo completo.
   @Column({ nullable: true, type: 'timestamp' })
   deletedAt: Date | null;
+
+  // NOVO — identificador estável ("sub") devolvido pela Google no ID
+  // token. Não é um secret nem um token de acesso — é só uma referência
+  // opaca usada para reconhecer a mesma conta Google em logins
+  // futuros. Nullable e único: contas tradicionais nunca o têm
+  // preenchido; uma conta Google nunca partilha este valor com outra.
+  @Column({ nullable: true, unique: true })
+  googleId: string | null;
 
   @OneToOne(
     () => ProviderVerification,

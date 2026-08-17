@@ -4,25 +4,13 @@ import { jwtVerify } from "jose";
 
 // ═══════════════════════════════════════════════════════════════════════
 // PROXY (substitui middleware.ts a partir do Next.js 16)
-//
-// CAUSA RAIZ DO BYPASS ORIGINAL:
-//   Este projeto está no Next.js 16. Nessa versão, "middleware.ts" deixou
-//   de ser o ponto de interceção de requests — foi renomeado para
-//   "proxy.ts" com a função exportada "proxy" (em vez de "middleware").
-//   O ficheiro middleware.ts antigo continuava a compilar, a passar no
-//   TypeScript e a fazer deploy sem qualquer aviso — mas NUNCA era
-//   executado em runtime. Nenhuma rota estava, de facto, protegida.
-//   O que travava o utilizador (tarde, com flash de conteúdo) era o
-//   useEffect client-side em services/page.tsx — e páginas sem esse
-//   useEffect (como /home) ficavam completamente abertas.
-//
-// FIX: renomear para proxy.ts + função "proxy". Lógica de autorização
-// mantida e reforçada. Corre no runtime Node.js (obrigatório no Next 16).
+// Ver comentário histórico original sobre a mudança de nome no Next 16.
 //
 // SEGREGAÇÃO POR ROLE:
 //   CLIENT           → só CLIENT_ROUTES
 //   PROVIDER/COMPANY → só PROVIDER_ROUTES
 //   ADMIN            → só ADMIN_ROUTES
+//   PENDING          → só CHOOSE_ROLE_ROUTE (NOVO)
 // ═══════════════════════════════════════════════════════════════════════
 
 const CLIENT_ROUTES = [
@@ -42,25 +30,23 @@ const CLIENT_ROUTES = [
   "/privacy",
   "/terms",
 ];
-// NOTA: /privacidade e /termos (versões PT, usadas no rodapé de páginas
-// públicas como / e /sobre) foram removidas de CLIENT_ROUTES de propósito.
-// São páginas legais e devem ser acessíveis sem login, tal como / e /sobre
-// já são — caso contrário o proxy redirecionava qualquer visitante sem
-// sessão de volta para "/" ao clicar em "Termos de uso" / "Privacidade" no
-// rodapé. /privacy e /terms (versões EN, dentro do dashboard/settings)
-// continuam protegidas, porque são a versão interna da app para quem já
-// está autenticado.
 
 const PROVIDER_ROUTES = ["/provider-home", "/provider"];
 
 const ADMIN_ROUTES = ["/admin"];
+
+// NOVO — página de escolha de role, só para contas Google recém
+// criadas (role=pending). Fica fora de CLIENT_ROUTES/PROVIDER_ROUTES
+// de propósito: a regra de acesso aqui não é "role X pode", é "só
+// quem ainda não escolheu role pode estar aqui".
+const CHOOSE_ROLE_ROUTE = "/choose-role";
 
 const ALL_PRIVATE_ROUTES = [...CLIENT_ROUTES, ...PROVIDER_ROUTES, ...ADMIN_ROUTES];
 
 const GUEST_ONLY_ROUTES = ["/", "/login"];
 
 type TokenPayload = { email: string; role: string };
-type EffectiveRole = "client" | "provider" | "company" | "admin";
+type EffectiveRole = "client" | "provider" | "company" | "admin" | "pending";
 
 function matchesRoute(pathname: string, routes: string[]): boolean {
   return routes.some((r) => pathname === r || pathname.startsWith(r + "/"));
@@ -86,6 +72,7 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
 function homeForRole(role: EffectiveRole): string {
   if (role === "admin") return "/admin";
   if (role === "provider" || role === "company") return "/provider-home";
+  if (role === "pending") return CHOOSE_ROLE_ROUTE;
   return "/home";
 }
 
@@ -97,6 +84,38 @@ export async function proxy(request: NextRequest) {
   const isAdminRoute = matchesRoute(pathname, ADMIN_ROUTES);
   const isPrivateRoute = matchesRoute(pathname, ALL_PRIVATE_ROUTES);
   const isGuestOnly = GUEST_ONLY_ROUTES.includes(pathname);
+  const isChooseRoleRoute = pathname === CHOOSE_ROLE_ROUTE;
+
+  // ── NOVO: /choose-role — só acessível a quem tem role=pending ──────────
+  if (isChooseRoleRoute) {
+    const token = request.cookies.get("serviapp_token")?.value;
+
+    if (!token) {
+      const res = NextResponse.redirect(new URL("/", request.url));
+      res.headers.set("Cache-Control", "no-store, max-age=0");
+      return res;
+    }
+
+    const payload = await verifyToken(token);
+
+    if (!payload) {
+      const res = NextResponse.redirect(new URL("/?auth=session_expired", request.url));
+      res.cookies.set("serviapp_token", "", { path: "/", maxAge: 0, sameSite: "lax" });
+      res.headers.set("Cache-Control", "no-store, max-age=0");
+      return res;
+    }
+
+    if (payload.role !== "pending") {
+      // Já escolheu role anteriormente — não faz sentido voltar aqui.
+      const res = NextResponse.redirect(
+        new URL(homeForRole(payload.role as EffectiveRole), request.url),
+      );
+      res.headers.set("Cache-Control", "no-store, max-age=0");
+      return res;
+    }
+
+    return NextResponse.next();
+  }
 
   // Rota pública (não privada, não guest-only) → passa sem verificação
   if (!isPrivateRoute && !isGuestOnly) {
@@ -112,7 +131,6 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set("auth", "required");
       url.searchParams.set("redirect", pathname);
       const res = NextResponse.redirect(url);
-      // Garante que esta resposta de redirect nunca é cacheada por CDN/browser
       res.headers.set("Cache-Control", "no-store, max-age=0");
       return res;
     }
@@ -222,5 +240,6 @@ export const config = {
     "/terms/:path*",
     "/",
     "/login",
+    "/choose-role", // NOVO
   ],
 };

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Loader2 } from "lucide-react";
-import { authApi, saveSession } from "@/lib/auth.api";
+import { authApi, saveSession, resolvePostGoogleAuthRoute } from "@/lib/auth.api";
+import { renderGoogleButton } from "@/lib/google-auth";
 
 export default function RegisterClientPage() {
   const router = useRouter();
@@ -11,7 +12,34 @@ export default function RegisterClientPage() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const googleBusyRef = useRef(false);
+
+  useEffect(() => {
+    renderGoogleButton({
+      containerId: "google-btn-register-client",
+      onCredential: async (idToken) => {
+        if (googleBusyRef.current) return;
+        googleBusyRef.current = true;
+        setGoogleLoading(true);
+        setError("");
+        try {
+          const data = await authApi.google(idToken);
+          saveSession(data);
+          if (typeof window !== "undefined" && data.googlePicture) {
+            sessionStorage.setItem("mestroo_google_picture", data.googlePicture);
+          }
+          router.push(resolvePostGoogleAuthRoute(data.user, data.kycStatus));
+        } catch (e: unknown) {
+          setError(e instanceof Error ? e.message : "Erro ao criar conta com Google.");
+          setGoogleLoading(false);
+          googleBusyRef.current = false;
+        }
+      },
+      onError: (err) => setError(err.message),
+    });
+  }, []);
 
   const handleSubmit = async () => {
     setError("");
@@ -67,6 +95,11 @@ export default function RegisterClientPage() {
         .auth-perk-row { display: flex; align-items: center; gap: 8px; }
         .auth-footer-text { text-align: center; font-size: 13px; color: #64748b; margin-top: 20px; }
         .auth-link-btn { color: #2563eb; font-weight: 700; background: none; border: none; cursor: pointer; padding: 0; font-family: inherit; font-size: inherit; }
+        .auth-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0 20px; }
+        .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: #eef1f5; }
+        .auth-divider span { font-size: 12px; color: #94a3b8; font-weight: 600; }
+        .google-btn-wrap { position: relative; display: flex; justify-content: center; min-height: 44px; margin-bottom: 16px; }
+        .google-btn-wrap.disabled { opacity: 0.6; pointer-events: none; }
         @media (max-width: 480px) { .auth-card { padding: 30px 22px; } }
       `}</style>
       <div className="auth">
@@ -92,6 +125,11 @@ export default function RegisterClientPage() {
 
             {step === 1 ? (
               <div>
+                <div className={`google-btn-wrap${googleLoading ? " disabled" : ""}`}>
+                  <div id="google-btn-register-client" style={{ width: "100%" }} />
+                </div>
+                <div className="auth-divider"><span>ou</span></div>
+
                 <label className="auth-label">Nome completo</label>
                 <input className="auth-input" placeholder="O teu nome" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
 
