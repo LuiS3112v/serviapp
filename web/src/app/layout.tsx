@@ -64,7 +64,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt" className={manrope.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+      </body>
     </html>
   );
 }
