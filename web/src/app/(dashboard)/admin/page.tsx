@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
@@ -9,6 +9,7 @@ import { AdminKyc } from "@/lib/api/admin";
 import {
   Users, Briefcase, Wallet, Shield, TrendingUp,
   AlertCircle, RefreshCw, Check, X, Building2, ArrowRight,
+  User, Phone, FileText, Camera,
 } from "lucide-react";
 
 function formatKz(value: number) {
@@ -33,6 +34,12 @@ export default function AdminPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { stats, recentUsers, pendingKyc, loading, error, refresh, approveKyc, rejectKyc } = useAdminStats();
+
+  // NOVO — modal de detalhe do pedido de KYC individual. Não altera
+  // nenhuma lógica de aprovação/recusa, só dá espaço para mostrar
+  // foto de perfil + telefone + os 3 documentos (frente do BI, verso
+  // do BI, selfie) sem sobrecarregar a lista principal.
+  const [detailKyc, setDetailKyc] = useState<AdminKyc | null>(null);
 
   useEffect(() => {
     if (!authLoading && user?.role !== "admin") router.replace("/");
@@ -59,7 +66,8 @@ export default function AdminPage() {
         .adm-card{background:#131b27;border:1px solid #1a2535;border-radius:16px;padding:20px}
         .user-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #1a2535}
         .user-row:last-child{border-bottom:none}
-        .kyc-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #1a2535}
+        .kyc-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #1a2535;cursor:pointer;transition:background .15s;border-radius:8px}
+        .kyc-row:hover{background:#0f1620}
         .kyc-row:last-child{border-bottom:none}
         .kyc-btn{border:none;cursor:pointer;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .empty-list{display:flex;flex-direction:column;align-items:center;padding:32px;gap:8px;text-align:center}
@@ -77,8 +85,20 @@ export default function AdminPage() {
           box-shadow:0 4px 14px rgba(55,138,221,0.3);transition:all 0.2s;
         }
         .payments-cta-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(55,138,221,0.45)}
+        .kyc-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;object-fit:cover}
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+        .modal-card{background:#131b27;border:1px solid #1a2535;border-radius:20px;padding:28px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+        .modal-doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+        .modal-doc{border:1px solid #1a2535;border-radius:12px;overflow:hidden;background:#0d1117}
+        .modal-doc img{width:100%;height:120px;object-fit:cover;display:block}
+        .modal-doc-label{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:11px;color:#8a9ab0;font-weight:600}
+        .modal-info-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #1a2535}
+        .modal-info-row:last-child{border-bottom:none}
+        .modal-actions{display:flex;gap:10px;margin-top:20px}
+        .modal-btn{flex:1;padding:12px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+        .modal-btn:hover{opacity:.88}
         @media(max-width:1024px){.adm-main{margin-left:0}.stats-grid{grid-template-columns:repeat(2,1fr)}.adm-grid{grid-template-columns:1fr}}
-        @media(max-width:640px){.adm-inner{padding:16px}.stats-grid{grid-template-columns:1fr 1fr}.payments-cta{flex-direction:column;align-items:flex-start}}
+        @media(max-width:640px){.adm-inner{padding:16px}.stats-grid{grid-template-columns:1fr 1fr}.payments-cta{flex-direction:column;align-items:flex-start}.modal-doc-grid{grid-template-columns:1fr}}
       `}</style>
 
       <div className="adm-wrap">
@@ -205,19 +225,30 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   pendingKyc.map((k: AdminKyc) => (
-                    <div className="kyc-row" key={k.id}>
-                      <div style={{
-                        width:36, height:36, borderRadius:"50%", flexShrink:0,
-                        background: k.type === "company" ? "#071830" : "#2a1e08",
-                        display:"flex", alignItems:"center", justifyContent:"center",
-                        fontSize:13, fontWeight:700,
-                        color: k.type === "company" ? "#378ADD" : "#EF9F27",
-                      }}>
-                        {k.type === "company"
-                          ? <Building2 size={16} style={{ color:"#378ADD" }}/>
-                          : k.userName.charAt(0).toUpperCase()
-                        }
-                      </div>
+                    <div
+                      className="kyc-row"
+                      key={k.id}
+                      onClick={() => k.type === "individual" && setDetailKyc(k)}
+                      style={{ cursor: k.type === "individual" ? "pointer" : "default" }}
+                    >
+                      {/* NOVO — foto de perfil real quando disponível (individual);
+                          mantém o ícone/inicial como fallback, exactamente como antes */}
+                      {k.type === "individual" && k.avatarUrl ? (
+                        <img src={k.avatarUrl} alt={k.userName} className="kyc-avatar" />
+                      ) : (
+                        <div style={{
+                          width:36, height:36, borderRadius:"50%", flexShrink:0,
+                          background: k.type === "company" ? "#071830" : "#2a1e08",
+                          display:"flex", alignItems:"center", justifyContent:"center",
+                          fontSize:13, fontWeight:700,
+                          color: k.type === "company" ? "#378ADD" : "#EF9F27",
+                        }}>
+                          {k.type === "company"
+                            ? <Building2 size={16} style={{ color:"#378ADD" }}/>
+                            : k.userName.charAt(0).toUpperCase()
+                          }
+                        </div>
+                      )}
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
                           <p style={{ fontSize:13, fontWeight:600, color:"#c0d0e0", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", margin:0 }}>{k.userName}</p>
@@ -232,12 +263,14 @@ export default function AdminPage() {
                             {k.type === "company" ? "🏢 Empresa" : "👤 Individual"}
                           </span>
                         </div>
-                        <p style={{ fontSize:11, color:"#4a5a6a", margin:0 }}>{k.documentStatus}</p>
+                        <p style={{ fontSize:11, color:"#4a5a6a", margin:0 }}>
+                          {k.type === "individual" && k.phoneNumber ? `${k.phoneNumber} · ` : ""}{k.documentStatus}
+                        </p>
                       </div>
                       <button
                         className="kyc-btn"
                         style={{ background:"#1d9e7520" }}
-                        onClick={() => approveKyc(k)}
+                        onClick={(e) => { e.stopPropagation(); approveKyc(k); }}
                         title="Aprovar"
                       >
                         <Check size={14} style={{ color:"#1D9E75" }}/>
@@ -245,7 +278,7 @@ export default function AdminPage() {
                       <button
                         className="kyc-btn"
                         style={{ background:"#E24B4A20" }}
-                        onClick={() => rejectKyc(k)}
+                        onClick={(e) => { e.stopPropagation(); rejectKyc(k); }}
                         title="Rejeitar"
                       >
                         <X size={14} style={{ color:"#E24B4A" }}/>
@@ -259,6 +292,88 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Modal de detalhe do pedido KYC individual ──
+          NOVO: só para type==="individual" — não interfere no fluxo
+          de empresa. Mostra nome, telefone, foto de perfil, e os 3
+          documentos (frente do BI, verso do BI, selfie). Os botões
+          Aceitar/Recusar aqui chamam exactamente as mesmas funções
+          approveKyc/rejectKyc já existentes no hook — nenhuma lógica
+          nova de aprovação foi criada. */}
+      {detailKyc && (
+        <div className="modal-overlay" onClick={() => setDetailKyc(null)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                {detailKyc.avatarUrl ? (
+                  <img src={detailKyc.avatarUrl} alt={detailKyc.userName} style={{ width:52, height:52, borderRadius:"50%", objectFit:"cover" }} />
+                ) : (
+                  <div style={{ width:52, height:52, borderRadius:"50%", background:"#2a1e08", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <User size={22} style={{ color:"#EF9F27" }} />
+                  </div>
+                )}
+                <div>
+                  <p style={{ fontSize:16, fontWeight:700, color:"#e2e8f0", marginBottom:2 }}>{detailKyc.userName}</p>
+                  <span className="type-badge" style={{ color:"#EF9F27", background:"#EF9F2718", border:"1px solid #EF9F2740" }}>
+                    👤 Individual
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => setDetailKyc(null)} style={{ background:"none", border:"none", cursor:"pointer", color:"#6a7a8a" }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {detailKyc.phoneNumber && (
+              <div className="modal-info-row">
+                <Phone size={15} style={{ color:"#8a9ab0" }} />
+                <span style={{ fontSize:13, color:"#c0d0e0" }}>{detailKyc.phoneNumber}</span>
+              </div>
+            )}
+
+            <p style={{ fontSize:12, fontWeight:700, color:"#6a7a8a", textTransform:"uppercase", letterSpacing:"0.06em", marginTop:16, marginBottom:4 }}>
+              Documentos enviados
+            </p>
+            <div className="modal-doc-grid">
+              {detailKyc.frontBiUrl && (
+                <div className="modal-doc">
+                  <img src={detailKyc.frontBiUrl} alt="Frente do BI" />
+                  <div className="modal-doc-label"><FileText size={12} /> Frente do BI</div>
+                </div>
+              )}
+              {detailKyc.backBiUrl && (
+                <div className="modal-doc">
+                  <img src={detailKyc.backBiUrl} alt="Verso do BI" />
+                  <div className="modal-doc-label"><FileText size={12} /> Verso do BI</div>
+                </div>
+              )}
+              {detailKyc.selfieUrl && (
+                <div className="modal-doc" style={{ gridColumn: "1 / -1" }}>
+                  <img src={detailKyc.selfieUrl} alt="Selfie com o BI" />
+                  <div className="modal-doc-label"><Camera size={12} /> Selfie com o BI</div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="modal-btn"
+                style={{ background:"#1D9E75", color:"#fff" }}
+                onClick={() => { approveKyc(detailKyc); setDetailKyc(null); }}
+              >
+                <Check size={15} /> Aceitar
+              </button>
+              <button
+                className="modal-btn"
+                style={{ background:"#E24B4A", color:"#fff" }}
+                onClick={() => { rejectKyc(detailKyc); setDetailKyc(null); }}
+              >
+                <X size={15} /> Recusar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Upload, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Upload, Loader2, Sparkles, ShieldCheck } from "lucide-react";
 import { authApi, saveSession, getToken, clearSession, resolvePostGoogleAuthRoute } from "@/lib/auth.api";
 import { refreshUserInStorage } from "@/lib/user.api";
 import { renderGoogleButton } from "@/lib/google-auth";
@@ -50,11 +50,6 @@ function RegisterProviderPageContent() {
 
   // Se veio do Google, a conta JÁ existe — não repetir authApi.register().
   const [accountCreated, setAccountCreated] = useState(isGoogleFlow);
-
-  const [biFile, setBiFile] = useState<File | null>(null);
-  const [selfieFile, setSelfieFile] = useState<File | null>(null);
-  const biInputRef = useRef<HTMLInputElement>(null);
-  const selfieInputRef = useRef<HTMLInputElement>(null);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -243,6 +238,7 @@ function RegisterProviderPageContent() {
         .google-btn-wrap.disabled { opacity: 0.6; pointer-events: none; }
         .suggested-avatar-row { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: #f8fafc; border: 1px solid #eef1f5; margin-bottom: 16px; }
         .suggested-avatar-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .done-icon-wrap { width: 72px; height: 72px; border-radius: 50%; background: #f0faf6; border: 1.5px solid #cdeee1; display: flex; align-items: center; justify-content: center; margin: 4px auto 20px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 480px) { .auth-card { padding: 30px 22px; } .cat-grid { grid-template-columns: repeat(2,1fr); } }
       `}</style>
@@ -421,60 +417,42 @@ function RegisterProviderPageContent() {
               </div>
             )}
 
-            {/* ── Passo 4: Verificação KYC ────────────────────────────── */}
+            {/* ── Passo 4: Conclusão da conta ─────────────────────────── */}
+            {/*
+              ALTERADO (regra do produto): este passo deixou de submeter
+              BI/selfie e deixou de criar qualquer solicitação de KYC.
+              Antes, os inputs de ficheiro aqui não estavam sequer
+              ligados a nenhum endpoint — não havia POST /provider/kyc/submit
+              a ser chamado neste ecrã, apesar do texto dizer "aguardar
+              aprovação". Isso já não fazia nada, só induzia o prestador
+              em erro. A verificação de identidade "a sério" continua a
+              existir tal como já estava implementada em kyc/page.tsx —
+              acessível a partir do botão "Verificar agora" no
+              provider-home (kyc?role=provider), que já chama
+              POST /provider/kyc/submit e é o único ponto onde uma
+              ProviderVerification passa a existir e a aparecer no
+              painel admin. Este passo 4 agora só confirma a conclusão
+              da criação da conta.
+            */}
             {step === 4 && (
               <div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>Verificação de identidade (KYC)</p>
-                <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20, lineHeight: 1.6 }}>
-                  Para garantir a segurança dos clientes, precisamos verificar a tua identidade.
+                <div className="done-icon-wrap">
+                  <ShieldCheck size={32} style={{ color: "#0E7A5F" }} />
+                </div>
+
+                <p style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 8, textAlign: "center" }}>
+                  Conta criada com sucesso
                 </p>
-
-                <input
-                  ref={biInputRef}
-                  type="file"
-                  accept="image/*,.pdf"
-                  style={{ display: "none" }}
-                  onChange={(e) => setBiFile(e.target.files?.[0] || null)}
-                />
-                <input
-                  ref={selfieInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={(e) => setSelfieFile(e.target.files?.[0] || null)}
-                />
-
-                <div
-                  className={`upload-area${biFile ? " has-file" : ""}`}
-                  onClick={() => biInputRef.current?.click()}
-                >
-                  <Upload size={22} style={{ color: biFile ? "#1D9E75" : "#94a3b8" }} />
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
-                    {biFile ? biFile.name : "Bilhete de identidade"}
-                  </p>
-                  <p style={{ fontSize: 12, color: "#94a3b8" }}>
-                    {biFile ? "Ficheiro selecionado — clica para trocar" : "Frente e verso — JPG, PNG ou PDF"}
-                  </p>
-                </div>
-
-                <div
-                  className={`upload-area${selfieFile ? " has-file" : ""}`}
-                  onClick={() => selfieInputRef.current?.click()}
-                >
-                  <Upload size={22} style={{ color: selfieFile ? "#1D9E75" : "#94a3b8" }} />
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
-                    {selfieFile ? selfieFile.name : "Selfie com o BI"}
-                  </p>
-                  <p style={{ fontSize: 12, color: "#94a3b8" }}>
-                    {selfieFile ? "Ficheiro selecionado — clica para trocar" : "Segura o documento junto ao rosto"}
-                  </p>
-                </div>
+                <p style={{ fontSize: 13, color: "#64748b", marginBottom: 24, lineHeight: 1.6, textAlign: "center" }}>
+                  O teu perfil de prestador já está pronto. Para começares a receber pedidos de clientes,
+                  falta só um passo: verificar a tua identidade a partir do teu painel.
+                </p>
 
                 <div className="auth-perks" style={{ background: "#fef3e2", border: "1px solid #fcd9a1" }}>
                   {[
-                    "O perfil só fica visível após aprovação (48h)",
-                    "Os documentos são tratados de forma confidencial",
-                    "Aprovação manual pela equipa Serviapp",
+                    "A verificação de identidade fica disponível no teu painel",
+                    "O perfil só fica visível para clientes depois de aprovado",
+                    "Podes explorar a plataforma enquanto isso",
                   ].map((t, i) => (
                     <div key={i} className="auth-perk-row" style={{ marginBottom: i < 2 ? 8 : 0 }}>
                       <CheckCircle size={14} style={{ color: "#EF9F27", flexShrink: 0 }} />
@@ -484,7 +462,7 @@ function RegisterProviderPageContent() {
                 </div>
 
                 <button type="button" className="auth-btn" onClick={() => router.push("/provider-home")}>
-                  Submeter e aguardar aprovação →
+                  Ir para o meu painel →
                 </button>
               </div>
             )}

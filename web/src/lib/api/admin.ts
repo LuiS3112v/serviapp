@@ -24,6 +24,16 @@ export interface AdminKyc {
   type: 'individual' | 'company';
   companyId?: string;
   createdAt?: string;
+  // NOVO — só preenchidos quando type === 'individual', devolvidos por
+  // AdminService.getPendingKyc() (backend). Nenhum campo novo na base de
+  // dados: phoneNumber e os *Url já existiam em ProviderVerification,
+  // avatarUrl já existia em User — só passaram a ser incluídos na
+  // resposta deste endpoint.
+  phoneNumber?: string | null;
+  avatarUrl?: string | null;
+  frontBiUrl?: string;
+  backBiUrl?: string;
+  selfieUrl?: string;
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
