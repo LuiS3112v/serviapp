@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Download, X, Share, SquarePlus } from "lucide-react";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 
-const SHOW_DELAY_MS = 3000;
+const SHOW_DELAY_MS = 900;
 
 export function InstallPrompt() {
   const {
@@ -34,10 +34,6 @@ export function InstallPrompt() {
     setGone(true);
   };
 
-  // Mostra para qualquer plataforma conhecida onde ainda não está instalado
-  // - Chromium (Android/desktop): tem botão "Instalar" nativo
-  // - iOS Safari / outros: mostra instruções manuais
-  // - Não mostra se já instalado (shouldShowInstallUI = false)
   if (!shouldShowInstallUI || !delayDone || gone) return null;
 
   const isIOS = platform === "ios";
@@ -62,7 +58,7 @@ export function InstallPrompt() {
           bottom: 20,
           right: 20,
           zIndex: 9999,
-          width: "min(340px, calc(100vw - 24px))",
+          width: "min(360px, calc(100vw - 24px))",
           background: "#ffffff",
           border: "1px solid #e2e8f0",
           borderRadius: 16,
@@ -72,7 +68,6 @@ export function InstallPrompt() {
           fontFamily: "var(--font-manrope, system-ui, sans-serif)",
         }}
       >
-        {/* X */}
         <button
           type="button"
           onClick={close}
@@ -97,7 +92,6 @@ export function InstallPrompt() {
           <X size={13} />
         </button>
 
-        {/* Ícone + título + texto */}
         <div
           style={{
             display: "flex",
@@ -173,13 +167,12 @@ export function InstallPrompt() {
                   lineHeight: 1.45,
                 }}
               >
-                Acesso rápido e offline direto do seu ecrã inicial.
+                Adicione o app à sua tela inicial para acesso rápido e offline.
               </p>
             )}
           </div>
         </div>
 
-        {/* Botões */}
         <div style={{ display: "flex", gap: 8 }}>
           <button
             type="button"
@@ -200,7 +193,6 @@ export function InstallPrompt() {
             Agora não
           </button>
 
-          {/* iOS: não há prompt nativo, só mostra "Agora não" + X */}
           {!isIOS && (
             <button
               type="button"
