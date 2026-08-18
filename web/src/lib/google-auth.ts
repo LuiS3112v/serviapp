@@ -1,10 +1,12 @@
 "use client";
 
-// Carrega o Google Identity Services (GIS) uma única vez e renderiza
-// o botão oficial "Continuar com Google". Não implementamos popup ou
-// redirect manual — o GIS trata de tudo (funciona em desktop, tablet
-// e mobile) e devolve um ID token assinado pela Google no callback,
-// que é o único dado enviado ao nosso backend.
+// ============================================================
+// PATCH TEMPORÁRIO DE DIAGNÓSTICO — remover depois de confirmar a causa.
+// Não expõe nenhum secret: client_id do Google é público por definição
+// (é enviado no pedido HTTP de qualquer forma, visível no Network tab).
+// Isto só torna visível, em produção, o valor exato que o bundle
+// publicado está a usar — sem precisar de abrir DevTools manualmente.
+// ============================================================
 
 const SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 
@@ -46,6 +48,18 @@ export async function renderGoogleButton({
   onError,
 }: RenderGoogleButtonOptions): Promise<void> {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+  // ---- DIAGNÓSTICO TEMPORÁRIO ----
+  // Mostra no console o valor exato (comprimento incluído, para apanhar
+  // espaços/quebras de linha invisíveis) que este bundle publicado tem.
+  // client_id é público — não é um secret — por isso é seguro logar.
+  if (typeof window !== "undefined") {
+    console.log("[DIAG] NEXT_PUBLIC_GOOGLE_CLIENT_ID:", JSON.stringify(clientId));
+    console.log("[DIAG] length:", clientId?.length);
+    console.log("[DIAG] trimmed === original:", clientId === clientId?.trim());
+  }
+  // ---- FIM DIAGNÓSTICO ----
+
   if (!clientId) {
     onError?.(new Error("Google Client ID não configurado."));
     return;
