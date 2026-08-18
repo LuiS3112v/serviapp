@@ -1,140 +1,165 @@
 "use client";
 
-import { X, Download, Share } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, X } from "lucide-react";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 
-const BRAND = "#1D9E75"; // token --teal do design system (globals.css)
-const INK = "#0f172a";
+const SHOW_DELAY_MS = 3000;
 
-/**
- * Banner discreto de instalação. Não é modal, não bloqueia o Home.
- * Só renderiza quando shouldShowInstallUI é true (ver hook).
- * Android/Chrome/Edge/Samsung Internet: mostra botão que dispara o prompt nativo.
- * iOS (qualquer navegador): mostra instrução textual curta — todos os
- * navegadores no iPhone conseguem "Adicionar ao Ecrã Principal", só que
- * pelo próprio menu deles (não há prompt nativo em nenhum caso).
- */
 export function InstallPrompt() {
-  const { platform, canPromptInstall, shouldShowInstallUI, promptInstall, dismiss } =
+  const { shouldShowInstallUI, canPromptInstall, promptInstall, dismiss } =
     usePwaInstall();
 
-  if (!shouldShowInstallUI) return null;
+  const [delayDone, setDelayDone] = useState(false);
+  const [gone, setGone] = useState(false);
 
-  const isIOS = platform === "ios";
+  useEffect(() => {
+    if (!shouldShowInstallUI) return;
+    const t = setTimeout(() => setDelayDone(true), SHOW_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [shouldShowInstallUI]);
+
+  const close = () => {
+    setGone(true);
+    dismiss();
+  };
+
+  const install = async () => {
+    await promptInstall();
+    setGone(true);
+  };
+
+  if (!shouldShowInstallUI || !delayDone || gone) return null;
+
+  // Só mostra quando o browser consegue instalar nativamente
+  // (Chrome/Edge/Samsung Android, Edge desktop, etc.)
+  // Safari iOS e Firefox não disparam beforeinstallprompt — não mostramos
+  // um card com botão que não faz nada
+  if (!canPromptInstall) return null;
 
   return (
-    <div
-      role="region"
-      aria-label="Instalar aplicação"
-      style={{
-        position: "fixed",
-        bottom: 16,
-        left: 16,
-        right: 16,
-        maxWidth: 420,
-        margin: "0 auto",
-        zIndex: 60,
-        background: "#fff",
-        border: "1px solid #eef1f5",
-        borderRadius: 16,
-        boxShadow: "0 10px 30px rgba(15,23,42,0.16)",
-        padding: "16px 16px 16px 18px",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-      }}
-    >
+    <>
+      <style>{`
+        @keyframes _pwa_up {
+          from { opacity:0; transform:translateY(14px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        .pwa-card { animation: _pwa_up 0.28s cubic-bezier(0.22,1,0.36,1) both; }
+        @media (prefers-reduced-motion: reduce) { .pwa-card { animation:none; } }
+      `}</style>
+
       <div
+        className="pwa-card"
+        role="dialog"
+        aria-label="Instalar aplicação"
         style={{
-          width: 38,
-          height: 38,
-          borderRadius: 11,
-          background: BRAND,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          zIndex: 9999,
+          width: "min(340px, calc(100vw - 24px))",
+          background: "#ffffff",
+          border: "1px solid #e2e8f0",
+          borderRadius: 16,
+          boxShadow: "0 16px 48px rgba(15,23,42,0.18), 0 2px 8px rgba(15,23,42,0.08)",
+          padding: "18px 18px 16px",
+          fontFamily: "var(--font-manrope, system-ui, sans-serif)",
         }}
-        aria-hidden="true"
       >
-        <Download size={18} color="#fff" />
-      </div>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {isIOS ? (
-          <>
-            <p style={{ fontSize: 13.5, fontWeight: 700, color: INK, margin: 0 }}>
-              Instale a aplicação
-            </p>
-            <p
-              style={{
-                fontSize: 12.5,
-                color: "#64748b",
-                margin: "3px 0 0",
-                lineHeight: 1.4,
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                flexWrap: "wrap",
-              }}
-            >
-              Toque em <Share size={13} style={{ display: "inline", verticalAlign: "middle" }} aria-label="Partilhar" /> e depois em &quot;Adicionar ao Ecrã Principal&quot;
-            </p>
-          </>
-        ) : (
-          <>
-            <p style={{ fontSize: 13.5, fontWeight: 700, color: INK, margin: 0 }}>
-              Instale a aplicação
-            </p>
-            <p style={{ fontSize: 12.5, color: "#64748b", margin: "3px 0 0" }}>
-              Acesso mais rápido, direto do seu ecrã inicial.
-            </p>
-          </>
-        )}
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-        {!isIOS && canPromptInstall && (
-          <button
-            type="button"
-            onClick={promptInstall}
-            style={{
-              padding: "9px 14px",
-              borderRadius: 10,
-              border: "none",
-              background: BRAND,
-              color: "#fff",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              fontFamily: "inherit",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Instalar
-          </button>
-        )}
+        {/* X */}
         <button
           type="button"
-          onClick={dismiss}
-          aria-label="Dispensar convite de instalação"
+          onClick={close}
+          aria-label="Fechar"
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: 9,
+            position: "absolute",
+            top: 12,
+            right: 12,
+            width: 26,
+            height: 26,
+            borderRadius: 8,
             border: "none",
-            background: "transparent",
+            background: "#f1f5f9",
             color: "#94a3b8",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            flexShrink: 0,
+            padding: 0,
           }}
         >
-          <X size={16} />
+          <X size={13} />
         </button>
+
+        {/* Ícone + título + texto */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 28, marginBottom: 14 }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: 11,
+            background: "#1e293b",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            <Download size={18} color="#fff" />
+          </div>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: "0 0 3px", letterSpacing: "-0.01em" }}>
+              Instalar Mestroo
+            </p>
+            <p style={{ fontSize: 12.5, color: "#64748b", margin: 0, lineHeight: 1.45 }}>
+              Acesso rápido e offline direto do seu ecrã inicial.
+            </p>
+          </div>
+        </div>
+
+        {/* Botões */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={close}
+            style={{
+              flex: 1,
+              padding: "9px 0",
+              borderRadius: 9,
+              border: "1px solid #e2e8f0",
+              background: "#fff",
+              color: "#64748b",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Agora não
+          </button>
+          <button
+            type="button"
+            onClick={install}
+            style={{
+              flex: 1.4,
+              padding: "9px 0",
+              borderRadius: 9,
+              border: "none",
+              background: "#1e293b",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            <Download size={14} />
+            Instalar
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
