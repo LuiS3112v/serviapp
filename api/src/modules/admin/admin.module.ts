@@ -1,159 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AdminController } from './admin.controller';
+import { AdminService } from './admin.service';
 import { User } from '../../database/entities/user.entity';
 import { ProviderVerification } from '../../database/entities/provider-verification.entity';
 import { Service } from '../../database/entities/service.entity';
-import { KycStatus } from '../../common/enums/kyc-status.enum';
-import { CompanyKycService } from '../companies/company-kyc.service';
-import { RejectCompanyKycDto } from '../companies/dto/reject-company-kyc.dto';
-import { ServiceStatus } from '../../common/enums/service-status.enum';
+import { CompaniesModule } from '../companies/companies.module';
 
-@Injectable()
-export class AdminService {
-  constructor(
-    @InjectRepository(User)
-    private userRepo: Repository<User>,
-    @InjectRepository(ProviderVerification)
-    private verificationRepo: Repository<ProviderVerification>,
-    @InjectRepository(Service)
-    private serviceRepo: Repository<Service>,
-    private companyKycService: CompanyKycService,
-  ) {}
-
-  async getStats() {
-    const [totalUsers, pendingKyc, allServices] = await Promise.all([
-      this.userRepo.count(),
-      this.verificationRepo.count({ where: { status: KycStatus.PENDING } }),
-      this.serviceRepo.find(),
-    ]);
-
-    const activeServices = allServices.filter(s =>
-      [ServiceStatus.ACCEPTED, ServiceStatus.IN_PROGRESS].includes(s.status as any),
-    ).length;
-
-    const totalVolume = allServices
-      .filter(s => s.status === ServiceStatus.COMPLETED)
-      .reduce((sum, s) => sum + Number(s.agreedPrice ?? 0), 0);
-
-    return { totalUsers, activeServices, totalVolume, pendingKyc };
-  }
-
-  async getRecentUsers() {
-    return this.userRepo.find({
-      order: { createdAt: 'DESC' },
-      take: 10,
-      select: { id: true, fullName: true, email: true, role: true, createdAt: true },
-    });
-  }
-
-  async getAllUsers() {
-    return this.userRepo.find({
-      order: { createdAt: 'DESC' },
-      select: { id: true, fullName: true, email: true, role: true, isVerified: true, createdAt: true },
-    });
-  }
-
-  // ── KYC individual ─────────────────────────────────────────────────────────
-  //
-  // SECURITY FIX (mantido): select explícito, sem password/2FA secrets —
-  // continua a não carregar o User completo, só os campos que o painel
-  // precisa para identificar o prestador.
-  //
-  // ALTERADO: getPendingKyc() passou a incluir phoneNumber, frontBiUrl,
-  // backBiUrl, selfieUrl (os documentos submetidos em kyc/page.tsx) e o
-  // avatarUrl do provider relacionado — mesmos campos que já existiam em
-  // ProviderVerification e em User, nenhum campo novo foi inventado. Isto
-  // segue exactamente o mesmo padrão de select que KycService.getPending()
-  // já usa, aplicado aqui dentro do AdminService (Opção B: sem depender de
-  // outro módulo, sem tocar em admin.module.ts).
-
-  async getPendingKyc() {
-    const list = await this.verificationRepo.find({
-      where: { status: KycStatus.PENDING },
-      relations: { provider: true },
-      select: {
-        id: true,
-        providerId: true,
-        fullName: true,
-        phoneNumber: true,
-        frontBiUrl: true,
-        backBiUrl: true,
-        selfieUrl: true,
-        createdAt: true,
-        provider: {
-          id: true,
-          avatarUrl: true,
-        },
-      },
-      order: { createdAt: 'ASC' },
-    });
-
-    // Normaliza para o formato que o frontend espera: { id, userName, documentStatus, type, ... }
-    return list.map(v => ({
-      id: v.id,
-      userName: v.fullName ?? '—',
-      phoneNumber: v.phoneNumber ?? null,
-      avatarUrl: v.provider?.avatarUrl ?? null,
-      frontBiUrl: v.frontBiUrl,
-      backBiUrl: v.backBiUrl,
-      selfieUrl: v.selfieUrl,
-      documentStatus: 'BI + Selfie',
-      type: 'individual' as const,
-      createdAt: v.createdAt,
-    }));
-  }
-
-  async approveKyc(id: string) {
-    const verification = await this.verificationRepo.findOne({
-      where: { id },
-    });
-    if (!verification) throw new Error('Verificação não encontrada.');
-    verification.status = KycStatus.APPROVED;
-    verification.reviewedAt = new Date();
-    await this.verificationRepo.save(verification);
-    await this.userRepo.update(verification.providerId, {
-      isVerified: true,
-      profileVisible: true,
-    });
-    return verification;
-  }
-
-  async rejectKyc(id: string) {
-    const verification = await this.verificationRepo.findOne({ where: { id } });
-    if (!verification) throw new Error('Verificação não encontrada.');
-    verification.status = KycStatus.REJECTED;
-    verification.reviewedAt = new Date();
-    await this.verificationRepo.save(verification);
-    await this.userRepo.update(verification.providerId, {
-      isVerified: false,
-      profileVisible: false,
-    });
-    return verification;
-  }
-
-  // ── KYC empresarial ────────────────────────────────────────────────────────
-  // INTOCADO — nenhuma alteração nesta secção.
-
-  async getPendingCompanyKyc() {
-    const list = await this.companyKycService.getPending();
-
-    // Normaliza para o mesmo formato AdminKyc do frontend
-    return list.map(v => ({
-      id: v.id,
-      userName: v.company?.name ?? v.legalName ?? '—',
-      documentStatus: 'NIF + Alvará + Certidão + BI Rep.',
-      type: 'company' as const,
-      companyId: v.companyId,
-      createdAt: v.createdAt,
-    }));
-  }
-
-  async approveCompanyKyc(id: string, adminId: string) {
-    return this.companyKycService.approve(id, adminId);
-  }
-
-  async rejectCompanyKyc(id: string, adminId: string, dto: RejectCompanyKycDto) {
-    return this.companyKycService.reject(id, adminId, dto);
-  }
-}
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([User, ProviderVerification, Service]),
+    CompaniesModule,
+  ],
+  controllers: [AdminController],
+  providers: [AdminService],
+})
+export class AdminModule {}

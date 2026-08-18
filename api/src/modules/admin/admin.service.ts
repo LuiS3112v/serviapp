@@ -56,32 +56,48 @@ export class AdminService {
 
   // ── KYC individual ─────────────────────────────────────────────────────────
   //
-  // SECURITY FIX: getPendingKyc() e approveKyc/rejectKyc já não usam
-  // relations:{provider:true} sem select — getPendingKyc delega agora
-  // inteiramente a KycService.getPending(), que já foi corrigido nesta
-  // auditoria (select explícito, sem password/2FA secrets). approveKyc
-  // e rejectKyc só precisam de providerId e status, que já vêm no
-  // objecto verification carregado pelo próprio verificationRepo — não
-  // carregavam User de qualquer forma, por isso ficam inalterados
-  // abaixo, apenas reescritos para reutilizar getById() do
-  // KycService seria uma mudança maior de dependências fora do âmbito
-  // desta auditoria; a query aqui já não tinha o problema.
+  // SECURITY FIX (mantido): select explícito, sem password/2FA secrets —
+  // continua a não carregar o User completo, só os campos que o painel
+  // precisa para identificar o prestador.
+  //
+  // ALTERADO: getPendingKyc() passou a incluir phoneNumber, frontBiUrl,
+  // backBiUrl, selfieUrl (os documentos submetidos em kyc/page.tsx) e o
+  // avatarUrl do provider relacionado — mesmos campos que já existiam em
+  // ProviderVerification e em User, nenhum campo novo foi inventado. Isto
+  // segue exactamente o mesmo padrão de select que KycService.getPending()
+  // já usa, aplicado aqui dentro do AdminService (Opção B: sem depender de
+  // outro módulo, sem tocar em admin.module.ts).
 
   async getPendingKyc() {
     const list = await this.verificationRepo.find({
       where: { status: KycStatus.PENDING },
+      relations: { provider: true },
       select: {
         id: true,
         providerId: true,
         fullName: true,
+        phoneNumber: true,
+        frontBiUrl: true,
+        backBiUrl: true,
+        selfieUrl: true,
         createdAt: true,
+        provider: {
+          id: true,
+          avatarUrl: true,
+        },
       },
+      order: { createdAt: 'ASC' },
     });
 
-    // Normaliza para o formato que o frontend espera: { id, userName, documentStatus, type }
+    // Normaliza para o formato que o frontend espera: { id, userName, documentStatus, type, ... }
     return list.map(v => ({
       id: v.id,
       userName: v.fullName ?? '—',
+      phoneNumber: v.phoneNumber ?? null,
+      avatarUrl: v.provider?.avatarUrl ?? null,
+      frontBiUrl: v.frontBiUrl,
+      backBiUrl: v.backBiUrl,
+      selfieUrl: v.selfieUrl,
       documentStatus: 'BI + Selfie',
       type: 'individual' as const,
       createdAt: v.createdAt,
@@ -117,6 +133,7 @@ export class AdminService {
   }
 
   // ── KYC empresarial ────────────────────────────────────────────────────────
+  // INTOCADO — nenhuma alteração nesta secção.
 
   async getPendingCompanyKyc() {
     const list = await this.companyKycService.getPending();
