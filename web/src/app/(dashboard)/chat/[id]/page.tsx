@@ -176,42 +176,50 @@ function ChatInner() {
              overflow-x:hidden. Um flex item sem min-width:0 não encolhe
              abaixo do conteúdo intrínseco; algo lá dentro empurrava a
              largura além do viewport e o espaço sobrante ficava com a
-             cor de fundo do body (--dark, #0d1117) → faixa preta.
+             cor de fundo do body (--dark, #0d1117) → faixa preta lateral.
           2) 100vh trocado por 100dvh: 100vh em mobile inclui a área da
              barra de endereço do browser, que aparece/desaparece ao
              rolar — isso cortava ou deixava espaço morto no input.
 
           FIX (nova ronda — mobile/PWA):
           3) Reservada a safe-area do fundo do ecrã (env(safe-area-
-             inset-bottom)) na barra de input. Sem isto, em PWA
-             standalone num iPhone com home indicator, o input ficava
-             colado/parcialmente sob a faixa do gesto de home. O
-             layout.tsx já define viewport-fit:cover (activa as
-             safe-areas), mas cada elemento fixo no fundo do ecrã tem
-             de as reservar manualmente — isto não estava a acontecer
-             em lado nenhum do chat.
-          4) dvh aplicado também ao .chatd-wrap (min-height) de forma
-             consistente, com 100vh como fallback para browsers sem
-             suporte a dvh (não remove nada, só acrescenta).
+             inset-bottom)) na barra de input.
+          4) CAUSA REAL da faixa preta no FUNDO (não lateral): min-height
+             sozinho não impõe um tecto — só um mínimo. .chatd-wrap tinha
+             min-height:100dvh mas nenhum limite superior, e .chatd-main
+             tinha max-height:100dvh sem overflow-y:hidden a fazer cumprir
+             esse limite. Nada impedia a soma de header+mensagens+input
+             de ultrapassar o ecrã, e nesse caso a PÁGINA (não só
+             .chatd-msgs) ganhava scroll próprio — ao rolar, aparecia o
+             fundo do body (--dark, #0d1117) por baixo do fim do chat.
+             Corrigido: .chatd-wrap e .chatd-main passam a ter
+             height:100dvh (tecto rígido, não só mínimo) + overflow:hidden.
+             Quem rola continua a ser exclusivamente .chatd-msgs
+             (overflow-y:auto) — a página em si nunca deve ter scroll.
         */
         .chatd-wrap{
           display:flex;
+          height:100vh;
+          height:100dvh;
           min-height:100vh;
           min-height:100dvh;
           background:#f8fafc;
           width:100%;
           max-width:100vw;
-          overflow-x:hidden;
+          overflow:hidden;
         }
         .chatd-main{
           flex:1;
           margin-left:240px;
           display:flex;
           flex-direction:column;
+          height:100vh;
+          height:100dvh;
           max-height:100vh;
           max-height:100dvh;
           min-width:0;
           overflow-x:hidden;
+          overflow-y:hidden;
         }
         .chatd-header{
           flex-shrink:0;display:flex;align-items:center;gap:14px;

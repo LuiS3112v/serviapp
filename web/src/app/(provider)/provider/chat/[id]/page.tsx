@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import ProviderSidebar from "@/components/layout/ProviderSidebar";
 import { ArrowLeft, Send, Shield, AlertTriangle, Loader2, MessageCircle } from "lucide-react";
 import { chatApi, ChatMessage, ChatRoom } from "@/lib/chat.api";
 import { getToken } from "@/lib/auth.api";
@@ -137,75 +138,87 @@ export default function ProviderChatDetailPage() {
   return (
     <>
       <style>{`
-        *,*::before,*::after { box-sizing: border-box }
-
         /*
-          FIX (responsividade — mobile/PWA):
+          FIX (responsividade — reestruturação completa):
 
-          1) height: calc(100vh - 64px) foi substituído por height:100%,
-             que preenche o espaço que o <main> do provider/layout.tsx já
-             reserva corretamente via flexbox (Navbar acima, <main> com
-             flex:1 e min-height:0 a seguir). O calc antigo tinha dois
-             problemas: (a) 100vh em mobile Chrome/Safari inclui a área
-             da barra de endereço, que aparece/desaparece ao rolar —
-             ficava sistematicamente maior do que o espaço realmente
-             visível; (b) "64px" estava hardcoded como a altura da
-             Navbar, mas a ProviderNavbar cresce em altura (flex-wrap)
-             abaixo de 420px — nesses ecrãs o cálculo ficava errado,
-             cortando ou sobrepondo conteúdo do chat. Ver nota
-             correspondente em provider/layout.tsx.
-          2) Adicionado min-width:0 + overflow-x:hidden (mesmo bug já
-             corrigido no chat do cliente: um flex item sem min-width:0
-             não encolhe abaixo do seu conteúdo, o que cria overflow
-             horizontal em ecrãs estreitos).
-          3) Reservada a safe-area do fundo (env(safe-area-inset-bottom))
-             na barra de input, para PWA standalone em iPhones com home
-             indicator — sem isto o input ficava sob a faixa de gesto.
+          O chat do provider deixou de depender da altura calculada pelo
+          <main> do layout pai (provider/layout.tsx). Em runtime, essa
+          dependência estava a falhar em mobile real: o header do chat
+          (voltar/avatar/nome) ficava fora do ecrã e o fundo mostrava uma
+          faixa preta — sintoma de o wrapper não estar a receber uma
+          altura fiável do pai a tempo, deixando a página inteira mais
+          alta que o ecrã e a rolar como um todo em vez de só rolar
+          .pcd-msgs internamente.
+
+          Correcção: à semelhança do chat do cliente (que já funciona
+          bem), esta página passa a montar o seu próprio <ProviderSidebar/>
+          e a ocupar 100dvh de forma autocontida — sem depender de nenhum
+          <main> ou <ProviderNavbar/> à volta. A ProviderNavbar deixa de
+          aparecer aqui de propósito (o chat aberto é full-screen dentro
+          da área do provider, tal como acontece no chat do cliente, que
+          também não mostra a Navbar do cliente ao abrir uma conversa).
+
+          min-width:0 / overflow-x:hidden mantidos em todos os níveis
+          (protecção contra overflow horizontal). 100dvh usado em vez de
+          100vh (desconta corretamente a barra de endereço do browser em
+          mobile). Safe-area do fundo reservada para PWA/iOS.
+
+          FIX adicional (faixa preta no fundo): .pcd-wrap/.pcd-main
+          tinham só min-height/max-height, sem height fixo nem
+          overflow:hidden a impor esse limite. min-height sozinho não
+          impede o conteúdo de crescer além do ecrã — se a soma de
+          header+mensagens+input ultrapassasse a altura visível, a
+          PÁGINA inteira ganhava scroll (não só .pcd-msgs), e ao rolar
+          aparecia o fundo escuro do body por baixo do chat. Corrigido
+          com height:100dvh (tecto rígido) + overflow:hidden nos dois
+          níveis — quem rola continua a ser exclusivamente .pcd-msgs.
         */
-        .pcd-wrap {
-          display: flex; flex-direction: column;
-          /* Preenche o <main> flexível do layout do provider — ver
-             comentário FIX acima e nota em provider/layout.tsx. */
-          height: 100%;
-          min-height: 0;
-          flex: 1;
-          background: #f8fafc; overflow: hidden;
-          width: 100%;
-          max-width: 100%;
-          min-width: 0;
+        .pcd-wrap{
+          display:flex;
+          height:100vh;
+          height:100dvh;
+          min-height:100vh;
+          min-height:100dvh;
+          background:#f8fafc;
+          width:100%;
+          max-width:100vw;
+          overflow:hidden;
         }
-
-        /* ── Header ── */
+        .pcd-main{
+          flex:1;
+          margin-left:240px;
+          display:flex;
+          flex-direction:column;
+          height:100vh;
+          height:100dvh;
+          max-height:100vh;
+          max-height:100dvh;
+          min-width:0;
+          overflow-x:hidden;
+          overflow-y:hidden;
+        }
         .pcd-header {
           flex-shrink: 0; display: flex; align-items: center; gap: 14px;
           padding: 0 24px; height: 65px;
           background: #ffffff; border-bottom: 1px solid #eef1f5;
           min-width: 0;
         }
-
-        /* ── Messages area ── */
         .pcd-msgs {
           flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;
           padding: 20px 24px; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth;
           -webkit-overflow-scrolling: touch;
-          /* fundo ligeiramente estriado para distinguir do branco dos cards */
           background: #f8fafc;
         }
         .pcd-msgs::-webkit-scrollbar { width: 4px; }
         .pcd-msgs::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
 
-        /* ── Input bar ── */
         .pcd-input-area {
           flex-shrink: 0; display: flex; align-items: center; gap: 10px;
           padding: 14px 24px;
           background: #ffffff; border-top: 1px solid #eef1f5;
           min-width: 0;
-          /* Reserva a safe-area (home indicator / gesture bar) em PWA/iOS.
-             env() com fallback 0px não altera nada em ecrãs sem notch. */
           padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         }
-
-        /* ── Bolhas ── */
 
         /* Provider (eu): direita, âmbar sólido, texto escuro */
         .pcd-me {
@@ -214,10 +227,9 @@ export default function ProviderChatDetailPage() {
           background: #EF9F27; color: #0f172a;
           align-self: flex-end; border-bottom-right-radius: 4px;
         }
-        /* Optimistic */
         .pcd-me-opt { opacity: 0.72; }
 
-        /* Cliente (outro): esquerda, cinza claro — igual ao cliente mas invertido */
+        /* Cliente (outro): esquerda, cinza claro */
         .pcd-other {
           max-width: 68%; padding: 10px 14px; border-radius: 14px;
           font-size: 14px; line-height: 1.55; word-break: break-word;
@@ -227,7 +239,6 @@ export default function ProviderChatDetailPage() {
 
         .pcd-time { font-size: 10px; opacity: 0.55; margin-top: 4px; }
 
-        /* ── Mensagem bloqueada ── */
         .pcd-blocked {
           background: #fef2f2; border: 1px solid #fecaca;
           border-radius: 10px; padding: 8px 12px;
@@ -235,13 +246,11 @@ export default function ProviderChatDetailPage() {
           align-self: flex-start; max-width: 80%;
         }
 
-        /* ── Typing indicator ── */
         .pcd-typing-dot {
           width: 6px; height: 6px; border-radius: 50%;
           background: #94a3b8; animation: pcdtdot 1.2s infinite;
         }
 
-        /* ── Input ── */
         .pcd-input {
           flex: 1; min-width: 0; padding: 12px 16px; border-radius: 12px;
           background: #f8fafc; border: 1.5px solid #e2e8f0;
@@ -251,7 +260,6 @@ export default function ProviderChatDetailPage() {
         .pcd-input:focus { border-color: #EF9F27; background: #ffffff; }
         .pcd-input::placeholder { color: #94a3b8; }
 
-        /* ── Send button — âmbar, ícone escuro (legível sobre fundo claro) ── */
         .pcd-send {
           flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px;
           background: #EF9F27; border: none; cursor: pointer;
@@ -261,13 +269,15 @@ export default function ProviderChatDetailPage() {
         .pcd-send:hover:not(:disabled) { transform: scale(1.05); }
         .pcd-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* ── Skeleton ── */
         .pcd-sk { background: #e2e8f0; border-radius: 8px; animation: pcdsk 1.5s infinite; }
         @keyframes pcdsk   { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }
         @keyframes pcdtdot { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
         @keyframes pcdspin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
 
-        @media (max-width: 1024px) { .pcd-header { padding-left: 72px; } }
+        @media(max-width:1024px){
+          .pcd-main{margin-left:0}
+          .pcd-header{padding-left:72px}
+        }
         @media (max-width: 640px) {
           .pcd-msgs        { padding: 12px 14px; }
           .pcd-input-area  { padding: 10px 14px; }
@@ -277,149 +287,148 @@ export default function ProviderChatDetailPage() {
       `}</style>
 
       <div className="pcd-wrap">
+        <ProviderSidebar/>
+        <div className="pcd-main">
 
-        {/* ── Header ── */}
-        <div className="pcd-header">
-          <button
-            onClick={() => router.back()}
-            style={{ background:"none", border:"none", cursor:"pointer", color:"#64748b", display:"flex", padding:4 }}
-          >
-            <ArrowLeft size={20}/>
-          </button>
+          {/* ── Header ── */}
+          <div className="pcd-header">
+            <button
+              onClick={() => router.back()}
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#64748b", display:"flex", padding:4 }}
+            >
+              <ArrowLeft size={20}/>
+            </button>
 
-          {/* Avatar */}
-          {loading
-            ? <div className="pcd-sk" style={{ width:40, height:40, borderRadius:"50%", flexShrink:0 }}/>
-            : (
-              <div style={{
-                width:40, height:40, borderRadius:"50%",
-                background:"#fef3e2", display:"flex", alignItems:"center",
-                justifyContent:"center", fontSize:16, fontWeight:700,
-                color:"#b96f0f", flexShrink:0, overflow:"hidden",
-              }}>
-                {other?.avatarUrl
-                  ? <img src={other.avatarUrl} style={{ width:"100%", height:"100%", objectFit:"cover" }} alt=""/>
-                  : other?.fullName?.charAt(0)?.toUpperCase() ?? "?"}
-              </div>
-            )
-          }
-
-          {/* Name */}
-          <div style={{ flex:1, minWidth:0 }}>
             {loading
-              ? <div className="pcd-sk" style={{ width:120, height:14, marginBottom:4 }}/>
-              : <p style={{ fontSize:15, fontWeight:700, color:"#0f172a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                  {other?.fullName ?? "—"}
-                </p>
+              ? <div className="pcd-sk" style={{ width:40, height:40, borderRadius:"50%", flexShrink:0 }}/>
+              : (
+                <div style={{
+                  width:40, height:40, borderRadius:"50%",
+                  background:"#fef3e2", display:"flex", alignItems:"center",
+                  justifyContent:"center", fontSize:16, fontWeight:700,
+                  color:"#b96f0f", flexShrink:0, overflow:"hidden",
+                }}>
+                  {other?.avatarUrl
+                    ? <img src={other.avatarUrl} style={{ width:"100%", height:"100%", objectFit:"cover" }} alt=""/>
+                    : other?.fullName?.charAt(0)?.toUpperCase() ?? "?"}
+                </div>
+              )
             }
-            <p style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>Cliente</p>
-          </div>
 
-          {/* Badge "Protegida" — âmbar suave, distinto do verde do cliente */}
-          <div style={{
-            display:"flex", alignItems:"center", gap:6,
-            padding:"6px 12px", borderRadius:8,
-            background:"#fef3e2", border:"1px solid #fcd9a1", flexShrink:0,
-          }}>
-            <Shield size={13} style={{ color:"#EF9F27" }}/>
-            <span style={{ fontSize:11, color:"#b96f0f", fontWeight:600 }}>Protegida</span>
-          </div>
-        </div>
-
-        {/* ── Messages ── */}
-        <div className="pcd-msgs">
-          {loading ? (
-            [1,2,3].map(i => (
-              <div key={i} className="pcd-sk" style={{
-                height:40, borderRadius:14,
-                width: i%2===0 ? "55%" : "42%",
-                alignSelf: i%2===0 ? "flex-start" : "flex-end",
-              }}/>
-            ))
-          ) : messages.length === 0 ? (
-            <div style={{
-              display:"flex", flexDirection:"column", alignItems:"center",
-              justifyContent:"center", flex:1, gap:14, textAlign:"center",
-            }}>
-              <div style={{
-                width:56, height:56, borderRadius:16,
-                background:"#ffffff", border:"1px solid #eef1f5",
-                display:"flex", alignItems:"center", justifyContent:"center",
-              }}>
-                <MessageCircle size={26} style={{ color:"#94a3b8" }}/>
-              </div>
-              <p style={{ fontSize:14, fontWeight:600, color:"#334155" }}>
-                {other ? `Inicia uma conversa com ${other.fullName}` : "Inicia a conversa"}
-              </p>
-              <p style={{ fontSize:12, color:"#64748b", lineHeight:1.6 }}>
-                Escreve uma mensagem para começar.
-              </p>
+            <div style={{ flex:1, minWidth:0 }}>
+              {loading
+                ? <div className="pcd-sk" style={{ width:120, height:14, marginBottom:4 }}/>
+                : <p style={{ fontSize:15, fontWeight:700, color:"#0f172a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {other?.fullName ?? "—"}
+                  </p>
+              }
+              <p style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>Cliente</p>
             </div>
-          ) : messages.map(m => {
-            // ═══════════════════════════════════════════════════════════════
-            // IDENTICAL OWNERSHIP LOGIC TO CLIENT CHAT — no special cases
-            // message.senderId === currentUser.id  (from JWT, never from room)
-            // ═══════════════════════════════════════════════════════════════
-            const isMe         = userId !== null && m.senderId === userId;
-            const isOptimistic = m.id.startsWith(OPT_PREFIX);
 
-            if (m.isBlocked) return (
-              <div className="pcd-blocked" key={m.id}>
-                <AlertTriangle size={14} style={{ color:"#dc2626", flexShrink:0 }}/>
-                <div>
-                  <p style={{ fontSize:12, fontWeight:600, color:"#dc2626" }}>Mensagem bloqueada</p>
-                  <p style={{ fontSize:11, color:"#b91c1c" }}>Partilha de contactos externos não é permitida.</p>
-                </div>
-              </div>
-            );
-
-            return (
-              <div key={m.id} style={{
-                display:"flex", flexDirection:"column",
-                alignItems: isMe ? "flex-end" : "flex-start",
-              }}>
-                <div className={`${isMe ? "pcd-me" : "pcd-other"}${isOptimistic ? " pcd-me-opt" : ""}`}>
-                  {m.content}
-                </div>
-                <span className="pcd-time" style={{ alignSelf: isMe ? "flex-end" : "flex-start" }}>
-                  {isOptimistic ? "A enviar..." : formatTime(m.createdAt)}
-                </span>
-              </div>
-            );
-          })}
-
-          {/* Typing indicator */}
-          {typing && (
             <div style={{
               display:"flex", alignItems:"center", gap:6,
-              padding:"8px 14px", background:"#e4e9f0",
-              borderRadius:14, alignSelf:"flex-start", borderBottomLeftRadius:4,
+              padding:"6px 12px", borderRadius:8,
+              background:"#fef3e2", border:"1px solid #fcd9a1", flexShrink:0,
             }}>
-              {[0,1,2].map(i => (
-                <div key={i} className="pcd-typing-dot" style={{ animationDelay:`${i*0.2}s` }}/>
-              ))}
+              <Shield size={13} style={{ color:"#EF9F27" }}/>
+              <span style={{ fontSize:11, color:"#b96f0f", fontWeight:600 }}>Protegida</span>
             </div>
-          )}
-          <div ref={bottomRef}/>
-        </div>
+          </div>
 
-        {/* ── Input ── */}
-        <div className="pcd-input-area">
-          <input
-            className="pcd-input"
-            placeholder={other ? `Mensagem para ${other.fullName}...` : "Escreve uma mensagem..."}
-            value={msg}
-            onChange={e => { setMsg(e.target.value); handleTyping(); }}
-            onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
-          />
-          <button className="pcd-send" disabled={!msg.trim() || sending} onClick={handleSend}>
-            {sending
-              ? <Loader2 size={16} color="#0f172a" style={{ animation:"pcdspin 1s linear infinite" }}/>
-              : <Send size={16} color="#0f172a"/>
-            }
-          </button>
-        </div>
+          {/* ── Messages ── */}
+          <div className="pcd-msgs">
+            {loading ? (
+              [1,2,3].map(i => (
+                <div key={i} className="pcd-sk" style={{
+                  height:40, borderRadius:14,
+                  width: i%2===0 ? "55%" : "42%",
+                  alignSelf: i%2===0 ? "flex-start" : "flex-end",
+                }}/>
+              ))
+            ) : messages.length === 0 ? (
+              <div style={{
+                display:"flex", flexDirection:"column", alignItems:"center",
+                justifyContent:"center", flex:1, gap:14, textAlign:"center",
+              }}>
+                <div style={{
+                  width:56, height:56, borderRadius:16,
+                  background:"#ffffff", border:"1px solid #eef1f5",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                }}>
+                  <MessageCircle size={26} style={{ color:"#94a3b8" }}/>
+                </div>
+                <p style={{ fontSize:14, fontWeight:600, color:"#334155" }}>
+                  {other ? `Inicia uma conversa com ${other.fullName}` : "Inicia a conversa"}
+                </p>
+                <p style={{ fontSize:12, color:"#64748b", lineHeight:1.6 }}>
+                  Escreve uma mensagem para começar.
+                </p>
+              </div>
+            ) : messages.map(m => {
+              // ═══════════════════════════════════════════════════════════════
+              // IDENTICAL OWNERSHIP LOGIC TO CLIENT CHAT — no special cases
+              // message.senderId === currentUser.id  (from JWT, never from room)
+              // ═══════════════════════════════════════════════════════════════
+              const isMe         = userId !== null && m.senderId === userId;
+              const isOptimistic = m.id.startsWith(OPT_PREFIX);
 
+              if (m.isBlocked) return (
+                <div className="pcd-blocked" key={m.id}>
+                  <AlertTriangle size={14} style={{ color:"#dc2626", flexShrink:0 }}/>
+                  <div>
+                    <p style={{ fontSize:12, fontWeight:600, color:"#dc2626" }}>Mensagem bloqueada</p>
+                    <p style={{ fontSize:11, color:"#b91c1c" }}>Partilha de contactos externos não é permitida.</p>
+                  </div>
+                </div>
+              );
+
+              return (
+                <div key={m.id} style={{
+                  display:"flex", flexDirection:"column",
+                  alignItems: isMe ? "flex-end" : "flex-start",
+                }}>
+                  <div className={`${isMe ? "pcd-me" : "pcd-other"}${isOptimistic ? " pcd-me-opt" : ""}`}>
+                    {m.content}
+                  </div>
+                  <span className="pcd-time" style={{ alignSelf: isMe ? "flex-end" : "flex-start" }}>
+                    {isOptimistic ? "A enviar..." : formatTime(m.createdAt)}
+                  </span>
+                </div>
+              );
+            })}
+
+            {typing && (
+              <div style={{
+                display:"flex", alignItems:"center", gap:6,
+                padding:"8px 14px", background:"#e4e9f0",
+                borderRadius:14, alignSelf:"flex-start", borderBottomLeftRadius:4,
+              }}>
+                {[0,1,2].map(i => (
+                  <div key={i} className="pcd-typing-dot" style={{ animationDelay:`${i*0.2}s` }}/>
+                ))}
+              </div>
+            )}
+            <div ref={bottomRef}/>
+          </div>
+
+          {/* ── Input ── */}
+          <div className="pcd-input-area">
+            <input
+              className="pcd-input"
+              placeholder={other ? `Mensagem para ${other.fullName}...` : "Escreve uma mensagem..."}
+              value={msg}
+              onChange={e => { setMsg(e.target.value); handleTyping(); }}
+              onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
+            />
+            <button className="pcd-send" disabled={!msg.trim() || sending} onClick={handleSend}>
+              {sending
+                ? <Loader2 size={16} color="#0f172a" style={{ animation:"pcdspin 1s linear infinite" }}/>
+                : <Send size={16} color="#0f172a"/>
+              }
+            </button>
+          </div>
+
+        </div>
       </div>
     </>
   );
