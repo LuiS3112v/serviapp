@@ -171,16 +171,28 @@ function ChatInner() {
     <>
       <style>{`
         /*
-          FIX (responsividade): .chatd-wrap/.chatd-main não tinham
-          min-width:0 nem overflow-x:hidden. Um flex item sem min-width:0
-          não encolhe abaixo do seu conteúdo intrínseco — se algo lá dentro
-          (input, avatar, mensagem) empurrasse a largura, .chatd-main
-          ultrapassava o viewport e criava overflow horizontal. O espaço
-          fora do wrap ficava com a cor de fundo do body (--dark, #0d1117),
-          daí a faixa preta à direita. Alinhado com o mesmo padrão já usado
-          em chat/page.tsx (lista de conversas), que não tinha este bug.
-          100vh trocado por 100dvh pelo mesmo motivo já aplicado lá:
-          altura de viewport correcta em browser mobile e PWA standalone.
+          FIX (responsividade — histórico):
+          1) .chatd-wrap/.chatd-main não tinham min-width:0 nem
+             overflow-x:hidden. Um flex item sem min-width:0 não encolhe
+             abaixo do conteúdo intrínseco; algo lá dentro empurrava a
+             largura além do viewport e o espaço sobrante ficava com a
+             cor de fundo do body (--dark, #0d1117) → faixa preta.
+          2) 100vh trocado por 100dvh: 100vh em mobile inclui a área da
+             barra de endereço do browser, que aparece/desaparece ao
+             rolar — isso cortava ou deixava espaço morto no input.
+
+          FIX (nova ronda — mobile/PWA):
+          3) Reservada a safe-area do fundo do ecrã (env(safe-area-
+             inset-bottom)) na barra de input. Sem isto, em PWA
+             standalone num iPhone com home indicator, o input ficava
+             colado/parcialmente sob a faixa do gesto de home. O
+             layout.tsx já define viewport-fit:cover (activa as
+             safe-areas), mas cada elemento fixo no fundo do ecrã tem
+             de as reservar manualmente — isto não estava a acontecer
+             em lado nenhum do chat.
+          4) dvh aplicado também ao .chatd-wrap (min-height) de forma
+             consistente, com 100vh como fallback para browsers sem
+             suporte a dvh (não remove nada, só acrescenta).
         */
         .chatd-wrap{
           display:flex;
@@ -212,6 +224,7 @@ function ChatInner() {
           display:flex;flex-direction:column;gap:10px;
           overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;
           min-width:0;
+          -webkit-overflow-scrolling:touch;
         }
         .chatd-msgs::-webkit-scrollbar{width:4px}
         .chatd-msgs::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:4px}
@@ -219,6 +232,9 @@ function ChatInner() {
           flex-shrink:0;display:flex;align-items:center;gap:10px;
           padding:14px 24px;background:#ffffff;border-top:1px solid #eef1f5;
           min-width:0;
+          /* Reserva a safe-area (home indicator / gesture bar) em PWA/iOS.
+             env() com fallback 0px não altera nada em ecrãs sem notch. */
+          padding-bottom:calc(14px + env(safe-area-inset-bottom, 0px));
         }
         /* Own message: right side, blue */
         .msg-me{
@@ -270,6 +286,7 @@ function ChatInner() {
         @media(max-width:640px){
           .chatd-msgs{padding:12px 14px}
           .chatd-input-area{padding:10px 14px}
+          .chatd-input-area{padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px))}
           .msg-me,.msg-other{max-width:84%}
         }
       `}</style>

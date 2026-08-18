@@ -139,11 +139,40 @@ export default function ProviderChatDetailPage() {
       <style>{`
         *,*::before,*::after { box-sizing: border-box }
 
-        /* ── Shell: ocupa o espaço restante abaixo da Navbar (64px) ── */
+        /*
+          FIX (responsividade — mobile/PWA):
+
+          1) height: calc(100vh - 64px) foi substituído por height:100%,
+             que preenche o espaço que o <main> do provider/layout.tsx já
+             reserva corretamente via flexbox (Navbar acima, <main> com
+             flex:1 e min-height:0 a seguir). O calc antigo tinha dois
+             problemas: (a) 100vh em mobile Chrome/Safari inclui a área
+             da barra de endereço, que aparece/desaparece ao rolar —
+             ficava sistematicamente maior do que o espaço realmente
+             visível; (b) "64px" estava hardcoded como a altura da
+             Navbar, mas a ProviderNavbar cresce em altura (flex-wrap)
+             abaixo de 420px — nesses ecrãs o cálculo ficava errado,
+             cortando ou sobrepondo conteúdo do chat. Ver nota
+             correspondente em provider/layout.tsx.
+          2) Adicionado min-width:0 + overflow-x:hidden (mesmo bug já
+             corrigido no chat do cliente: um flex item sem min-width:0
+             não encolhe abaixo do seu conteúdo, o que cria overflow
+             horizontal em ecrãs estreitos).
+          3) Reservada a safe-area do fundo (env(safe-area-inset-bottom))
+             na barra de input, para PWA standalone em iPhones com home
+             indicator — sem isto o input ficava sob a faixa de gesto.
+        */
         .pcd-wrap {
           display: flex; flex-direction: column;
-          height: calc(100vh - 64px);
+          /* Preenche o <main> flexível do layout do provider — ver
+             comentário FIX acima e nota em provider/layout.tsx. */
+          height: 100%;
+          min-height: 0;
+          flex: 1;
           background: #f8fafc; overflow: hidden;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
         }
 
         /* ── Header ── */
@@ -151,12 +180,14 @@ export default function ProviderChatDetailPage() {
           flex-shrink: 0; display: flex; align-items: center; gap: 14px;
           padding: 0 24px; height: 65px;
           background: #ffffff; border-bottom: 1px solid #eef1f5;
+          min-width: 0;
         }
 
         /* ── Messages area ── */
         .pcd-msgs {
-          flex: 1; display: flex; flex-direction: column; gap: 10px;
-          padding: 20px 24px; overflow-y: auto; scroll-behavior: smooth;
+          flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;
+          padding: 20px 24px; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
           /* fundo ligeiramente estriado para distinguir do branco dos cards */
           background: #f8fafc;
         }
@@ -168,6 +199,10 @@ export default function ProviderChatDetailPage() {
           flex-shrink: 0; display: flex; align-items: center; gap: 10px;
           padding: 14px 24px;
           background: #ffffff; border-top: 1px solid #eef1f5;
+          min-width: 0;
+          /* Reserva a safe-area (home indicator / gesture bar) em PWA/iOS.
+             env() com fallback 0px não altera nada em ecrãs sem notch. */
+          padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         }
 
         /* ── Bolhas ── */
@@ -208,7 +243,7 @@ export default function ProviderChatDetailPage() {
 
         /* ── Input ── */
         .pcd-input {
-          flex: 1; padding: 12px 16px; border-radius: 12px;
+          flex: 1; min-width: 0; padding: 12px 16px; border-radius: 12px;
           background: #f8fafc; border: 1.5px solid #e2e8f0;
           color: #0f172a; font-size: 14px; outline: none;
           font-family: inherit; transition: border 0.2s, background 0.2s;
@@ -236,6 +271,7 @@ export default function ProviderChatDetailPage() {
         @media (max-width: 640px) {
           .pcd-msgs        { padding: 12px 14px; }
           .pcd-input-area  { padding: 10px 14px; }
+          .pcd-input-area  { padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
           .pcd-me, .pcd-other { max-width: 84%; }
         }
       `}</style>
