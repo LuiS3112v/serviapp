@@ -1,14 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, X } from "lucide-react";
+import { Download, X, Share, SquarePlus } from "lucide-react";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 
 const SHOW_DELAY_MS = 3000;
 
 export function InstallPrompt() {
-  const { shouldShowInstallUI, canPromptInstall, promptInstall, dismiss } =
-    usePwaInstall();
+  const {
+    shouldShowInstallUI,
+    canPromptInstall,
+    promptInstall,
+    dismiss,
+    platform,
+  } = usePwaInstall();
 
   const [delayDone, setDelayDone] = useState(false);
   const [gone, setGone] = useState(false);
@@ -29,13 +34,13 @@ export function InstallPrompt() {
     setGone(true);
   };
 
+  // Mostra para qualquer plataforma conhecida onde ainda não está instalado
+  // - Chromium (Android/desktop): tem botão "Instalar" nativo
+  // - iOS Safari / outros: mostra instruções manuais
+  // - Não mostra se já instalado (shouldShowInstallUI = false)
   if (!shouldShowInstallUI || !delayDone || gone) return null;
 
-  // Só mostra quando o browser consegue instalar nativamente
-  // (Chrome/Edge/Samsung Android, Edge desktop, etc.)
-  // Safari iOS e Firefox não disparam beforeinstallprompt — não mostramos
-  // um card com botão que não faz nada
-  if (!canPromptInstall) return null;
+  const isIOS = platform === "ios";
 
   return (
     <>
@@ -61,7 +66,8 @@ export function InstallPrompt() {
           background: "#ffffff",
           border: "1px solid #e2e8f0",
           borderRadius: 16,
-          boxShadow: "0 16px 48px rgba(15,23,42,0.18), 0 2px 8px rgba(15,23,42,0.08)",
+          boxShadow:
+            "0 16px 48px rgba(15,23,42,0.18), 0 2px 8px rgba(15,23,42,0.08)",
           padding: "18px 18px 16px",
           fontFamily: "var(--font-manrope, system-ui, sans-serif)",
         }}
@@ -92,26 +98,84 @@ export function InstallPrompt() {
         </button>
 
         {/* Ícone + título + texto */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 28, marginBottom: 14 }}>
-          <div style={{
-            width: 40,
-            height: 40,
-            borderRadius: 11,
-            background: "#1e293b",
+        <div
+          style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}>
-            <Download size={18} color="#fff" />
+            gap: 12,
+            paddingRight: 28,
+            marginBottom: 14,
+          }}
+        >
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 11,
+              background: "#1e293b",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            {isIOS ? (
+              <Share size={18} color="#fff" />
+            ) : (
+              <Download size={18} color="#fff" />
+            )}
           </div>
           <div>
-            <p style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: "0 0 3px", letterSpacing: "-0.01em" }}>
+            <p
+              style={{
+                fontSize: 14,
+                fontWeight: 800,
+                color: "#0f172a",
+                margin: "0 0 3px",
+                letterSpacing: "-0.01em",
+              }}
+            >
               Instalar Mestroo
             </p>
-            <p style={{ fontSize: 12.5, color: "#64748b", margin: 0, lineHeight: 1.45 }}>
-              Acesso rápido e offline direto do seu ecrã inicial.
-            </p>
+            {isIOS ? (
+              <p
+                style={{
+                  fontSize: 12.5,
+                  color: "#64748b",
+                  margin: 0,
+                  lineHeight: 1.45,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  flexWrap: "wrap",
+                }}
+              >
+                Toque em{" "}
+                <Share
+                  size={12}
+                  style={{ display: "inline", verticalAlign: "middle" }}
+                />{" "}
+                e depois em{" "}
+                <SquarePlus
+                  size={12}
+                  style={{ display: "inline", verticalAlign: "middle" }}
+                />{" "}
+                <strong style={{ fontWeight: 700 }}>
+                  Adicionar ao Ecrã Principal
+                </strong>
+              </p>
+            ) : (
+              <p
+                style={{
+                  fontSize: 12.5,
+                  color: "#64748b",
+                  margin: 0,
+                  lineHeight: 1.45,
+                }}
+              >
+                Acesso rápido e offline direto do seu ecrã inicial.
+              </p>
+            )}
           </div>
         </div>
 
@@ -135,29 +199,34 @@ export function InstallPrompt() {
           >
             Agora não
           </button>
-          <button
-            type="button"
-            onClick={install}
-            style={{
-              flex: 1.4,
-              padding: "9px 0",
-              borderRadius: 9,
-              border: "none",
-              background: "#1e293b",
-              color: "#fff",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              fontFamily: "inherit",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-            }}
-          >
-            <Download size={14} />
-            Instalar
-          </button>
+
+          {/* iOS: não há prompt nativo, só mostra "Agora não" + X */}
+          {!isIOS && (
+            <button
+              type="button"
+              onClick={canPromptInstall ? install : undefined}
+              style={{
+                flex: 1.4,
+                padding: "9px 0",
+                borderRadius: 9,
+                border: "none",
+                background: "#1e293b",
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: canPromptInstall ? "pointer" : "default",
+                fontFamily: "inherit",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                opacity: canPromptInstall ? 1 : 0.5,
+              }}
+            >
+              <Download size={14} />
+              {canPromptInstall ? "Instalar" : "Instalar..."}
+            </button>
+          )}
         </div>
       </div>
     </>
