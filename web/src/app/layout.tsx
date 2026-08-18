@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import { PWA_CONFIG } from "@/lib/pwa-config";
+import { SWRegister } from "./sw-register";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -66,6 +67,7 @@ export default function RootLayout({
     <html lang="pt" className={manrope.variable}>
       <body>
         {children}
+        <SWRegister />
       </body>
     </html>
   );
