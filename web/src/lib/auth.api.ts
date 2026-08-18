@@ -8,8 +8,6 @@ export interface AuthUser {
   id: string;
   fullName: string;
   email: string;
-  // ALTERADO: +"pending" — contas Google que ainda não escolheram
-  // entre Cliente/Prestador.
   role: "client" | "provider" | "company" | "admin" | "pending";
   isVerified: boolean;
   profileVisible: boolean;
@@ -25,12 +23,21 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
-// NOVO — resposta de POST /auth/google. Estende AuthResponse (mesma
-// forma que login/register já devolvem) com dois campos extra, só
-// usados para decidir o redirect pós-autenticação.
+// Resposta de POST /auth/google (LOGIN — inalterado).
 export interface GoogleAuthResponse extends AuthResponse {
   googlePicture: string | null;
   kycStatus: string | null;
+}
+
+// NOVO — resposta de POST /auth/google/verify (REGISTER). Deliberadamente
+// SEM access_token e SEM user: não há sessão nem conta criada, é só a
+// identidade Google verificada, usada para pré-preencher o formulário.
+export interface GoogleIdentityPreview {
+  email: string;
+  fullName: string;
+  picture: string | null;
+  googleId: string;
+  emailAlreadyRegistered: boolean;
 }
 
 export interface RegisterPayload {
@@ -57,8 +64,8 @@ async function request<T>(path: string, body: unknown): Promise<T> {
   return data;
 }
 
-// NOVO — usado só por endpoints que exigem sessão (ex: choose-role).
-// login/register/google continuam públicos, via request() acima.
+// Usado só por endpoints que exigem sessão (ex: choose-role).
+// login/register/google/google-verify continuam públicos, via request() acima.
 async function requestAuthed<T>(path: string, body: unknown): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_URL}${path}`, {
@@ -79,16 +86,21 @@ export const authApi = {
     request<AuthResponse>("/auth/login", payload),
   register: (payload: RegisterPayload) =>
     request<AuthResponse>("/auth/register", payload),
-  // NOVO
+  // INTOCADO — usado exclusivamente pelo /login.
   google: (idToken: string) =>
     request<GoogleAuthResponse>("/auth/google", { idToken }),
+  // NOVO — usado exclusivamente pelo /register/client e /register/provider.
+  // Não cria conta, não cria sessão, não faz login. Só devolve a
+  // identidade Google verificada para pré-preencher o formulário.
+  googleVerify: (idToken: string) =>
+    request<GoogleIdentityPreview>("/auth/google/verify", { idToken }),
   chooseRole: (role: "client" | "provider") =>
     requestAuthed<AuthResponse>("/auth/choose-role", { role }),
 };
 
-// NOVO — usado pelas páginas de login/register/choose-role para
-// decidir, de forma consistente, para onde encaminhar depois de uma
-// autenticação Google. Função pura, sem efeitos secundários.
+// INTOCADO — continua a ser usado exclusivamente pelo fluxo de LOGIN
+// com Google (/login). O novo fluxo de Register não chama esta função:
+// não há user nem kycStatus antes da conta existir.
 export function resolvePostGoogleAuthRoute(
   user: AuthUser,
   kycStatus: string | null,

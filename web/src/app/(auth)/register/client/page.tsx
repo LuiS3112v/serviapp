@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Loader2 } from "lucide-react";
-import { authApi, saveSession, resolvePostGoogleAuthRoute } from "@/lib/auth.api";
+import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Loader2, Sparkles } from "lucide-react";
+import { authApi, saveSession } from "@/lib/auth.api";
 import { renderGoogleButton } from "@/lib/google-auth";
 
 export default function RegisterClientPage() {
@@ -16,6 +16,14 @@ export default function RegisterClientPage() {
   const [error, setError] = useState("");
   const googleBusyRef = useRef(false);
 
+  // NOVO — quando o utilizador usa "Continuar com Google", o email e o
+  // nome vindos da Google passam a ser tratados como pré-preenchidos
+  // (não editáveis), para deixar claro que essa identidade já foi
+  // verificada. O resto do cadastro (telemóvel, senha) continua
+  // manual e obrigatório — Google NUNCA cria a conta aqui.
+  const [googleFilled, setGoogleFilled] = useState(false);
+  const [googlePicture, setGooglePicture] = useState<string | null>(null);
+
   useEffect(() => {
     renderGoogleButton({
       containerId: "google-btn-register-client",
@@ -25,14 +33,27 @@ export default function RegisterClientPage() {
         setGoogleLoading(true);
         setError("");
         try {
-          const data = await authApi.google(idToken);
-          saveSession(data);
-          if (typeof window !== "undefined" && data.googlePicture) {
-            sessionStorage.setItem("mestroo_google_picture", data.googlePicture);
+          // ALTERADO — antes: authApi.google(idToken) criava/autenticava
+          // a conta imediatamente e redirecionava. Agora: authApi.googleVerify()
+          // só valida a identidade junto da Google e devolve nome/email,
+          // sem criar User, sem sessão, sem login. A conta só é criada
+          // quando o utilizador terminar o formulário e clicar em
+          // "Criar conta" (handleSubmit), tal como no cadastro tradicional.
+          const identity = await authApi.googleVerify(idToken);
+
+          if (identity.emailAlreadyRegistered) {
+            setError(
+              "Este email já está associado a uma conta existente. Tenta entrar em vez de criar uma nova conta."
+            );
+            return;
           }
-          router.push(resolvePostGoogleAuthRoute(data.user, data.kycStatus));
+
+          setForm((f) => ({ ...f, name: identity.fullName, email: identity.email }));
+          setGooglePicture(identity.picture);
+          setGoogleFilled(true);
         } catch (e: unknown) {
-          setError(e instanceof Error ? e.message : "Erro ao criar conta com Google.");
+          setError(e instanceof Error ? e.message : "Erro ao verificar a conta Google.");
+        } finally {
           setGoogleLoading(false);
           googleBusyRef.current = false;
         }
@@ -59,6 +80,13 @@ export default function RegisterClientPage() {
         phone: form.phone.trim() || undefined,
       });
       saveSession(data);
+      // Preserva a foto sugerida da Google (se houver) para a página
+      // seguinte poder oferecê-la como sugestão de avatar — mesmo
+      // mecanismo de passagem que já existia, só que agora acontece
+      // depois da conta ser criada, não antes.
+      if (typeof window !== "undefined" && googlePicture) {
+        sessionStorage.setItem("mestroo_google_picture", googlePicture);
+      }
       router.push("/home");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro ao criar conta. Tenta novamente.");
@@ -83,6 +111,7 @@ export default function RegisterClientPage() {
         .auth-input { width: 100%; padding: 14px 16px; border-radius: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; color: #0f172a; font-size: 16px; outline: none; transition: border-color .15s, background .15s; margin-bottom: 16px; font-family: inherit; }
         .auth-input:focus { border-color: #2563eb; background: #fff; }
         .auth-input::placeholder { color: #94a3b8; }
+        .auth-input:disabled { background: #f1f5f9; color: #64748b; cursor: not-allowed; }
         .auth-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; }
         .auth-eye:hover { color: #475569; }
         .auth-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg,#2563eb,#3b82f6); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform .15s, box-shadow .15s; box-shadow: 0 8px 20px rgba(37,99,235,0.25); font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -100,6 +129,8 @@ export default function RegisterClientPage() {
         .auth-divider span { font-size: 12px; color: #94a3b8; font-weight: 600; }
         .google-btn-wrap { position: relative; display: flex; justify-content: center; min-height: 44px; margin-bottom: 16px; }
         .google-btn-wrap.disabled { opacity: 0.6; pointer-events: none; }
+        .google-filled-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; background: #eff6ff; border: 1px solid #dbeafe; margin-bottom: 16px; }
+        .google-filled-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
         @media (max-width: 480px) { .auth-card { padding: 30px 22px; } }
       `}</style>
       <div className="auth">
@@ -130,11 +161,37 @@ export default function RegisterClientPage() {
                 </div>
                 <div className="auth-divider"><span>ou</span></div>
 
+                {googleFilled && (
+                  <div className="google-filled-row">
+                    {googlePicture && <img src={googlePicture} alt="" className="google-filled-avatar" />}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 12.5, fontWeight: 600, color: "#1e40af" }}>
+                        <Sparkles size={12} style={{ display: "inline", marginRight: 4, verticalAlign: -1 }} />
+                        Identidade Google verificada
+                      </p>
+                      <p style={{ fontSize: 11.5, color: "#64748b" }}>Continua o cadastro abaixo</p>
+                    </div>
+                  </div>
+                )}
+
                 <label className="auth-label">Nome completo</label>
-                <input className="auth-input" placeholder="O teu nome" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                <input
+                  className="auth-input"
+                  placeholder="O teu nome"
+                  value={form.name}
+                  disabled={googleFilled}
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                />
 
                 <label className="auth-label">Email</label>
-                <input className="auth-input" type="email" placeholder="o-teu@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                <input
+                  className="auth-input"
+                  type="email"
+                  placeholder="o-teu@email.com"
+                  value={form.email}
+                  disabled={googleFilled}
+                  onChange={e => setForm({ ...form, email: e.target.value })}
+                />
 
                 <label className="auth-label">Telemóvel</label>
                 <input className="auth-input" placeholder="+244 9XX XXX XXX" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />

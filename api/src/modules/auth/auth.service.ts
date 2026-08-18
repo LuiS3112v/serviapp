@@ -15,7 +15,7 @@ import { ProviderVerification } from '../../database/entities/provider-verificat
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { Role } from '../../common/enums/role.enum';
-import { GoogleIdentity } from './google-auth.service';
+import { GoogleAuthService, GoogleIdentity } from './google-auth.service';
 
 const REGISTERABLE_ROLES: Role[] = [Role.CLIENT, Role.PROVIDER, Role.COMPANY];
 
@@ -34,6 +34,20 @@ export interface GoogleAuthResult {
   kycStatus: string | null;
 }
 
+// NOVO — resultado de verifyGoogleIdentity(). Deliberadamente SEM
+// access_token e SEM user: não há sessão nem conta criada, é só
+// identidade verificada para pré-preencher um formulário.
+export interface GoogleIdentityPreview {
+  email: string;
+  fullName: string;
+  picture: string | null;
+  googleId: string;
+  // Avisa o frontend que este email já pertence a uma conta existente,
+  // para poder mostrar mensagem clara ANTES do utilizador preencher
+  // todo o formulário e só falhar no passo final. Não expõe o role.
+  emailAlreadyRegistered: boolean;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -46,6 +60,7 @@ export class AuthService {
     @InjectRepository(ProviderVerification)
     private providerVerificationRepo: Repository<ProviderVerification>,
     private jwtService: JwtService,
+    private googleAuthService: GoogleAuthService,
   ) {}
 
   async register(
@@ -87,11 +102,11 @@ export class AuthService {
 
     if (!user || user.deletedAt) throw new UnauthorizedException('Credenciais inválidas.');
 
-    // NOVO (decisão b): contas criadas via Google não têm password —
-    // bcrypt.compare rejeitaria um hash null de forma imprevisível.
-    // Recusa explicitamente, com a MESMA mensagem genérica de sempre,
-    // para não revelar a outra pessoa que a conta existe mas foi
-    // criada por outro método.
+    // Contas criadas via Google não têm password — bcrypt.compare
+    // rejeitaria um hash null de forma imprevisível. Recusa
+    // explicitamente, com a MESMA mensagem genérica de sempre, para
+    // não revelar a outra pessoa que a conta existe mas foi criada por
+    // outro método.
     if (!user.password) throw new UnauthorizedException('Credenciais inválidas.');
 
     const valid = await bcrypt.compare(dto.password, user.password);
@@ -141,11 +156,10 @@ export class AuthService {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // GOOGLE OAUTH
+  // GOOGLE OAUTH — LOGIN
   //
-  // Não é um sistema paralelo — reutiliza createSession(),
-  // generateToken() e sanitize(), tal como login()/register() já
-  // fazem. Só muda a forma como o User é encontrado ou criado.
+  // INTOCADO. Continua a ser o único método usado por /login (via
+  // POST /auth/google). Não é chamado pelo novo fluxo de Register.
   //
   //   1. googleId já existe            -> login normal dessa conta
   //   2. email já existe (sem googleId) -> linking: associa googleId,
@@ -202,15 +216,52 @@ export class AuthService {
     };
   }
 
-  // Chamado por POST /auth/choose-role. Só funciona enquanto o role
-  // ainda é PENDING — depois de escolhido, este endpoint recusa correr
-  // de novo, para impedir que alguém troque de tipo de conta à vontade
-  // (ex: fugir a um KYC pendente mudando de "provider" para "client").
+  // ══════════════════════════════════════════════════════════════════
+  // GOOGLE OAUTH — REGISTER (NOVO)
   //
-  // Gera um NOVO token porque o JWT é stateless: o token antigo tinha
-  // "role: pending" gravado dentro dele, e o proxy do frontend só lê
-  // o token — nunca a base de dados — para decidir para onde
-  // encaminhar o utilizador.
+  // Usado exclusivamente por /register/client e /register/provider.
+  // Verifica a identidade junto da Google e devolve os dados para
+  // pré-preencher o formulário. Deliberadamente NÃO:
+  //   - cria User
+  //   - cria UserSession
+  //   - gera token
+  //   - regista SecurityLog de login
+  //
+  // A conta só passa a existir quando o utilizador submeter o
+  // formulário normal (register()), com o role já definido pela
+  // própria página (/register/client ou /register/provider) e com
+  // password preenchida manualmente — exactamente como o cadastro
+  // tradicional já exige.
+  //
+  // A verificação de "email já registado" aqui é só informativa (dá
+  // ao frontend a possibilidade de mostrar um aviso cedo); a garantia
+  // real de unicidade continua a ser a constraint `unique: true` em
+  // User.email, aplicada no momento do register() — não há forma de
+  // contornar isso só porque este método devolveu um resultado
+  // desatualizado por causa de uma corrida entre pedidos.
+  // ══════════════════════════════════════════════════════════════════
+  async verifyGoogleIdentity(idToken: string): Promise<GoogleIdentityPreview> {
+    const identity = await this.googleAuthService.verifyIdToken(idToken);
+
+    const existing = await this.userRepo.findOne({
+      where: { email: identity.email },
+    });
+
+    return {
+      email: identity.email,
+      fullName: identity.fullName,
+      picture: identity.picture,
+      googleId: identity.googleId,
+      emailAlreadyRegistered: !!(existing && !existing.deletedAt),
+    };
+  }
+
+  // Chamado por POST /auth/choose-role. Mantido por compatibilidade
+  // com o fluxo PENDING ainda existente (ver nota no controller) — o
+  // novo Register deixa de o usar, mas continua funcional para quem
+  // ainda dependa dele. Só funciona enquanto o role ainda é PENDING —
+  // depois de escolhido, este endpoint recusa correr de novo, para
+  // impedir que alguém troque de tipo de conta à vontade.
   async chooseRole(
     userId: string,
     chosenRole: Role.CLIENT | Role.PROVIDER,

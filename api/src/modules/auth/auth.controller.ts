@@ -43,10 +43,8 @@ export class AuthController {
     return this.authService.login(dto, context);
   }
 
-  // NOVO — mesma taxa de tentativas do login tradicional. O idToken
-  // já vem validado pela Google no frontend (assinatura garantida por
-  // eles), mas isto não impede tentativas de spam ao nosso endpoint,
-  // por isso mantém-se throttled como qualquer outro endpoint de auth.
+  // INTOCADO — fluxo de Login com Google. Continua a autenticar/criar
+  // sessão exatamente como já funcionava. Usado apenas por /login.
   @Post('google')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 3600000 } })
@@ -56,9 +54,33 @@ export class AuthController {
     return this.authService.loginOrRegisterWithGoogle(identity, context);
   }
 
-  // NOVO — só acessível com uma sessão válida (JwtGuard), já que só
-  // faz sentido para alguém que acabou de autenticar via Google e
-  // ainda está com role=PENDING.
+  // NOVO — usado exclusivamente por /register/client e /register/provider.
+  // Só valida o idToken junto da Google e devolve a identidade
+  // (nome/email/foto). NÃO cria User, NÃO cria sessão, NÃO gera token,
+  // NÃO faz login. A conta só passa a existir quando o utilizador
+  // submeter o formulário normal (POST /auth/register).
+  //
+  // Mesmo throttle do endpoint /google — continua a ser um endpoint
+  // público que aceita input externo (idToken), por isso mantém-se
+  // protegido contra abuso da mesma forma.
+  @Post('google/verify')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 3600000 } })
+  async googleVerify(@Body() dto: GoogleAuthDto) {
+    return this.authService.verifyGoogleIdentity(dto.idToken);
+  }
+
+  // Nota: googleVerify() delega toda a validação do idToken (assinatura,
+  // audiência, expiração) para dentro de AuthService.verifyGoogleIdentity(),
+  // que por sua vez usa GoogleAuthService internamente — o mesmo padrão
+  // que google() já usa chamando primeiro este.googleAuthService.
+  // GoogleAuthService continua injectado no controller só porque google()
+  // (login) precisa dele diretamente; não há duplicação de verificação.
+
+  // NOVO — não removido: mantido por compatibilidade com o fluxo PENDING
+  // ainda existente no backend (Role.PENDING, chooseRole()). O Register
+  // deixa de usar este caminho, mas o endpoint continua disponível caso
+  // outro ponto do sistema dependa dele.
   @Post('choose-role')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtGuard)
