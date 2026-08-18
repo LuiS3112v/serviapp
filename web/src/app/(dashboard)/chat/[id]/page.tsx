@@ -170,23 +170,55 @@ function ChatInner() {
   return (
     <>
       <style>{`
-        .chatd-wrap{display:flex;min-height:100vh;background:#f8fafc}
-        .chatd-main{flex:1;margin-left:240px;display:flex;flex-direction:column;max-height:100vh}
+        /*
+          FIX (responsividade): .chatd-wrap/.chatd-main não tinham
+          min-width:0 nem overflow-x:hidden. Um flex item sem min-width:0
+          não encolhe abaixo do seu conteúdo intrínseco — se algo lá dentro
+          (input, avatar, mensagem) empurrasse a largura, .chatd-main
+          ultrapassava o viewport e criava overflow horizontal. O espaço
+          fora do wrap ficava com a cor de fundo do body (--dark, #0d1117),
+          daí a faixa preta à direita. Alinhado com o mesmo padrão já usado
+          em chat/page.tsx (lista de conversas), que não tinha este bug.
+          100vh trocado por 100dvh pelo mesmo motivo já aplicado lá:
+          altura de viewport correcta em browser mobile e PWA standalone.
+        */
+        .chatd-wrap{
+          display:flex;
+          min-height:100vh;
+          min-height:100dvh;
+          background:#f8fafc;
+          width:100%;
+          max-width:100vw;
+          overflow-x:hidden;
+        }
+        .chatd-main{
+          flex:1;
+          margin-left:240px;
+          display:flex;
+          flex-direction:column;
+          max-height:100vh;
+          max-height:100dvh;
+          min-width:0;
+          overflow-x:hidden;
+        }
         .chatd-header{
           flex-shrink:0;display:flex;align-items:center;gap:14px;
           padding:0 24px;height:65px;
           background:#ffffff;border-bottom:1px solid #eef1f5;
+          min-width:0;
         }
         .chatd-msgs{
           flex:1;padding:20px 24px;
           display:flex;flex-direction:column;gap:10px;
-          overflow-y:auto;scroll-behavior:smooth;
+          overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;
+          min-width:0;
         }
         .chatd-msgs::-webkit-scrollbar{width:4px}
         .chatd-msgs::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:4px}
         .chatd-input-area{
           flex-shrink:0;display:flex;align-items:center;gap:10px;
           padding:14px 24px;background:#ffffff;border-top:1px solid #eef1f5;
+          min-width:0;
         }
         /* Own message: right side, blue */
         .msg-me{
@@ -212,7 +244,7 @@ function ChatInner() {
           align-self:flex-start;max-width:80%;
         }
         .c-input{
-          flex:1;padding:12px 16px;border-radius:12px;
+          flex:1;min-width:0;padding:12px 16px;border-radius:12px;
           background:#f8fafc;border:1.5px solid #e2e8f0;
           color:#0f172a;font-size:14px;outline:none;
           font-family:inherit;transition:border 0.2s, background 0.2s;
