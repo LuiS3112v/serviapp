@@ -12,7 +12,6 @@ function formatTime(d: string) {
   return new Date(d).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
 }
 
-// Unique prefix so we never confuse optimistic IDs with real UUIDs
 const OPT_PREFIX = "__opt__";
 
 function ChatInner() {
@@ -21,11 +20,6 @@ function ChatInner() {
   const searchParams         = useSearchParams();
   const autoMessage          = searchParams.get("message");
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // OWNERSHIP — Single source of truth
-  // Read synchronously from JWT → correct on first render, no race condition.
-  // Never use room.clientId / room.providerId / role-based logic.
-  // ═══════════════════════════════════════════════════════════════════════════
   const userId = useChatUserId();
 
   const [room, setRoom]         = useState<ChatRoom | null>(null);
@@ -38,7 +32,6 @@ function ChatInner() {
   const typingTimer             = useRef<NodeJS.Timeout | null>(null);
   const sentAuto                = useRef(false);
 
-  // ── Load messages from REST ──────────────────────────────────────────────
   const loadMessages = useCallback(async () => {
     if (!getToken()) return;
     try {
@@ -47,7 +40,6 @@ function ChatInner() {
     } catch {}
   }, [roomId]);
 
-  // ── Load room to resolve the "other" participant ─────────────────────────
   const loadRoom = useCallback(async () => {
     try {
       const rooms = await chatApi.getRooms();
@@ -61,9 +53,6 @@ function ChatInner() {
     Promise.all([loadRoom(), loadMessages()]).finally(() => setLoading(false));
   }, [loadRoom, loadMessages]);
 
-  // ── Socket: join room + listen ───────────────────────────────────────────
-  // connectSocket() detects token changes and reconnects automatically,
-  // so client.data.userId on the server is always correct.
   useEffect(() => {
     if (!getToken()) return;
 
@@ -72,11 +61,8 @@ function ChatInner() {
 
     const onNewMessage = (m: ChatMessage) => {
       setMessages(prev => {
-        // Exact duplicate → skip
         if (prev.some(p => p.id === m.id)) return prev;
 
-        // Replace a matching optimistic message with the confirmed real one.
-        // Matching criteria: same senderId + same content + optimistic ID prefix.
         const optIdx = prev.findIndex(
           p =>
             p.id.startsWith(OPT_PREFIX) &&
@@ -85,7 +71,7 @@ function ChatInner() {
         );
         if (optIdx !== -1) {
           const next = [...prev];
-          next[optIdx] = m; // swap optimistic → real
+          next[optIdx] = m;
           return next;
         }
 
@@ -105,14 +91,12 @@ function ChatInner() {
       socket.off("new_message", onNewMessage);
       socket.off("typing",      onTyping);
     };
-  }, [roomId]);  // userId is synchronous and never changes — no need in deps
+  }, [roomId]);
 
-  // ── Auto-scroll ──────────────────────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  // ── Auto-send from query param ───────────────────────────────────────────
   useEffect(() => {
     if (autoMessage && !loading && !sentAuto.current) {
       sentAuto.current = true;
@@ -120,17 +104,12 @@ function ChatInner() {
     }
   }, [autoMessage, loading]);
 
-  // ── Send message ─────────────────────────────────────────────────────────
   const handleSend = async (text?: string) => {
     const content = (text ?? msg).trim();
     if (!content || sending) return;
     setSending(true);
     if (!text) setMsg("");
 
-    // ── Optimistic update ──────────────────────────────────────────────────
-    // Add the message immediately with the correct senderId so it appears on
-    // the right side before the socket confirmation arrives.
-    // Uses userId from useChatUserId (JWT payload.sub) — always correct.
     if (userId) {
       const optimistic: ChatMessage = {
         id:        `${OPT_PREFIX}${Date.now()}_${Math.random()}`,
@@ -144,15 +123,12 @@ function ChatInner() {
     }
 
     try {
-      // connectSocket() checks if the token changed and reconnects if needed,
-      // ensuring the server's client.data.userId is always up to date.
       connectSocket().emit("send_message", { roomId, content, type: "text" });
     } catch {}
 
     setSending(false);
   };
 
-  // ── Typing indicator ─────────────────────────────────────────────────────
   const handleTyping = () => {
     const s = connectSocket();
     s.emit("typing", { roomId, isTyping: true });
@@ -163,49 +139,39 @@ function ChatInner() {
     );
   };
 
-  // Resolve the OTHER participant (never the current user)
   const other = room?.participants?.find(p => p.id !== userId);
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
         /*
-          FIX (responsividade — histórico):
-          1) .chatd-wrap/.chatd-main não tinham min-width:0 nem
-             overflow-x:hidden. Um flex item sem min-width:0 não encolhe
-             abaixo do conteúdo intrínseco; algo lá dentro empurrava a
-             largura além do viewport e o espaço sobrante ficava com a
-             cor de fundo do body (--dark, #0d1117) → faixa preta lateral.
-          2) 100vh trocado por 100dvh: 100vh em mobile inclui a área da
-             barra de endereço do browser, que aparece/desaparece ao
-             rolar — isso cortava ou deixava espaço morto no input.
-
-          FIX (nova ronda — mobile/PWA):
-          3) Reservada a safe-area do fundo do ecrã (env(safe-area-
-             inset-bottom)) na barra de input.
-          4) CAUSA REAL da faixa preta no FUNDO (não lateral): min-height
-             sozinho não impõe um tecto — só um mínimo. .chatd-wrap tinha
-             min-height:100dvh mas nenhum limite superior, e .chatd-main
-             tinha max-height:100dvh sem overflow-y:hidden a fazer cumprir
-             esse limite. Nada impedia a soma de header+mensagens+input
-             de ultrapassar o ecrã, e nesse caso a PÁGINA (não só
-             .chatd-msgs) ganhava scroll próprio — ao rolar, aparecia o
-             fundo do body (--dark, #0d1117) por baixo do fim do chat.
-             Corrigido: .chatd-wrap e .chatd-main passam a ter
-             height:100dvh (tecto rígido, não só mínimo) + overflow:hidden.
-             Quem rola continua a ser exclusivamente .chatd-msgs
-             (overflow-y:auto) — a página em si nunca deve ter scroll.
+          Notas sobre responsividade (historico de fixes):
+          1) chatd-wrap e chatd-main precisam de min-width:0 e
+             overflow-x:hidden. Sem min-width:0 um flex item nao encolhe
+             abaixo do conteudo intrinseco, o que empurrava a largura
+             para alem do viewport (faixa preta lateral).
+          2) 100vh trocado por 100dvh: em mobile o 100vh inclui a barra
+             de endereco do browser, que aparece e desaparece ao rolar
+             e cortava ou deixava espaco morto no input.
+          3) Reservada a safe area do fundo do ecra
+             (env(safe-area-inset-bottom)) na barra de input, para PWA
+             e iOS com home indicator.
+          4) A faixa preta no fundo (nao lateral) era causada pelo body
+             global, que so define min-height:100vh sem overflow:hidden
+             a impor um teto. O body podia crescer mais do que os
+             100dvh reais do ecra, sobrando espaco com a cor de fundo
+             do body ate a altura total. Corrigido sem tocar no
+             globals.css: chatd-wrap passou a position:fixed com
+             inset:0, o que desliga o wrapper da altura do body e
+             ocupa exatamente o viewport visivel. chatd-main continua a
+             esticar via flexbox. Quem rola e sempre so o chatd-msgs
+             (overflow-y:auto) - a pagina em si nunca deve ter scroll.
         */
         .chatd-wrap{
+          position:fixed;
+          inset:0;
           display:flex;
-          height:100vh;
-          height:100dvh;
-          min-height:100vh;
-          min-height:100dvh;
           background:#f8fafc;
-          width:100%;
-          max-width:100vw;
           overflow:hidden;
         }
         .chatd-main{
@@ -240,25 +206,20 @@ function ChatInner() {
           flex-shrink:0;display:flex;align-items:center;gap:10px;
           padding:14px 24px;background:#ffffff;border-top:1px solid #eef1f5;
           min-width:0;
-          /* Reserva a safe-area (home indicator / gesture bar) em PWA/iOS.
-             env() com fallback 0px não altera nada em ecrãs sem notch. */
           padding-bottom:calc(14px + env(safe-area-inset-bottom, 0px));
         }
-        /* Own message: right side, blue */
         .msg-me{
           max-width:68%;padding:10px 14px;border-radius:14px;
           font-size:14px;line-height:1.55;word-break:break-word;
           background:#2563eb;color:white;
           align-self:flex-end;border-bottom-right-radius:4px;
         }
-        /* Other's message: left side, light gray (contraste reforçado, estilo Insta) */
         .msg-other{
           max-width:68%;padding:10px 14px;border-radius:14px;
           font-size:14px;line-height:1.55;word-break:break-word;
           background:#e4e9f0;color:#1e293b;
           align-self:flex-start;border-bottom-left-radius:4px;
         }
-        /* Optimistic: slightly translucent until confirmed */
         .msg-me-opt{ opacity:0.75; }
         .msg-time{font-size:10px;opacity:0.55;margin-top:4px}
         .blocked-msg{
@@ -303,7 +264,6 @@ function ChatInner() {
         <Sidebar/>
         <div className="chatd-main">
 
-          {/* Header */}
           <div className="chatd-header">
             <button
               onClick={() => router.back()}
@@ -347,7 +307,6 @@ function ChatInner() {
             </div>
           </div>
 
-          {/* Messages */}
           <div className="chatd-msgs">
             {loading ? (
               [1,2,3].map(i => (
@@ -377,11 +336,6 @@ function ChatInner() {
                 </p>
               </div>
             ) : messages.map(m => {
-              // ═══════════════════════════════════════════════════════════════
-              // THE ONLY OWNERSHIP CHECK IN THE ENTIRE CODEBASE:
-              //   isMe = message.senderId === currentUser.id
-              // Never depends on room.clientId, room.providerId, or role.
-              // ═══════════════════════════════════════════════════════════════
               const isMe       = userId !== null && m.senderId === userId;
               const isOptimistic = m.id.startsWith(OPT_PREFIX);
 
@@ -422,7 +376,6 @@ function ChatInner() {
             <div ref={bottomRef}/>
           </div>
 
-          {/* Input */}
           <div className="chatd-input-area">
             <input
               className="c-input"

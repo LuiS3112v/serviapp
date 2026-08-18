@@ -152,36 +152,36 @@ export default function ProviderChatDetailPage() {
 
           Correcção: à semelhança do chat do cliente (que já funciona
           bem), esta página passa a montar o seu próprio <ProviderSidebar/>
-          e a ocupar 100dvh de forma autocontida — sem depender de nenhum
+          e a ocupar o ecrã de forma autocontida — sem depender de nenhum
           <main> ou <ProviderNavbar/> à volta. A ProviderNavbar deixa de
           aparecer aqui de propósito (o chat aberto é full-screen dentro
           da área do provider, tal como acontece no chat do cliente, que
-          também não mostra a Navbar do cliente ao abrir uma conversa).
+          também não mostra a Navbar do cliente ao abrir uma conversa) —
+          quem decide isso é agora o ProviderChrome, no layout pai.
 
           min-width:0 / overflow-x:hidden mantidos em todos os níveis
-          (protecção contra overflow horizontal). 100dvh usado em vez de
-          100vh (desconta corretamente a barra de endereço do browser em
-          mobile). Safe-area do fundo reservada para PWA/iOS.
+          (protecção contra overflow horizontal). Safe-area do fundo
+          reservada para PWA/iOS.
 
-          FIX adicional (faixa preta no fundo): .pcd-wrap/.pcd-main
-          tinham só min-height/max-height, sem height fixo nem
-          overflow:hidden a impor esse limite. min-height sozinho não
-          impede o conteúdo de crescer além do ecrã — se a soma de
-          header+mensagens+input ultrapassasse a altura visível, a
-          PÁGINA inteira ganhava scroll (não só .pcd-msgs), e ao rolar
-          aparecia o fundo escuro do body por baixo do chat. Corrigido
-          com height:100dvh (tecto rígido) + overflow:hidden nos dois
-          níveis — quem rola continua a ser exclusivamente .pcd-msgs.
+          FIX (faixa preta no fundo, nova ronda): o <body> global
+          (globals.css) só tem min-height:100vh (unidade "vh" grande,
+          que no mobile conta a barra de endereço do browser como
+          espaço visível) e fundo escuro (--dark, #0d1117). Mesmo com
+          .pcd-wrap travado por altura, sobrava uma "folga" entre o fim
+          do wrapper e a altura maior do body — e essa folga mostrava o
+          fundo escuro ao rolar. Corrigido sem tocar no globals.css
+          (mudança global, fora do âmbito): .pcd-wrap passa a usar
+          position:fixed + inset:0, o que o desliga por completo da
+          altura do <body> — ocupa sempre exactamente o viewport
+          visível. .pcd-main mantém height:100vh/100dvh + overflow:hidden
+          como tecto adicional. Quem rola continua a ser exclusivamente
+          .pcd-msgs (overflow-y:auto).
         */
         .pcd-wrap{
+          position:fixed;
+          inset:0;
           display:flex;
-          height:100vh;
-          height:100dvh;
-          min-height:100vh;
-          min-height:100dvh;
           background:#f8fafc;
-          width:100%;
-          max-width:100vw;
           overflow:hidden;
         }
         .pcd-main{

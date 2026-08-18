@@ -1,5 +1,4 @@
-import ProviderNavbar from "@/components/layout/ProviderNavbar";
-import ProviderSidebar from "@/components/layout/ProviderSidebar";
+import ProviderChrome from "../../components/layout/ProviderChrome";
 import { requireRole } from "@/lib/session.server";
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -7,27 +6,29 @@ import { requireRole } from "@/lib/session.server";
 //
 // Cobre: /provider-home, /provider/*
 //
-// Único acrescento face ao ficheiro original: requireRole() no topo.
-// Todo o resto (estrutura visual, estilos, componentes) é inalterado.
+// Este ficheiro continua a fazer só a verificação de sessão no servidor
+// (requireRole) — igual ao original. A estrutura visual (Sidebar, Navbar,
+// <main>) passou para o <ProviderChrome/>, um componente cliente, porque
+// agora essa estrutura depende da ROTA actual (usePathname só existe em
+// componentes cliente, e este layout precisa de continuar a ser async
+// por causa do requireRole).
 //
-// FIX (responsividade — mobile/PWA):
+// PORQUÊ: na rota do chat individual (/provider/chat/[id]), a própria
+// página já monta a sua Sidebar e o seu wrapper full-screen — igual ao
+// chat do cliente. O <ProviderChrome/> reconhece essa rota e, só nela,
+// não volta a montar Sidebar/Navbar/<main> por cima. Em todas as outras
+// rotas do provider, o comportamento é exactamente o mesmo de antes.
+//
+// FIX (responsividade — mobile/PWA, histórico, mantido no CSS abaixo):
 // 1) min-height:100vh → acrescentado min-height:100dvh (fallback mantido
 //    para browsers sem suporte). 100vh em mobile Chrome/Safari conta a
 //    barra de endereço como espaço disponível, ficando maior do que o
-//    ecrã realmente visível — isso fazia páginas do provider (incluindo
-//    o chat) ficarem "mais altas" do que deviam, cortando conteúdo no
-//    fundo ou deixando espaço morto.
-// 2) min-width:0 em .prov-main — protecção contra overflow horizontal:
-//    um flex item sem min-width:0 não encolhe abaixo do conteúdo
-//    intrínseco. Não altera nada visualmente onde já não há overflow.
-// 3) minHeight:0 no <main> — sem isto, um filho que precise de
-//    height:100% (como a página de chat) não tem uma base de altura
+//    ecrã realmente visível.
+// 2) min-width:0 em .prov-main — protecção contra overflow horizontal.
+// 3) minHeight:0 no <main> (dentro do ProviderChrome) — sem isto, um
+//    filho que precise de height:100% não tem uma base de altura
 //    fiável, porque um flex item em coluna não encolhe abaixo do seu
-//    conteúdo por definição. Com min-height:0, o <main> respeita o
-//    flex:1 que já tinha e os filhos passam a poder preencher
-//    corretamente 100% da altura disponível. Não afecta páginas que já
-//    crescem naturalmente com o conteúdo (a maioria) — só habilita as
-//    que precisam de altura total (como o chat).
+//    conteúdo por definição.
 // ═══════════════════════════════════════════════════════════════════════
 
 export default async function ProviderLayout({
@@ -44,13 +45,7 @@ export default async function ProviderLayout({
         .prov-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;min-width:0;overflow-x:hidden}
         @media(max-width:1024px){.prov-main{margin-left:0}}
       `}</style>
-      <div className="prov-layout">
-        <ProviderSidebar />
-        <div className="prov-main">
-          <ProviderNavbar />
-          <main style={{ flex:1, minHeight:0, minWidth:0 }}>{children}</main>
-        </div>
-      </div>
+      <ProviderChrome>{children}</ProviderChrome>
     </>
   );
 }
