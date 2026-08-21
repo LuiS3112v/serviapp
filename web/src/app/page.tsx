@@ -217,20 +217,31 @@ export default function HomePage() {
           desalinhado ou cortado em ecrãs pequenos. A moldura em si usa
           largura fluida com um teto (max-width), como no design original.
 
-          FIX: as bolhas de chat estavam a vazar para fora da moldura do
-          iPhone em mobile/PWA/Safari porque o overflow não estava a ser
-          contido de forma robusta (só o max-width das bolhas não chega,
-          pois com container queries + flex, o browser pode calcular a
-          largura disponível antes do overflow:hidden "cortar" — por isso
-          isolamos cada camada com overflow:hidden + width:100% explícito,
-          e paramos o conteúdo de exceder a caixa com min-width:0 nos
-          containers flex, que é a causa clássica de overflow em Safari).
+          FIX DEFINITIVO: o conteúdo do chat (bolhas de mensagem) estava a
+          rasgar a borda preta inferior do telefone em iOS/Safari/PWA.
+          Causa raiz: .lp-phone-messages tinha flex:1 dentro de um pai cuja
+          altura vem de aspect-ratio (não um px fixo). Em flexbox, todo
+          flex item tem min-height:auto por definição — ou seja, mesmo com
+          overflow:hidden no ecrã, o item recusa encolher abaixo do
+          conteúdo e o Safari deixa a caixa crescer/vazar através do
+          border-radius do avô antes de aplicar o clip. A correção correta
+          é declarar min-height:0 em CADA elemento flex da cadeia
+          (.lp-phone, .lp-phone-screen, .lp-phone-messages) — isso obriga
+          o browser a respeitar a altura do pai como teto real, e só
+          depois disso o overflow:hidden consegue cortar de verdade.
+          Também travamos a altura do .lp-phone-screen com height:100% +
+          min-height:0 no pai .lp-phone (que agora usa flex column em vez
+          de confiar apenas no aspect-ratio) para eliminar qualquer
+          diferença de arredondamento entre o cálculo do aspect-ratio e a
+          altura real renderizada pelo Safari em iOS.
         */
         .lp-phone{
           position:relative;
+          display:flex;
           width:100%;
           max-width:210px;
           aspect-ratio:210/428;
+          min-height:0;
           border-radius:36px;
           background:${INK};
           padding:10px;
@@ -242,26 +253,28 @@ export default function HomePage() {
         }
         .lp-phone-screen{
           position:relative;
+          display:flex;
+          flex-direction:column;
           width:100%;
           height:100%;
+          min-height:0;
           max-width:100%;
           border-radius:28px;
           background:#f8fafc;
           overflow:hidden;
-          display:flex;
-          flex-direction:column;
           min-width:0;
           isolation:isolate;
         }
         .lp-phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:40%;height:22px;background:${INK};border-radius:0 0 14px 14px;z-index:5}
         .lp-phone-status{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 6px;font-size:11px;font-weight:700;color:${INK};flex-shrink:0}
-        .lp-phone-status-icons{display:flex;align-items:center;gap:4px}
+        .lp-phone-status-icons{display:flex;align-items:center;gap:4px;flex-shrink:0}
         .lp-phone-chatbar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #eef1f5;background:#ffffff;flex-shrink:0;min-width:0}
         .lp-phone-chatavatar{width:26px;height:26px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-        .lp-phone-chatname{font-size:11.5px;font-weight:700;color:${INK}}
-        .lp-phone-chatstatus{font-size:9.5px;color:${CONFIRM}}
+        .lp-phone-chatname{font-size:11.5px;font-weight:700;color:${INK};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .lp-phone-chatstatus{font-size:9.5px;color:${CONFIRM};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .lp-phone-messages{
-          flex:1;
+          flex:1 1 0;
+          min-height:0;
           width:100%;
           max-width:100%;
           padding:14px;
@@ -274,6 +287,7 @@ export default function HomePage() {
           box-sizing:border-box;
         }
         .lp-phone-bubble{
+          flex-shrink:0;
           max-width:82%;
           width:fit-content;
           word-break:break-word;
@@ -281,7 +295,11 @@ export default function HomePage() {
         }
 
         /* Em molduras pequenas (telemóvel), encolhe o texto/ícones internos
-           proporcionalmente em vez de deixá-los grandes demais e a transbordar. */
+           proporcionalmente em vez de deixá-los grandes demais e a transbordar.
+           As bolhas de mensagem (.lp-phone-bubble) também encolhem aqui —
+           sem isso, em molduras pequenas o texto das 3 mensagens exige mais
+           altura do que o telefone tem, o que é a causa raiz de o conteúdo
+           rasgar a borda inferior mesmo com overflow:hidden. */
         @container phone (max-width: 180px){
           .lp-phone-status{padding:12px 14px 4px;font-size:9.5px}
           .lp-phone-notch{height:18px}
@@ -290,11 +308,13 @@ export default function HomePage() {
           .lp-phone-chatname{font-size:10px}
           .lp-phone-chatstatus{font-size:8.5px}
           .lp-phone-messages{padding:10px;gap:6px}
+          .lp-phone-bubble{font-size:10.5px !important;padding:7px 10px !important}
         }
         @container phone (max-width: 155px){
           .lp-phone-status{padding:10px 12px 3px;font-size:8.5px}
           .lp-phone-notch{height:15px;width:44%}
           .lp-phone-messages{padding:8px;gap:5px}
+          .lp-phone-bubble{font-size:9.5px !important;padding:6px 9px !important;border-radius:10px !important}
         }
 
         /* Categories */
