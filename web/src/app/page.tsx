@@ -216,6 +216,15 @@ export default function HomePage() {
           com o tamanho da moldura via container query, para nunca ficar
           desalinhado ou cortado em ecrãs pequenos. A moldura em si usa
           largura fluida com um teto (max-width), como no design original.
+
+          FIX: as bolhas de chat estavam a vazar para fora da moldura do
+          iPhone em mobile/PWA/Safari porque o overflow não estava a ser
+          contido de forma robusta (só o max-width das bolhas não chega,
+          pois com container queries + flex, o browser pode calcular a
+          largura disponível antes do overflow:hidden "cortar" — por isso
+          isolamos cada camada com overflow:hidden + width:100% explícito,
+          e paramos o conteúdo de exceder a caixa com min-width:0 nos
+          containers flex, que é a causa clássica de overflow em Safari).
         */
         .lp-phone{
           position:relative;
@@ -229,16 +238,47 @@ export default function HomePage() {
           margin:0 auto;
           container-type:inline-size;
           container-name:phone;
+          overflow:hidden;
         }
-        .lp-phone-screen{position:relative;width:100%;height:100%;border-radius:28px;background:#f8fafc;overflow:hidden;display:flex;flex-direction:column}
+        .lp-phone-screen{
+          position:relative;
+          width:100%;
+          height:100%;
+          max-width:100%;
+          border-radius:28px;
+          background:#f8fafc;
+          overflow:hidden;
+          display:flex;
+          flex-direction:column;
+          min-width:0;
+          isolation:isolate;
+        }
         .lp-phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:40%;height:22px;background:${INK};border-radius:0 0 14px 14px;z-index:5}
         .lp-phone-status{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 6px;font-size:11px;font-weight:700;color:${INK};flex-shrink:0}
         .lp-phone-status-icons{display:flex;align-items:center;gap:4px}
-        .lp-phone-chatbar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #eef1f5;background:#ffffff;flex-shrink:0}
+        .lp-phone-chatbar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #eef1f5;background:#ffffff;flex-shrink:0;min-width:0}
         .lp-phone-chatavatar{width:26px;height:26px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .lp-phone-chatname{font-size:11.5px;font-weight:700;color:${INK}}
         .lp-phone-chatstatus{font-size:9.5px;color:${CONFIRM}}
-        .lp-phone-messages{flex:1;padding:14px;display:flex;flex-direction:column;gap:8px;justify-content:flex-end;overflow:hidden}
+        .lp-phone-messages{
+          flex:1;
+          width:100%;
+          max-width:100%;
+          padding:14px;
+          display:flex;
+          flex-direction:column;
+          gap:8px;
+          justify-content:flex-end;
+          overflow:hidden;
+          min-width:0;
+          box-sizing:border-box;
+        }
+        .lp-phone-bubble{
+          max-width:82%;
+          width:fit-content;
+          word-break:break-word;
+          overflow-wrap:break-word;
+        }
 
         /* Em molduras pequenas (telemóvel), encolhe o texto/ícones internos
            proporcionalmente em vez de deixá-los grandes demais e a transbordar. */
@@ -665,9 +705,9 @@ export default function HomePage() {
                         </div>
                       </div>
                       <div className="lp-phone-messages">
-                        <div style={{ alignSelf: "flex-start", background: "#fff", border: "1px solid #eef1f5", borderRadius: "12px 12px 12px 3px", padding: "9px 13px", fontSize: 12.5, color: "#334155", maxWidth: "82%" }}>Pode ser amanhã de manhã?</div>
-                        <div style={{ alignSelf: "flex-end", background: BRAND, color: "#fff", borderRadius: "12px 12px 3px 12px", padding: "9px 13px", fontSize: 12.5, maxWidth: "82%" }}>Sim, chego às 9h</div>
-                        <div style={{ alignSelf: "flex-start", background: "#fff", border: "1px solid #eef1f5", borderRadius: "12px 12px 12px 3px", padding: "9px 13px", fontSize: 12.5, color: "#334155", maxWidth: "82%" }}>Combinado 👍</div>
+                        <div className="lp-phone-bubble" style={{ alignSelf: "flex-start", background: "#fff", border: "1px solid #eef1f5", borderRadius: "12px 12px 12px 3px", padding: "9px 13px", fontSize: 12.5, color: "#334155" }}>Pode ser amanhã de manhã?</div>
+                        <div className="lp-phone-bubble" style={{ alignSelf: "flex-end", background: BRAND, color: "#fff", borderRadius: "12px 12px 3px 12px", padding: "9px 13px", fontSize: 12.5 }}>Sim, chego às 9h</div>
+                        <div className="lp-phone-bubble" style={{ alignSelf: "flex-start", background: "#fff", border: "1px solid #eef1f5", borderRadius: "12px 12px 12px 3px", padding: "9px 13px", fontSize: 12.5, color: "#334155" }}>Combinado 👍</div>
                       </div>
                     </div>
                   </div>
