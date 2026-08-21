@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Zap, Menu, X, ArrowRight, ClipboardList, Inbox, CalendarCheck, Star,
   Shield, ShieldCheck, Headphones, Wrench, Sparkles, Leaf, Paintbrush, Truck,
@@ -56,7 +57,6 @@ export default function HomePage() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [heroPhotoLoaded, setHeroPhotoLoaded] = useState(false);
   const [heroPhotoFailed, setHeroPhotoFailed] = useState(false);
 
   useEffect(() => {
@@ -167,9 +167,7 @@ export default function HomePage() {
 
         /* Hero visual: fotografia única do profissional a trabalhar */
         .lp-hero-visual{position:relative;border-radius:20px;overflow:hidden;border:1px solid #e2e8f0;min-height:420px;background:linear-gradient(160deg,#1e293b,#0f172a)}
-        .lp-hero-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}
-        .lp-hero-photo.loaded{opacity:1}
-        .lp-hero-photo-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#94a3b8;font-size:12.5px;text-align:center;padding:24px;line-height:1.6}
+        .lp-hero-photo-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#94a3b8;font-size:12.5px;text-align:center;padding:24px;line-height:1.6;z-index:1}
         .lp-visual-card{position:absolute;background:#fff;border-radius:14px;box-shadow:0 10px 24px rgba(15,23,42,0.16);padding:12px 14px;display:flex;align-items:center;gap:10px;z-index:4;border:1px solid #eef1f5;max-width:calc(100% - 24px)}
 
         /* Section shared */
@@ -213,17 +211,52 @@ export default function HomePage() {
         .lp-map-marker{animation:fadeBlink 2.4s ease-in-out infinite}
         .lp-map-marker.delay{animation-delay:1.1s}
 
-        /* iPhone ilustrativo para a secção Chat */
-        .lp-phone{position:relative;width:210px;height:428px;border-radius:36px;background:${INK};padding:10px;box-shadow:0 18px 40px rgba(15,23,42,0.22);max-width:100%}
+        /*
+          iPhone ilustrativo — molde original preservada (bordas finas,
+          proporção real de iPhone). Só o CONTEÚDO INTERNO passa a escalar
+          com o tamanho da moldura via container query, para nunca ficar
+          desalinhado ou cortado em ecrãs pequenos. A moldura em si usa
+          largura fluida com um teto (max-width), como no design original.
+        */
+        .lp-phone{
+          position:relative;
+          width:100%;
+          max-width:210px;
+          aspect-ratio:210/428;
+          border-radius:36px;
+          background:${INK};
+          padding:10px;
+          box-shadow:0 18px 40px rgba(15,23,42,0.22);
+          margin:0 auto;
+          container-type:inline-size;
+          container-name:phone;
+        }
         .lp-phone-screen{position:relative;width:100%;height:100%;border-radius:28px;background:#f8fafc;overflow:hidden;display:flex;flex-direction:column}
-        .lp-phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:84px;height:22px;background:${INK};border-radius:0 0 14px 14px;z-index:5}
-        .lp-phone-status{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 6px;font-size:11px;font-weight:700;color:${INK}}
+        .lp-phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:40%;height:22px;background:${INK};border-radius:0 0 14px 14px;z-index:5}
+        .lp-phone-status{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 6px;font-size:11px;font-weight:700;color:${INK};flex-shrink:0}
         .lp-phone-status-icons{display:flex;align-items:center;gap:4px}
-        .lp-phone-chatbar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #eef1f5;background:#ffffff}
+        .lp-phone-chatbar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #eef1f5;background:#ffffff;flex-shrink:0}
         .lp-phone-chatavatar{width:26px;height:26px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .lp-phone-chatname{font-size:11.5px;font-weight:700;color:${INK}}
         .lp-phone-chatstatus{font-size:9.5px;color:${CONFIRM}}
-        .lp-phone-messages{flex:1;padding:14px;display:flex;flex-direction:column;gap:8px;justify-content:flex-end}
+        .lp-phone-messages{flex:1;padding:14px;display:flex;flex-direction:column;gap:8px;justify-content:flex-end;overflow:hidden}
+
+        /* Em molduras pequenas (telemóvel), encolhe o texto/ícones internos
+           proporcionalmente em vez de deixá-los grandes demais e a transbordar. */
+        @container phone (max-width: 180px){
+          .lp-phone-status{padding:12px 14px 4px;font-size:9.5px}
+          .lp-phone-notch{height:18px}
+          .lp-phone-chatbar{padding:6px 11px;gap:6px}
+          .lp-phone-chatavatar{width:22px;height:22px}
+          .lp-phone-chatname{font-size:10px}
+          .lp-phone-chatstatus{font-size:8.5px}
+          .lp-phone-messages{padding:10px;gap:6px}
+        }
+        @container phone (max-width: 155px){
+          .lp-phone-status{padding:10px 12px 3px;font-size:8.5px}
+          .lp-phone-notch{height:15px;width:44%}
+          .lp-phone-messages{padding:8px;gap:5px}
+        }
 
         /* Categories */
         .lp-cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:16px;overflow:hidden}
@@ -360,7 +393,7 @@ export default function HomePage() {
           .lp-story-step{font-size:14px;gap:10px}
           .lp-visual-card{padding:9px 11px}
           .lp-tool-copy h3{font-size:20px}
-          .lp-phone{width:170px;height:346px}
+          .lp-phone{max-width:170px}
           .lp-header-inner{padding:12px 18px}
           .lp-logo-text{font-size:17px}
         }
@@ -372,7 +405,7 @@ export default function HomePage() {
           .lp-eyebrow{font-size:11.5px;padding:6px 12px}
           .lp-mock-header{flex-wrap:wrap}
           .lp-mini-v{font-size:17px}
-          .lp-phone{width:150px;height:306px}
+          .lp-phone{max-width:148px}
         }
 
         /* Ecrãs muito grandes: evita esticar demasiado */
@@ -445,18 +478,19 @@ export default function HomePage() {
               <div className="lp-hero-visual">
                 {/*
                   ÚNICA fotografia nova de toda a landing page.
-                  Substituir /hero-professional.png por uma fotografia horizontal
-                  realista de um profissional a trabalhar (eletricista, canalizador,
-                  técnico de AC, etc). Sem pose para câmara, sem aspecto de stock corporativo.
-                  Enquanto o ficheiro não existir, mostra-se um placeholder discreto
-                  em vez de um espaço em branco.
+                  Coloque o ficheiro em /public/hero-professional.png
+                  (fotografia horizontal e realista de um profissional a trabalhar,
+                  sem pose para câmara, sem aspecto de stock corporativo).
+                  next/image com priority evita o "flash preto" em produção.
                 */}
                 {!heroPhotoFailed && (
-                  <img
-                    className={`lp-hero-photo${heroPhotoLoaded ? " loaded" : ""}`}
+                  <Image
                     src="/hero-professional.png"
                     alt="Profissional a trabalhar num serviço na casa de um cliente"
-                    onLoad={() => setHeroPhotoLoaded(true)}
+                    fill
+                    priority
+                    sizes="(max-width: 960px) 100vw, 50vw"
+                    style={{ objectFit: "cover" }}
                     onError={() => setHeroPhotoFailed(true)}
                   />
                 )}
@@ -549,7 +583,7 @@ export default function HomePage() {
               </div>
             </Reveal>
 
-            {/* Mapa — agora com ponto a piscar (pulso) e rota "a andar", eletricista no filtro */}
+            {/* Mapa — ponto a piscar (pulso) e rota "a andar", eletricista no filtro */}
             <Reveal>
               <div className="lp-tool-row">
                 <div className="lp-tool-copy">

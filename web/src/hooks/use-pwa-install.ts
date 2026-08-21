@@ -2,10 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const DISMISS_STORAGE_KEY = "pwa-install-dismissed-at";
-/** Se o utilizador dispensar, não voltamos a mostrar durante este período. */
-const DISMISS_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000; // 14 dias
-
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
   readonly userChoice: Promise<{
@@ -59,16 +55,6 @@ function isStandalone(): boolean {
   return Boolean(mql || iosStandalone);
 }
 
-function readDismissedAt(): number | null {
-  try {
-    const raw = window.localStorage.getItem(DISMISS_STORAGE_KEY);
-    return raw ? Number(raw) : null;
-  } catch {
-    // localStorage pode falhar em modo privado/restrito — falha em aberto
-    return null;
-  }
-}
-
 export interface UsePwaInstallResult {
   /** true quando a app já está a correr como PWA instalado */
   isStandaloneMode: boolean;
@@ -82,7 +68,7 @@ export interface UsePwaInstallResult {
   shouldShowInstallUI: boolean;
   /** dispara o prompt nativo (só funciona quando canPromptInstall é true) */
   promptInstall: () => Promise<void>;
-  /** regista que o utilizador dispensou o convite */
+  /** fecha o convite apenas nesta sessão (não grava preferência persistente) */
   dismiss: () => void;
 }
 
@@ -90,6 +76,12 @@ export interface UsePwaInstallResult {
  * Hook único responsável por toda a lógica de deteção e instalação PWA.
  * Isolado do resto da app — nenhum componente de UI decide esta lógica
  * sozinho, todos consomem este hook.
+ *
+ * Sem cooldown de dispensa: o convite de instalação (popup e secção de
+ * tutorial) aparece sempre que a app ainda não está instalada, em toda
+ * visita/sessão. Só deixa de aparecer quando a app é mesmo instalada
+ * (modo standalone). "Agora não" no popup fecha apenas aquela sessão —
+ * não fica gravado entre visitas.
  */
 export function usePwaInstall(): UsePwaInstallResult {
   const [deferredPrompt, setDeferredPrompt] =
@@ -97,7 +89,7 @@ export function usePwaInstall(): UsePwaInstallResult {
   const [platform, setPlatform] = useState<Platform>("unknown");
   const [browser, setBrowser] = useState<Browser>("unknown");
   const [standaloneMode, setStandaloneMode] = useState(false);
-  const [dismissedAt, setDismissedAt] = useState<number | null>(null);
+  const [dismissedThisSession, setDismissedThisSession] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -105,7 +97,6 @@ export function usePwaInstall(): UsePwaInstallResult {
     setPlatform(detectPlatform());
     setBrowser(detectBrowser());
     setStandaloneMode(isStandalone());
-    setDismissedAt(readDismissedAt());
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -150,26 +141,19 @@ export function usePwaInstall(): UsePwaInstallResult {
   }, [deferredPrompt]);
 
   const dismiss = useCallback(() => {
-    const now = Date.now();
-    try {
-      window.localStorage.setItem(DISMISS_STORAGE_KEY, String(now));
-    } catch {
-      // Preferência local best-effort — se falhar, apenas não persiste
-      // entre sessões, não é crítico.
-    }
-    setDismissedAt(now);
+    // Fecha apenas a sessão atual (não persiste em localStorage).
+    // Ao recarregar a página ou voltar noutra visita, o convite
+    // volta a aparecer normalmente enquanto a app não estiver instalada.
+    setDismissedThisSession(true);
   }, []);
-
-  const recentlyDismissed = Boolean(
-    dismissedAt && Date.now() - dismissedAt < DISMISS_COOLDOWN_MS,
-  );
 
   const canPromptInstall = Boolean(deferredPrompt);
 
   // Mostra UI de instalação quando:
   // - já montou no client (evita hydration mismatch)
-  // - não está já em modo standalone
-  // - não foi dispensado recentemente
+  // - não está já em modo standalone (app instalada)
+  // - não foi dispensado NESTA sessão (fecha o popup ao clicar "agora não",
+  //   mas sem persistir entre visitas — a próxima visita mostra de novo)
   // - E não estamos numa plataforma "unknown" (bots, ambientes sem UA fiável)
   //
   // Em desktop e Android mostramos mesmo sem o prompt nativo disponível:
@@ -179,7 +163,7 @@ export function usePwaInstall(): UsePwaInstallResult {
   // disso, mostramos sempre instruções válidas (menu do browser) e só
   // trocamos para o botão de instalação nativa quando o evento chega.
   const shouldShowInstallUI =
-    mounted && !standaloneMode && !recentlyDismissed && platform !== "unknown";
+    mounted && !standaloneMode && !dismissedThisSession && platform !== "unknown";
 
   return {
     isStandaloneMode: standaloneMode,
