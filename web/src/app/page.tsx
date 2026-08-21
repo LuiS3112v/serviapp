@@ -125,8 +125,7 @@ export default function HomePage() {
           100%{transform:scale(2.2);opacity:0}
         }
         @keyframes dashMove{
-          0%{stroke-dashoffset:0}
-          100%{stroke-dashoffset:-48}
+          to{stroke-dashoffset:-40}
         }
         @keyframes fadeBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.92)}}
 
