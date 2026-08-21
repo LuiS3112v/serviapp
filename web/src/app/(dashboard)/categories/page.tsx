@@ -4,31 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
-import {
-  ChevronRight, X, MapPin, Loader2, Check,
-  Sparkles, Wind, Wrench, Zap, Monitor, Leaf,
-  Package, Scissors, Car, Paintbrush, HardHat, Lock,
-} from "lucide-react";
+import { ChevronRight, X, MapPin, Loader2, Check } from "lucide-react";
 import { getToken } from "@/lib/auth.api";
+import { CATEGORIES } from "@/lib/categories";
 import { SUBCATEGORIES } from "@/lib/subcategories-data";
 import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
-
-const CATEGORIES = [
-  { Icon: Sparkles,   label: "Limpeza",      desc: "Limpeza residencial e comercial" },
-  { Icon: Wind,       label: "Climatização", desc: "Instalação e manutenção de AC" },
-  { Icon: Wrench,     label: "Canalização",  desc: "Fugas, instalações e reparações" },
-  { Icon: Zap,        label: "Eletricidade", desc: "Instalações eléctricas e reparações" },
-  { Icon: Monitor,    label: "TI & Redes",   desc: "Suporte técnico e redes" },
-  { Icon: Leaf,       label: "Jardinagem",   desc: "Poda, manutenção e paisagismo" },
-  { Icon: Package,    label: "Mudanças",     desc: "Transporte e mudanças de casa" },
-  { Icon: Scissors,   label: "Beleza",       desc: "Cabeleireiro, manicure e estética" },
-  { Icon: Car,        label: "Automóvel",    desc: "Mecânica e manutenção auto" },
-  { Icon: Paintbrush, label: "Pintura",      desc: "Pintura de interiores e exteriores" },
-  { Icon: HardHat,    label: "Construção",   desc: "Obras, remodelações e acabamentos" },
-  { Icon: Lock,       label: "Segurança",    desc: "Vigilância e sistemas de segurança" },
-];
 
 function SubcategoriesModal({
   category, onClose,
@@ -500,12 +482,12 @@ export default function CategoriesPage() {
                 const Icon = c.Icon;
                 return (
                   <div key={i} className="ccard">
-                    <div className="cico" onClick={() => router.push(`/search?category=${encodeURIComponent(c.label)}`)}>
+                    <div className="cico" onClick={() => router.push(`/search?category=${encodeURIComponent(c.name)}`)}>
                       <Icon size={22} style={{ color: "#475569" }} />
                     </div>
 
                     <p
-                      onClick={() => router.push(`/search?category=${encodeURIComponent(c.label)}`)}
+                      onClick={() => router.push(`/search?category=${encodeURIComponent(c.name)}`)}
                       style={{
                         fontSize: 13,
                         fontWeight: 700,
@@ -520,13 +502,13 @@ export default function CategoriesPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {c.label}
+                      {c.name}
                     </p>
                     <p style={{ fontSize: 11, color: "#64748b", lineHeight: 1.45, position: "relative", zIndex: 1 }}>
                       {c.desc}
                     </p>
 
-                    <button className="csub-btn" onClick={() => setModalCategory(c.label)}>
+                    <button className="csub-btn" onClick={() => setModalCategory(c.name)}>
                       Ver Subcategorias
                     </button>
 
@@ -534,7 +516,7 @@ export default function CategoriesPage() {
                       <Icon size={80} style={{ color: "#94a3b8" }} />
                     </span>
 
-                    <div className="carr" onClick={() => router.push(`/search?category=${encodeURIComponent(c.label)}`)}>
+                    <div className="carr" onClick={() => router.push(`/search?category=${encodeURIComponent(c.name)}`)}>
                       <ChevronRight size={14} style={{ color: "rgba(15,23,42,0.4)" }} />
                     </div>
                   </div>

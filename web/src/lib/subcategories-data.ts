@@ -12,13 +12,14 @@ import {
   Hammer, Fence,
   Camera, BellRing, KeyRound,
 } from 'lucide-react';
+import type { CategoryName } from './categories';
 
 export interface SubcategoryItem {
   name: string;
   icon: any;
 }
 
-export const SUBCATEGORIES: Record<string, SubcategoryItem[]> = {
+export const SUBCATEGORIES: Record<CategoryName, SubcategoryItem[]> = {
   'Limpeza': [
     { name: 'Limpeza doméstica',      icon: Home },
     { name: 'Limpeza pós-obra',       icon: HardHat },

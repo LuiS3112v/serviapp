@@ -12,12 +12,7 @@ import { getToken, getSession } from "@/lib/auth.api";
 import { servicesApi } from "@/lib/services.api";
 import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
 import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
-
-const CAT_EMOJI: Record<string, string> = {
-  "Limpeza":"🧹","Climatização":"❄️","Canalização":"🔧","Eletricista":"⚡",
-  "TI & Redes":"💻","Jardinagem":"🌿","Mudanças":"📦","Beleza":"💆",
-  "Automóvel":"🚗","Pintura":"🎨","Construção":"🏗️","Segurança":"🔐",
-};
+import { CATEGORY_BY_NAME, DEFAULT_CATEGORY_ICON } from "@/lib/categories";
 
 // idle: partilha desligada
 // loading: a pedir permissão de GPS / a confirmar com o backend
@@ -523,33 +518,43 @@ export default function ProviderNavbar() {
                 <div className="pnav-empty">
                   {searching ? "A pesquisar..." : "Nenhum pedido encontrado"}
                 </div>
-              ) : results.map(item => (
-                <div
-                  key={item.id}
-                  className="pnav-result"
-                  onClick={() => handleResultClick(item)}
-                >
-                  <div style={{ width:36, height:36, borderRadius:10, background:"#FEF3C7", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
-                    {CAT_EMOJI[item.category] ?? "🔧"}
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <p style={{ fontSize:13, fontWeight:600, color:"#0F172A", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</p>
-                      {item.sourceType === "quick" && (
-                        <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:99, background:"#EDE9FE", color:"#7C3AED", border:"1px solid #DDD6FE", flexShrink:0 }}>
-                          <Zap size={9}/> Rápido
-                        </span>
-                      )}
+              ) : results.map(item => {
+                // Antes: CAT_EMOJI[item.category] ?? "🔧" — um emoji fixo
+                // por categoria. Substituído pelo Icon+color reais da
+                // mesma fonte única usada em search/page.tsx, sem emojis,
+                // com fallback para DEFAULT_CATEGORY_ICON quando a
+                // categoria do item não bate com nenhuma das 12 oficiais.
+                const catMeta = CATEGORY_BY_NAME[item.category ?? ""];
+                const CatIcon = catMeta?.Icon ?? DEFAULT_CATEGORY_ICON.Icon;
+                const catColor = catMeta?.color ?? DEFAULT_CATEGORY_ICON.color;
+                return (
+                  <div
+                    key={item.id}
+                    className="pnav-result"
+                    onClick={() => handleResultClick(item)}
+                  >
+                    <div style={{ width:36, height:36, borderRadius:10, background:"#FEF3C7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <CatIcon size={16} style={{ color: catColor }}/>
                     </div>
-                    <p style={{ fontSize:11, color:"#94A3B8" }}>
-                      {item.category}
-                      {item.sourceType !== "quick" && item.budget != null ? ` · ${Number(item.budget).toLocaleString("pt-PT")} Kz` : ""}
-                      {item.address ? ` · ${item.address}` : ""}
-                    </p>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <p style={{ fontSize:13, fontWeight:600, color:"#0F172A", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</p>
+                        {item.sourceType === "quick" && (
+                          <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:99, background:"#EDE9FE", color:"#7C3AED", border:"1px solid #DDD6FE", flexShrink:0 }}>
+                            <Zap size={9}/> Rápido
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize:11, color:"#94A3B8" }}>
+                        {item.category}
+                        {item.sourceType !== "quick" && item.budget != null ? ` · ${Number(item.budget).toLocaleString("pt-PT")} Kz` : ""}
+                        {item.address ? ` · ${item.address}` : ""}
+                      </p>
+                    </div>
+                    <ChevronRight size={14} style={{ color:"#CBD5E1", flexShrink:0 }}/>
                   </div>
-                  <ChevronRight size={14} style={{ color:"#CBD5E1", flexShrink:0 }}/>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

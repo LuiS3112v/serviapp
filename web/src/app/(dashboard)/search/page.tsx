@@ -7,33 +7,16 @@ import {
   Search, Filter, Briefcase, FileText,
   Wifi, WifiOff, Loader2, X, RefreshCw,
   Package, CheckCircle, Building2, User,
-  Sparkles, Wind, Wrench, Zap, Monitor, Leaf,
-  Scissors, Car, Paintbrush, HardHat, Lock,
 } from "lucide-react";
 import { getToken } from "@/lib/auth.api";
 import { chatApi } from "@/lib/chat.api";
 import { servicesApi } from "@/lib/services.api";
+import { CATEGORY_NAMES, CATEGORY_BY_NAME, DEFAULT_CATEGORY_ICON } from "@/lib/categories";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-const CATS  = ["Todos","Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Segurança"];
+const CATS  = ["Todos", ...CATEGORY_NAMES];
 const SORTS = ["Mais próximo","Melhor avaliação","Menor preço"];
-
-const CAT_ICON: Record<string, { Icon: any; color: string }> = {
-  "Limpeza":      { Icon: Sparkles,   color: "#0E7A5F" },
-  "Climatização": { Icon: Wind,       color: "#0284C7" },
-  "Canalização":  { Icon: Wrench,     color: "#0D9488" },
-  "Eletricista":  { Icon: Zap,        color: "#B45309" },
-  "TI & Redes":   { Icon: Monitor,    color: "#4F46E5" },
-  "Jardinagem":   { Icon: Leaf,       color: "#65A30D" },
-  "Mudanças":     { Icon: Package,    color: "#0891B2" },
-  "Beleza":       { Icon: Scissors,   color: "#E11D48" },
-  "Automóvel":    { Icon: Car,        color: "#2563EB" },
-  "Pintura":      { Icon: Paintbrush, color: "#7C3AED" },
-  "Construção":   { Icon: HardHat,    color: "#C2410C" },
-  "Segurança":    { Icon: Lock,       color: "#475569" },
-};
-const DEFAULT_CAT_ICON = { Icon: Wrench, color: "#64748b" };
 
 const COMPANY_CATEGORY_KEYWORDS: Record<string, string[]> = {
   "TI & Redes":   ["ti", "tecnologia", "technology", "tech", "redes", "software", "informatica", "digital", "it", "sistemas", "tic"],
@@ -41,7 +24,7 @@ const COMPANY_CATEGORY_KEYWORDS: Record<string, string[]> = {
   "Limpeza":      ["limpeza", "cleaning", "higiene", "clean", "desinfe"],
   "Climatização": ["climati", "avac", "ar condicion", "refriger", "hvac", "cooling"],
   "Canalização":  ["canaliz", "plumb", "encanament", "hidraul", "agua"],
-  "Eletricista":  ["eletric", "electri", "energia", "electrical", "eletro"],
+  "Eletricidade": ["eletric", "electri", "energia", "electrical", "eletro"],
   "Jardinagem":   ["jardim", "garden", "paisag", "verde", "plant"],
   "Mudanças":     ["mudan", "transport", "logistic", "cargo", "frete"],
   "Beleza":       ["beleza", "estetica", "cabelei", "beauty", "spa", "saude", "cosmet"],
@@ -239,12 +222,6 @@ function SearchInner() {
     }
   };
 
-  // Navega para o perfil público preservando query (pesquisa + categoria)
-  // na própria URL da search page — ao voltar com router.back(), o
-  // Next.js App Router restaura o scroll automaticamente, e a query
-  // string continua na URL de origem, por isso fetchAll() e os estados
-  // de query/cat já leem sp.get(...) no mount, sem precisar de nenhum
-  // mecanismo novo de persistência de estado.
   const handleViewProfile = (providerId: string) => {
     router.push(`/prestador/${providerId}`);
   };
@@ -399,7 +376,9 @@ function SearchInner() {
                   const sol        = solicitStates[item.key] ?? "idle";
                   const isCompany  = isCompanyCard(item);
                   const isCatalog  = item.source === "catalog";
-                  const { Icon: CatIcon, color: catColor } = CAT_ICON[item.category ?? ""] ?? DEFAULT_CAT_ICON;
+                  const catMeta    = CATEGORY_BY_NAME[item.category ?? ""];
+                  const CatIcon    = catMeta?.Icon ?? DEFAULT_CATEGORY_ICON.Icon;
+                  const catColor   = catMeta?.color ?? DEFAULT_CATEGORY_ICON.color;
                   const imageUrl   = isCompany ? item.companyLogoUrl : item.providerAvatar;
 
                   return (

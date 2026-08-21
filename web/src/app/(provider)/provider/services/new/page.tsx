@@ -4,12 +4,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, MapPin, Clock, CheckCircle, Loader2, AlertCircle } from "lucide-react";
 import { providerCatalogApi, CreateCatalogPayload } from "@/lib/provider-catalog.api";
 import { getToken } from "@/lib/auth.api";
-
-const CATEGORIES = [
-  "Limpeza","Climatização","Canalização","Eletricista",
-  "TI & Redes","Jardinagem","Mudanças","Beleza",
-  "Automóvel","Pintura","Construção","Segurança",
-];
+import { CATEGORY_NAMES } from "@/lib/categories";
 
 interface FormState { title:string; cat:string; desc:string; address:string; price:string; }
 
@@ -108,7 +103,7 @@ export default function ProviderNewServicePage() {
 
         <label className="label">Categoria *</label>
         <div className="cat-grid">
-          {CATEGORIES.map((c,i)=>(
+          {CATEGORY_NAMES.map((c,i)=>(
             <button key={i} className={`cat-opt${form.cat===c?" sel":""}`}
               onClick={()=>{setForm({...form,cat:c});setError("");}}>
               {c}

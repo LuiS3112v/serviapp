@@ -9,8 +9,8 @@ import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
 import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
 import { getToken, getSession } from "@/lib/auth.api";
 import ProviderServiceActionCard from "@/components/services/ProviderServiceActionCard";
+import { CATEGORY_NAMES } from "@/lib/categories";
 
-const CATEGORIES = ["", "Limpeza", "Climatização", "Canalização", "Eletricista", "TI & Redes", "Jardinagem", "Mudanças", "Beleza", "Automóvel", "Pintura", "Construção", "Segurança"];
 const PROVINCES  = ["", "Luanda", "Benguela", "Huambo", "Huíla", "Malanje", "Namibe", "Kwanza Sul", "Kwanza Norte", "Bié", "Moxico", "Lunda Norte", "Lunda Sul", "Cunene", "Cabinda", "Zaire", "Uíge", "Bengo", "Cuando Cubango"];
 
 const TABS = [
@@ -53,7 +53,6 @@ function ProviderServicesInner() {
   const [showFilters, setShowFilters] = useState(false);
   const [filter, setFilter]           = useState<AvailableFilter>({});
 
-  // Usamos ref para cancelar carregamentos desatualizados
   const loadIdRef = useRef(0);
 
   const isLoggedIn = !!getToken();
@@ -62,8 +61,6 @@ function ProviderServicesInner() {
   async function load(currentTab: string, currentFilter: AvailableFilter) {
     if (!isLoggedIn) { setLoading(false); return; }
 
-    // Cada chamada tem um ID único — se uma chamada mais recente chegar
-    // primeiro, a mais antiga descarta o resultado em vez de sobrescrever.
     const thisLoadId = ++loadIdRef.current;
 
     setLoading(true);
@@ -78,7 +75,6 @@ function ProviderServicesInner() {
           subcategoryServicesApi.getAvailable(),
         ]);
 
-        // Se já existe uma chamada mais recente em curso, descarta
         if (thisLoadId !== loadIdRef.current) return;
 
         unified = buildUnifiedList(regular, quick, { forProviderId: currentUserId });
@@ -105,7 +101,6 @@ function ProviderServicesInner() {
     }
   }
 
-  // Carrega sempre que tab ou filter mudam
   useEffect(() => {
     load(tab, filter);
   }, [tab, JSON.stringify(filter)]);
@@ -139,10 +134,6 @@ function ProviderServicesInner() {
         .fsel{padding:10px 14px;border-radius:10px;background:#FFFFFF;border:1px solid #CBD5E1;color:#111827;font-size:13px;outline:none;font-family:inherit;cursor:pointer;min-width:140px}
         .finp{padding:10px 14px;border-radius:10px;background:#FFFFFF;border:1px solid #CBD5E1;color:#111827;font-size:13px;outline:none;font-family:inherit;width:120px}
         .flabel{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
-        /* FIX: no mobile, o .fpanel em coluna herdava align-items:flex-end,
-           empurrando cada bloco (label+select) para a direita mesmo com
-           .fsel/.finp a 100% de largura. align-items:stretch faz cada
-           bloco ocupar a largura toda e ficar alinhado à esquerda. */
         @media(max-width:640px){.psv{padding:16px;gap:16px}.feed{max-height:none}.fpanel{flex-direction:column;align-items:stretch}.fsel,.finp{width:100%!important;min-width:unset}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
       `}</style>
@@ -200,7 +191,7 @@ function ProviderServicesInner() {
               <p className="flabel">Categoria</p>
               <select className="fsel" value={filter.category ?? ""} onChange={(e) => setFilter((f) => ({ ...f, category: e.target.value || undefined }))}>
                 <option value="">Todas as categorias</option>
-                {CATEGORIES.filter(Boolean).map((c) => <option key={c} value={c}>{c}</option>)}
+                {CATEGORY_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>

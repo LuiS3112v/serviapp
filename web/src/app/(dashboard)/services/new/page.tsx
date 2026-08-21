@@ -6,12 +6,7 @@ import Navbar from "@/components/layout/Navbar";
 import { ArrowLeft, MapPin, Calendar, Clock, CheckCircle, Loader2, AlertCircle } from "lucide-react";
 import { servicesApi } from "@/lib/services.api";
 import { getToken } from "@/lib/auth.api";
-
-const CATEGORIES = [
-  "Limpeza","Climatização","Canalização","Eletricista",
-  "TI & Redes","Jardinagem","Mudanças","Beleza",
-  "Automóvel","Pintura","Construção","Segurança",
-];
+import { CATEGORY_NAMES } from "@/lib/categories";
 
 interface FormState { title:string; category:string; description:string; address:string; date:string; time:string; budget:string; }
 
@@ -43,7 +38,6 @@ export default function NewServicePage() {
   const token = getToken();
   if (!token) { router.push("/"); return; }
 
-  // Verifica o role real do JWT (não o que está no localStorage user)
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     if (payload.role !== "client") {
@@ -143,7 +137,7 @@ export default function NewServicePage() {
 
             <label className="label">Categoria *</label>
             <div className="cat-grid">
-              {CATEGORIES.map((c,i)=>(
+              {CATEGORY_NAMES.map((c,i)=>(
                 <button key={i} className={`cat-opt${form.category===c?" sel":""}`} onClick={()=>set("category",c)}>{c}</button>
               ))}
             </div>

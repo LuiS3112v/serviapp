@@ -8,7 +8,6 @@ import {
   Link2, CheckCircle2, Sparkles, Rocket, Building2, Clock, HelpCircle,
 } from "lucide-react";
 
-/* Hook simples de scroll-reveal, sem dependências novas */
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -41,9 +40,6 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   );
 }
 
-/* Mesma linguagem visual da Homepage: cinza escuro como cor de acção,
-   verde só para estados de confirmação/verificação, roxo só no "app"
-   do logo (igual ao rodapé em todas as páginas). */
 const BRAND = "#1e293b";
 const CONFIRM = "#1D9E75";
 const INK = "#0f172a";
@@ -53,6 +49,7 @@ export default function SobrePage() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -65,32 +62,32 @@ export default function SobrePage() {
   const goHome = () => router.push("/");
 
   const values = [
-    { icon: ShieldCheck, title: "Confiança em primeiro lugar", text: "Todos os prestadores passam por verificação de identidade (KYC) antes de poderem aceitar pedidos na plataforma." },
-    { icon: Handshake, title: "Justo para os dois lados", text: "Preços claros, sem letras pequenas. O cliente sabe o que paga e o prestador sabe o que recebe." },
-    { icon: Heart, title: "Feito para Angola", text: "Pensado de raiz para a realidade angolana: bairros, formas de pagamento e o dia a dia de quem contrata e de quem presta serviços." },
-    { icon: Rocket, title: "Sempre a melhorar", text: "Ouvimos quem usa a plataforma todos os dias para tornar cada pedido mais simples e rápido." },
+    { icon: ShieldCheck, title: "Confiança antes de tudo", text: "Nenhum prestador aparece na plataforma sem passar por verificação de identidade. Isso não é opcional." },
+    { icon: Handshake, title: "Justo para os dois lados", text: "Preços claros, sem surpresas. Quem contrata sabe o que paga. Quem trabalha sabe o que recebe." },
+    { icon: Heart, title: "Feito para Angola", text: "Não adaptámos uma plataforma de fora. Pensámos isto de raiz para como as coisas funcionam aqui: os bairros, os pagamentos, o dia a dia." },
+    { icon: Rocket, title: "Sempre a melhorar", text: "Ouvimos quem usa a plataforma. Se algo não está a funcionar bem, queremos saber." },
   ];
 
   const timeline = [
     { year: "A ideia", title: "Um problema do dia a dia", text: "Encontrar um eletricista, uma faxineira ou um canalizador de confiança em Luanda era, muitas vezes, uma questão de sorte ou de perguntar a amigos." },
-    { year: "O projeto", title: "Nasce a Mestroo", text: "Criámos uma plataforma simples onde qualquer pessoa pode descrever o que precisa e receber propostas de prestadores verificados perto de si." },
-    { year: "Hoje", title: "A crescer em Luanda", text: "Já ligamos centenas de prestadores a clientes em várias zonas de Luanda, com avaliações reais e pagamento seguro." },
-    { year: "O futuro", title: "Todo o país pela frente", text: "O objetivo é expandir progressivamente para outras províncias de Angola, mantendo o mesmo nível de confiança e qualidade." },
+    { year: "O projeto", title: "Nasce a Mestroo", text: "Criámos uma plataforma onde qualquer pessoa descreve o que precisa e recebe propostas de prestadores verificados perto de si. Simples assim." },
+    { year: "Hoje", title: "A crescer em Luanda", text: "Já ligámos centenas de prestadores a clientes em várias zonas de Luanda, com avaliações reais e pagamento seguro." },
+    { year: "O futuro", title: "Todo o país pela frente", text: "O objetivo é chegar progressivamente a outras províncias de Angola, sem perder o nível de confiança que construímos até agora." },
   ];
 
   const howItWorks = [
-    { icon: Users, title: "Duas comunidades, uma plataforma", text: "De um lado, pessoas e famílias que precisam de um serviço feito com qualidade. Do outro, profissionais que querem trabalho a sério, sem depender só do boca a boca." },
-    { icon: Lock, title: "Pagamento protegido (escrow)", text: "O valor combinado fica retido em segurança e só é entregue ao prestador depois de o cliente confirmar que o serviço foi concluído como esperado." },
-    { icon: MessageCircle, title: "Comunicação dentro da plataforma", text: "Cliente e prestador combinam todos os detalhes por um chat integrado, sem precisar de trocar contactos antes de terem confiança um no outro." },
-    { icon: Star, title: "Reputação construída com avaliações reais", text: "Cada avaliação vem de um serviço que foi mesmo realizado, o que ajuda a manter o padrão de qualidade dos prestadores na plataforma." },
+    { icon: Users, title: "Dois lados, uma plataforma", text: "Pessoas que precisam de um serviço feito bem. Profissionais que querem trabalho a sério, sem depender só do boca a boca. A Mestroo liga os dois." },
+    { icon: Lock, title: "O dinheiro fica retido até o serviço terminar", text: "O valor combinado fica em segurança e só é entregue ao prestador depois do cliente confirmar que o trabalho ficou feito como esperado." },
+    { icon: MessageCircle, title: "A conversa fica toda num só sítio", text: "Horário, endereço, detalhes: tudo combinado pelo chat da Mestroo. Sem trocar números antes de haver confiança." },
+    { icon: Star, title: "Avaliações de serviços reais", text: "Cada avaliação está ligada a um serviço que foi mesmo realizado. Não é um sistema de estrelas genérico." },
   ];
 
   const faqs = [
-    { q: "Quanto custa usar a Mestroo?", a: "Criar conta e pedir orçamentos é gratuito para clientes. Os prestadores pagam uma taxa de serviço apenas sobre os pagamentos que recebem através da plataforma." },
-    { q: "Como sei que o prestador é de confiança?", a: "Todos os prestadores passam por verificação de identidade (KYC) antes de poderem ser contactados, e o seu histórico de avaliações fica visível no perfil." },
-    { q: "O que acontece se eu não ficar satisfeito com o serviço?", a: "O pagamento só é libertado ao prestador depois de o cliente confirmar a conclusão do serviço, e a nossa equipa de suporte está disponível para ajudar a resolver qualquer situação." },
-    { q: "A Mestroo já está disponível em toda Angola?", a: "Neste momento operamos em Luanda, com planos de expansão progressiva para outras províncias do país." },
-    { q: "Como posso tornar-me prestador?", a: "Basta criar uma conta, submeter os seus dados para verificação e definir os serviços que pretende oferecer. Depois de aprovado, já pode começar a receber pedidos." },
+    { q: "Quanto custa usar a Mestroo?", a: "Para clientes é gratuito: criar conta, publicar pedidos e receber propostas não tem custo nenhum. Os prestadores pagam uma taxa de 10% apenas sobre os pagamentos que recebem pela plataforma." },
+    { q: "Como sei que o prestador é de confiança?", a: "Todos os prestadores passam por verificação de identidade antes de poderem ser contactados. O histórico de avaliações de cada um fica visível no perfil." },
+    { q: "O que acontece se o serviço não correr bem?", a: "O pagamento só sai depois de confirmar que o serviço foi concluído. Se houver algum problema, a nossa equipa está disponível para ajudar a resolver." },
+    { q: "A Mestroo já está disponível em toda Angola?", a: "Neste momento operamos em Luanda. A expansão para outras províncias está planeada e vai acontecer de forma progressiva." },
+    { q: "Como começo a prestar serviços?", a: "Cria uma conta, submete os dados para verificação e define os serviços que queres oferecer. Depois de aprovado, já podes começar a receber pedidos." },
   ];
 
   return (
@@ -100,7 +97,6 @@ export default function SobrePage() {
         .lp{background:#ffffff;color:#111827;font-family:inherit;overflow-x:hidden}
         .lp-container{max-width:1180px;margin:0 auto;padding:0 24px}
 
-        /* Header */
         .lp-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.9);backdrop-filter:blur(10px);border-bottom:1px solid #eef1f5;transition:box-shadow .2s}
         .lp-header.scrolled{box-shadow:0 2px 16px rgba(15,23,42,0.06)}
         .lp-header-inner{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
@@ -118,62 +114,54 @@ export default function SobrePage() {
         .lp-btn-solid:hover{transform:translateY(-1px)}
         .lp-menu-toggle{display:none;background:none;border:none;cursor:pointer;color:#0f172a}
 
-        /* Hero da página Sobre */
-        .lp-about-hero{padding:60px 0 52px;text-align:center}
+        .lp-about-hero{padding:64px 0 56px}
         .lp-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;background:#f1f5f9;color:#475569;font-size:12.5px;font-weight:700;margin-bottom:20px}
-        .lp-about-h1{font-size:40px;line-height:1.16;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin:0 auto 18px;max-width:720px}
-        .lp-about-h1 span{color:${BRAND}}
-        .lp-about-sub{font-size:16.5px;line-height:1.65;color:#64748b;max-width:600px;margin:0 auto}
+        .lp-about-h1{font-size:40px;line-height:1.16;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin:0 0 18px;max-width:680px}
+        .lp-about-sub{font-size:16.5px;line-height:1.65;color:#64748b;max-width:580px}
 
-        /* Section shared */
         .lp-section{padding:76px 0}
         .lp-section-alt{background:#f8fafc}
-        .lp-section-head{text-align:center;max-width:640px;margin:0 auto 44px}
+        .lp-section-head{max-width:640px;margin:0 0 44px}
+        .lp-section-head.center{text-align:center;margin-left:auto;margin-right:auto}
         .lp-tag{display:inline-block;font-size:13px;font-weight:700;color:${BRAND};margin-bottom:14px}
         .lp-h2{font-size:29px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin-bottom:12px}
         .lp-section-sub{font-size:15px;color:#64748b;line-height:1.65}
 
-        /* Missão (dois blocos) */
         .lp-mission-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:18px;overflow:hidden}
         .lp-mission-card{padding:36px 32px;background:#fff}
         .lp-mission-icon{width:48px;height:48px;border-radius:13px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:#334155}
         .lp-mission-card h3{font-size:18px;font-weight:800;color:#0f172a;margin-bottom:12px}
         .lp-mission-card p{font-size:14.5px;color:#475569;line-height:1.7}
 
-        /* Timeline */
-        .lp-timeline{position:relative;max-width:780px;margin:0 auto}
-        .lp-timeline-line{position:absolute;left:12px;top:8px;bottom:8px;width:1px;background:#e2e8f0}
-        .lp-timeline-item{position:relative;padding-left:48px;margin-bottom:36px}
-        .lp-timeline-item:last-child{margin-bottom:0}
-        .lp-timeline-dot{position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid ${BRAND};z-index:2}
-        .lp-timeline-year{display:block;font-size:12px;font-weight:700;color:#A15C3E;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
-        .lp-timeline-item h3{font-size:16.5px;font-weight:700;color:#0f172a;margin-bottom:8px}
-        .lp-timeline-item p{font-size:14px;color:#64748b;line-height:1.65;max-width:560px}
+        .lp-timeline{position:relative;max-width:720px}
+        .lp-timeline-rule{position:absolute;left:9px;top:8px;bottom:8px;width:1px;background:#e2e8f0}
+        .lp-timeline-item{position:relative;padding-left:42px;padding-bottom:36px}
+        .lp-timeline-item:last-child{padding-bottom:0}
+        .lp-timeline-dot{position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid ${BRAND};z-index:2}
+        .lp-timeline-year{display:block;font-size:11.5px;font-weight:800;color:#94a3b8;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+        .lp-timeline-item h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px}
+        .lp-timeline-item p{font-size:14px;color:#64748b;line-height:1.65;max-width:520px}
 
-        /* Como funciona por dentro */
         .lp-how-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:18px;overflow:hidden}
         .lp-how-card{padding:30px 28px;background:#fff}
         .lp-how-icon{width:46px;height:46px;border-radius:13px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:#334155}
         .lp-how-card h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:10px}
         .lp-how-card p{font-size:13.5px;color:#475569;line-height:1.65}
 
-        /* Valores */
         .lp-values-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:16px;overflow:hidden}
         .lp-value-card{background:#fff;padding:26px 22px}
         .lp-value-icon{width:42px;height:42px;border-radius:12px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:#334155}
         .lp-value-card h3{font-size:14.5px;font-weight:700;color:#0f172a;margin-bottom:8px}
         .lp-value-card p{font-size:13px;color:#64748b;line-height:1.6}
 
-        /* Números */
         .lp-stats-band{border:1px solid #eef1f5;border-radius:18px;padding:36px 40px;display:grid;grid-template-columns:repeat(4,1fr);text-align:center}
         .lp-stats-band > div{border-left:1px solid #eef1f5;padding:0 12px}
         .lp-stats-band > div:first-child{border-left:none}
-        .lp-stats-band .num{font-size:27px;font-weight:800;color:${INK}}
-        .lp-stats-band .lbl{font-size:12.5px;color:#94a3b8;margin-top:4px}
+        .lp-stats-num{font-size:27px;font-weight:800;color:${INK}}
+        .lp-stats-lbl{font-size:12.5px;color:#94a3b8;margin-top:4px}
 
-        /* Cobertura */
         .lp-coverage-panel{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;background:#f8fafc;border:1px solid #eef1f5;border-radius:20px;padding:44px 40px}
-        .lp-coverage-list{display:flex;flex-direction:column;gap:14px}
+        .lp-coverage-list{display:flex;flex-direction:column;gap:14px;margin-top:20px}
         .lp-coverage-item{display:flex;align-items:flex-start;gap:12px}
         .lp-coverage-item span{font-size:14px;color:#334155;line-height:1.55}
         .lp-coverage-icon{width:28px;height:28px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#334155}
@@ -181,24 +169,21 @@ export default function SobrePage() {
         .lp-map-mini svg{width:100%;height:100%;display:block}
         .lp-map-pin{position:absolute;width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(15,23,42,0.14);border:1px solid #eef1f5}
 
-        /* FAQ */
-        .lp-faq-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
-        .lp-faq-item{background:#fff;border:1px solid #eef1f5;border-radius:16px;padding:20px 22px;cursor:pointer;transition:border-color .2s}
-        .lp-faq-item:hover{border-color:#cbd5e1}
-        .lp-faq-q{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:15px;font-weight:700;color:#0f172a}
-        .lp-faq-a{font-size:14px;color:#64748b;line-height:1.65;margin-top:12px}
+        .lp-faq-list{max-width:760px;display:flex;flex-direction:column;gap:10px}
+        .lp-faq-item{background:#fff;border:1px solid #eef1f5;border-radius:14px;overflow:hidden;transition:border-color .2s}
+        .lp-faq-item.open{border-color:#cbd5e1}
+        .lp-faq-q{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 22px;font-size:15px;font-weight:700;color:#0f172a;cursor:pointer;user-select:none}
+        .lp-faq-a{padding:0 22px 20px;font-size:14px;color:#64748b;line-height:1.65}
 
-        /* CTA final */
         .lp-cta{background:${INK};border-radius:22px;padding:52px 48px;text-align:center;color:#fff}
         .lp-cta h2{font-size:27px;font-weight:800;margin-bottom:14px;letter-spacing:-0.02em}
         .lp-cta p{font-size:15px;color:#cbd5e1;max-width:480px;margin:0 auto 28px;line-height:1.6}
         .lp-cta-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
         .lp-btn-white{padding:15px 28px;border-radius:12px;border:none;background:#fff;color:${INK};font-size:15px;font-weight:800;cursor:pointer;transition:transform .15s;font-family:inherit}
         .lp-btn-white:hover{transform:translateY(-2px)}
-        .lp-btn-outline-white{padding:15px 28px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.35);background:transparent;color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
-        .lp-btn-outline-white:hover{background:rgba(255,255,255,0.1)}
+        .lp-btn-outline-white{padding:15px 28px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.3);background:transparent;color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
+        .lp-btn-outline-white:hover{background:rgba(255,255,255,0.08)}
 
-        /* Footer */
         .lp-footer{background:#0f172a;color:#cbd5e1;padding:56px 0 28px}
         .lp-footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;margin-bottom:40px}
         .lp-footer h4{font-size:13.5px;font-weight:700;color:#fff;margin-bottom:16px}
@@ -209,7 +194,6 @@ export default function SobrePage() {
         .lp-footer-social a:hover{background:${BRAND}}
         .lp-footer-bottom{border-top:1px solid #1e293b;padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
         .lp-footer-bottom p{font-size:12.5px;color:#64748b}
-        .lp-coverage-note{font-size:12.5px;color:#64748b;max-width:420px;text-align:right}
 
         @media(max-width:960px){
           .lp-nav{display:none}
@@ -222,7 +206,6 @@ export default function SobrePage() {
           .lp-coverage-panel{grid-template-columns:1fr;padding:32px 26px}
           .lp-footer-grid{grid-template-columns:1fr 1fr}
           .lp-footer-bottom{flex-direction:column;align-items:flex-start}
-          .lp-coverage-note{text-align:left}
         }
         @media(max-width:600px){
           .lp-about-h1{font-size:27px}
@@ -234,7 +217,6 @@ export default function SobrePage() {
           .lp-cta{padding:38px 22px}
           .lp-footer-grid{grid-template-columns:1fr}
           .lp-coverage-panel{padding:24px 18px}
-          .lp-timeline-item{padding-left:40px}
         }
       `}</style>
 
@@ -273,13 +255,13 @@ export default function SobrePage() {
           )}
         </header>
 
-        {/* Hero da página Sobre */}
+        {/* Hero */}
         <section className="lp-about-hero">
           <div className="lp-container">
             <Reveal>
-              <div className="lp-eyebrow" style={{ marginLeft: "auto", marginRight: "auto" }}><MapPin size={13} /> Sobre a Mestroo</div>
-              <h1 className="lp-about-h1">Ligamos pessoas a <span>profissionais de confiança</span>, em Luanda e, em breve, em todo o país</h1>
-              <p className="lp-about-sub">Somos uma plataforma angolana que facilita encontrar e ser encontrado por quem precisa de um serviço bem feito. Aqui explicamos quem somos, como trabalhamos e porque pode confiar em nós.</p>
+              <div className="lp-eyebrow"><MapPin size={13} /> Sobre a Mestroo</div>
+              <h1 className="lp-about-h1">Encontrar um profissional de confiança em Luanda não devia ser tão difícil</h1>
+              <p className="lp-about-sub">Aqui explicamos quem somos, como pensámos a plataforma e porque acreditamos que isto pode funcionar melhor para toda a gente.</p>
             </Reveal>
           </div>
         </section>
@@ -291,31 +273,30 @@ export default function SobrePage() {
               <div className="lp-mission-grid">
                 <div className="lp-mission-card">
                   <div className="lp-mission-icon"><Target size={22} /></div>
-                  <h3>A nossa missão</h3>
-                  <p>Tornar simples e seguro encontrar um profissional de confiança para qualquer serviço do dia a dia da canalização à limpeza, da eletricidade à beleza sem depender só de contactos ou do boca a boca.</p>
+                  <h3>Porque existimos</h3>
+                  <p>Contratar um eletricista, uma faxineira ou um canalizador de confiança em Luanda era, muitas vezes, questão de sorte. Criámos a Mestroo para mudar isso: qualquer pessoa descreve o que precisa e encontra quem pode fazer, perto de si, com avaliações reais.</p>
                 </div>
                 <div className="lp-mission-card">
                   <div className="lp-mission-icon"><Sparkles size={22} /></div>
-                  <h3>A nossa visão</h3>
-                  <p>Ser a plataforma de referência para serviços em Angola, valorizando o talento local e dando a milhares de profissionais uma forma justa e digital de fazer crescer o seu trabalho.</p>
+                  <h3>Para onde vamos</h3>
+                  <p>Queremos ser a forma mais natural de encontrar e ser encontrado por quem precisa de um serviço em Angola. E fazer isso valorizando quem trabalha, não só quem contrata.</p>
                 </div>
               </div>
             </Reveal>
           </div>
         </section>
 
-        {/* Como surgimos — timeline */}
+        {/* Como surgimos */}
         <section className="lp-section">
           <div className="lp-container">
             <Reveal>
               <div className="lp-section-head">
                 <span className="lp-tag">A nossa história</span>
                 <h2 className="lp-h2">Como surgiu a Mestroo</h2>
-                <p className="lp-section-sub">De um problema comum em Luanda a uma plataforma pensada para crescer com o país.</p>
               </div>
             </Reveal>
-            <div className="lp-timeline">
-              <div className="lp-timeline-line" />
+            <div className="lp-timeline" style={{ position: "relative" }}>
+              <div className="lp-timeline-rule" />
               {timeline.map((t, i) => (
                 <Reveal key={i} delay={i * 80}>
                   <div className="lp-timeline-item">
@@ -335,9 +316,9 @@ export default function SobrePage() {
           <div className="lp-container">
             <Reveal>
               <div className="lp-section-head">
-                <span className="lp-tag">Por dentro da plataforma</span>
-                <h2 className="lp-h2">Como garantimos confiança em cada pedido</h2>
-                <p className="lp-section-sub">Cada detalhe da plataforma foi pensado para proteger tanto quem contrata como quem presta o serviço.</p>
+                <span className="lp-tag">Por dentro</span>
+                <h2 className="lp-h2">Como garantimos que funciona de verdade</h2>
+                <p className="lp-section-sub">Cada detalhe da plataforma foi pensado para proteger tanto quem contrata como quem trabalha.</p>
               </div>
             </Reveal>
             <Reveal>
@@ -360,7 +341,7 @@ export default function SobrePage() {
             <Reveal>
               <div className="lp-section-head">
                 <span className="lp-tag">O que nos guia</span>
-                <h2 className="lp-h2">Os nossos valores</h2>
+                <h2 className="lp-h2">Em que acreditamos</h2>
               </div>
             </Reveal>
             <Reveal>
@@ -382,10 +363,10 @@ export default function SobrePage() {
           <div className="lp-container">
             <Reveal>
               <div className="lp-stats-band">
-                <div><p className="num">500+</p><p className="lbl">Prestadores</p></div>
-                <div><p className="num">12+</p><p className="lbl">Categorias</p></div>
-                <div><p className="num">4.9★</p><p className="lbl">Avaliação média</p></div>
-                <div><p className="num">1</p><p className="lbl">Cidade, para já</p></div>
+                <div><p className="lp-stats-num">500+</p><p className="lp-stats-lbl">Prestadores</p></div>
+                <div><p className="lp-stats-num">12+</p><p className="lp-stats-lbl">Categorias</p></div>
+                <div><p className="lp-stats-num">4.9★</p><p className="lp-stats-lbl">Avaliação média</p></div>
+                <div><p className="lp-stats-num">1</p><p className="lp-stats-lbl">Cidade, por agora</p></div>
               </div>
             </Reveal>
           </div>
@@ -399,19 +380,19 @@ export default function SobrePage() {
                 <div>
                   <span className="lp-tag">Onde estamos</span>
                   <h2 className="lp-h2" style={{ marginTop: 4 }}>Hoje em Luanda, amanhã em Angola</h2>
-                  <p className="lp-section-sub" style={{ marginBottom: 24 }}>Começámos por Luanda para garantir que cada prestador é bem verificado e cada serviço corre bem, antes de crescer para novas zonas.</p>
+                  <p className="lp-section-sub">Começámos por Luanda para garantir que cada prestador é verificado a sério e cada serviço corre bem, antes de crescer para outras zonas.</p>
                   <div className="lp-coverage-list">
                     <div className="lp-coverage-item">
                       <div className="lp-coverage-icon"><CheckCircle2 size={14} /></div>
-                      <span>Já disponível em várias zonas de Luanda, incluindo Talatona, Maianga, Ingombota e Samba.</span>
+                      <span>Já disponível em várias zonas de Luanda: Talatona, Maianga, Ingombota, Samba e outras.</span>
                     </div>
                     <div className="lp-coverage-item">
                       <div className="lp-coverage-icon"><Clock size={14} /></div>
-                      <span>Expansão progressiva planeada para outras províncias de Angola nos próximos passos da plataforma.</span>
+                      <span>Expansão progressiva para outras províncias de Angola nos próximos meses.</span>
                     </div>
                     <div className="lp-coverage-item">
                       <div className="lp-coverage-icon"><Building2 size={14} /></div>
-                      <span>Equipa local dedicada a acompanhar prestadores e clientes em cada nova zona.</span>
+                      <span>Equipa local a acompanhar cada nova zona antes de abrir ao público.</span>
                     </div>
                   </div>
                 </div>
@@ -450,20 +431,24 @@ export default function SobrePage() {
             <Reveal>
               <div className="lp-section-head">
                 <span className="lp-tag">Perguntas frequentes</span>
-                <h2 className="lp-h2">Tudo o que precisa de saber</h2>
-                <p className="lp-section-sub">Se tiver mais dúvidas, a nossa equipa de suporte está sempre disponível para ajudar.</p>
+                <h2 className="lp-h2">O que as pessoas costumam perguntar</h2>
               </div>
             </Reveal>
             <div className="lp-faq-list">
               {faqs.map((f, i) => (
                 <Reveal key={i} delay={i * 40}>
-                  <details className="lp-faq-item">
-                    <summary className="lp-faq-q" style={{ listStyle: "none", cursor: "pointer" }}>
+                  <div
+                    className={`lp-faq-item${openFaq === i ? " open" : ""}`}
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  >
+                    <div className="lp-faq-q">
                       {f.q}
-                      <HelpCircle size={18} color="#94a3b8" style={{ flexShrink: 0 }} />
-                    </summary>
-                    <p className="lp-faq-a">{f.a}</p>
-                  </details>
+                      <span style={{ color: "#94a3b8", flexShrink: 0, fontSize: 18, fontWeight: 400, lineHeight: 1 }}>
+                        {openFaq === i ? "−" : "+"}
+                      </span>
+                    </div>
+                    {openFaq === i && <p className="lp-faq-a">{f.a}</p>}
+                  </div>
                 </Reveal>
               ))}
             </div>
@@ -475,10 +460,10 @@ export default function SobrePage() {
           <div className="lp-container">
             <Reveal>
               <div className="lp-cta">
-                <h2>Faça parte da Mestroo</h2>
-                <p>Quer contratar um serviço de confiança ou quer começar a receber novos clientes? Crie a sua conta gratuita agora.</p>
+                <h2>Tem um serviço para resolver?</h2>
+                <p>Crie a sua conta e encontre quem pode fazer, perto de si, hoje mesmo.</p>
                 <div className="lp-cta-actions">
-                  <button className="lp-btn-white" onClick={goRegisterClient}>Criar conta</button>
+                  <button className="lp-btn-white" onClick={goRegisterClient}>Encontrar um profissional</button>
                   <button className="lp-btn-outline-white" onClick={goHome}>Voltar ao início</button>
                 </div>
               </div>
@@ -517,7 +502,7 @@ export default function SobrePage() {
             </div>
             <div className="lp-footer-bottom">
               <p>© 2026 Mestroo. Todos os direitos reservados.</p>
-              <p className="lp-coverage-note">De momento disponível em Luanda, com expansão progressiva para outras cidades.</p>
+              <p style={{ fontSize: "12.5px", color: "#64748b" }}>De momento disponível em Luanda, com expansão progressiva para outras cidades.</p>
             </div>
           </div>
         </footer>

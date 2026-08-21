@@ -56,6 +56,8 @@ export default function HomePage() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [heroPhotoLoaded, setHeroPhotoLoaded] = useState(false);
+  const [heroPhotoFailed, setHeroPhotoFailed] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -68,10 +70,10 @@ export default function HomePage() {
   const goRegisterProvider = () => router.push("/register/provider");
 
   const steps = [
-    { icon: ClipboardList, title: "Descreva o que precisa", text: "Explique o serviço que procura e o que espera do prestador." },
-    { icon: Inbox, title: "Receba propostas", text: "Prestadores disponíveis na sua zona respondem com condições e preço." },
-    { icon: CalendarCheck, title: "Escolha e agende", text: "Compare perfis e marque o serviço para a data que lhe convier." },
-    { icon: Star, title: "Avalie o serviço", text: "Depois do trabalho feito, deixe a sua avaliação para ajudar outros utilizadores." },
+    { icon: ClipboardList, title: "Diga o que precisa", text: "Duas linhas já chegam: o problema e a zona onde está." },
+    { icon: Inbox, title: "Vêm as propostas", text: "Quem está disponível perto de si responde com preço e prazo." },
+    { icon: CalendarCheck, title: "Escolhe e marca", text: "Vê o perfil, compara e marca para quando lhe der jeito." },
+    { icon: Star, title: "Avalia no fim", text: "Fica registado para o próximo cliente saber com quem conta." },
   ];
 
   const categories = [
@@ -90,19 +92,19 @@ export default function HomePage() {
   ];
 
   const journey = [
-    { label: "Antes", title: "Saiba com quem está a contratar", text: "Cada prestador passa por verificação de identidade (KYC) antes de poder receber pedidos.", icon: UserCheck },
-    { label: "Durante", title: "Fale sem sair da Mestroo", text: "Combine horários, detalhes e alterações pelo chat integrado, fica tudo registado.", icon: MessageCircle },
-    { label: "Pagamento", title: "O dinheiro fica retido até o serviço terminar", text: "O valor entra em escrow e só é libertado ao prestador depois de confirmar a conclusão.", icon: Lock },
-    { label: "Depois", title: "Avalie o que foi feito", text: "A sua avaliação fica ligada a um serviço real e ajuda o próximo cliente a escolher.", icon: Star },
+    { label: "Antes", title: "Sabe com quem está a lidar", text: "Todo o prestador passa por verificação de identidade antes de poder receber pedidos. Não é um perfil anónimo a bater à sua porta.", icon: UserCheck },
+    { label: "Durante", title: "A conversa fica registada", text: "Combine horário e detalhes pelo chat da Mestroo. Se houver alguma dúvida depois, está tudo ali.", icon: MessageCircle },
+    { label: "Pagamento", title: "O dinheiro só sai quando o trabalho estiver feito", text: "Fica retido até confirmar que o serviço foi concluído. Ninguém recebe antes de entregar.", icon: Lock },
+    { label: "Depois", title: "A sua avaliação conta", text: "Fica ligada a um serviço real, feito por essa pessoa. É o que ajuda o próximo cliente a decidir.", icon: Star },
   ];
 
   const providerChecklist = [
-    { icon: CheckCircle2, text: "Perfil verificado após aprovação do KYC" },
-    { icon: Percent, text: "Taxa de serviço de 10% sobre os pagamentos recebidos" },
-    { icon: BarChart3, text: "Painel de estatísticas para acompanhar pedidos e desempenho" },
-    { icon: StarIcon, text: "Sistema de avaliações deixadas pelos clientes" },
-    { icon: Building2, text: "Possibilidade de criar depois um perfil de empresa" },
-    { icon: MessageCircle, text: "Chat integrado para falar diretamente com o cliente" },
+    { icon: CheckCircle2, text: "Perfil fica verificado depois da aprovação" },
+    { icon: Percent, text: "Fica 10% para a Mestroo em cada pagamento recebido" },
+    { icon: BarChart3, text: "Vê os seus pedidos e desempenho num painel" },
+    { icon: StarIcon, text: "As avaliações dos clientes ficam no seu perfil" },
+    { icon: Building2, text: "Pode criar depois um perfil de empresa" },
+    { icon: MessageCircle, text: "Fala com o cliente sem sair da Mestroo" },
   ];
 
   const stats = [
@@ -115,11 +117,18 @@ export default function HomePage() {
     <>
       <style>{`
         .lp *{box-sizing:border-box}
-        .lp{background:#ffffff;color:#111827;font-family:inherit;overflow-x:hidden}
+        .lp{background:#ffffff;color:#111827;font-family:var(--font-manrope),inherit,sans-serif;overflow-x:hidden}
         .lp-container{max-width:1180px;margin:0 auto;padding:0 24px}
 
-        @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(15,118,110,0.35)}50%{box-shadow:0 0 0 10px rgba(15,118,110,0)}}
-        @keyframes dashMove{to{stroke-dashoffset:-24}}
+        @keyframes ringPulse{
+          0%{transform:scale(0.5);opacity:0.5}
+          100%{transform:scale(2.2);opacity:0}
+        }
+        @keyframes dashMove{
+          0%{stroke-dashoffset:0}
+          100%{stroke-dashoffset:-48}
+        }
+        @keyframes fadeBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.92)}}
 
         /* Header */
         .lp-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.9);backdrop-filter:blur(10px);border-bottom:1px solid #eef1f5;transition:box-shadow .2s}
@@ -139,29 +148,29 @@ export default function HomePage() {
         .lp-menu-toggle{display:none;background:none;border:none;cursor:pointer;color:#0f172a}
 
         /* Hero */
-        .lp-hero{padding:64px 0 56px}
-        .lp-hero-grid{display:grid;grid-template-columns:1.05fr 0.95fr;gap:56px;align-items:center}
+        .lp-hero{padding:56px 0 64px}
+        .lp-hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
         .lp-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;background:#f1f5f9;color:#475569;font-size:12.5px;font-weight:700;margin-bottom:20px}
         .lp-h1{font-size:42px;line-height:1.14;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin-bottom:18px}
         .lp-h1 span{color:${BRAND}}
         .lp-sub{font-size:17px;line-height:1.6;color:#64748b;max-width:460px;margin-bottom:32px}
-        .lp-hero-actions{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:36px}
+        .lp-hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-bottom:36px}
         .lp-btn-primary{display:inline-flex;align-items:center;gap:8px;padding:15px 26px;border-radius:12px;border:none;background:${BRAND};color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:transform .15s;font-family:inherit}
         .lp-btn-primary:hover{transform:translateY(-2px)}
         .lp-btn-secondary{display:inline-flex;align-items:center;gap:8px;padding:15px 26px;border-radius:12px;border:1.5px solid #e2e8f0;background:#fff;color:#334155;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
         .lp-btn-secondary:hover{border-color:#cbd5e1;color:${INK};transform:translateY(-2px)}
-        .lp-stats{display:flex;gap:28px}
+        .lp-hero-link{font-size:14.5px;font-weight:700;color:#64748b;text-decoration:none;border-bottom:1.5px solid #e2e8f0;padding-bottom:2px;transition:color .15s,border-color .15s}
+        .lp-hero-link:hover{color:${BRAND};border-color:${BRAND}}
+        .lp-stats{display:flex;flex-wrap:wrap;gap:28px}
         .lp-stat-v{font-size:21px;font-weight:800;color:${INK}}
         .lp-stat-l{font-size:12px;color:#94a3b8;margin-top:2px}
 
-        /* Hero visual: mapa real de fundo */
-        .lp-hero-visual{position:relative;border-radius:20px;padding:22px;min-height:380px;overflow:hidden;border:1px solid #e2e8f0}
-        .lp-map-bg{position:absolute;inset:0;z-index:0}
-        .lp-map-bg svg{width:100%;height:100%;display:block}
-        .lp-hero-you{position:absolute;top:50%;left:50%;width:14px;height:14px;border-radius:50%;background:${MAP_ACCENT};border:2px solid #fff;transform:translate(-50%,-50%);animation:pulseDot 2.2s ease-out infinite;z-index:3}
-        .lp-pin{position:absolute;width:42px;height:42px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(15,23,42,0.14);z-index:3;border:1px solid #eef1f5}
-        .lp-visual-card{position:absolute;background:#fff;border-radius:14px;box-shadow:0 10px 24px rgba(15,23,42,0.12);padding:12px 14px;display:flex;align-items:center;gap:10px;z-index:4;border:1px solid #eef1f5}
-        .lp-route-line{stroke:${MAP_ACCENT};stroke-width:2.5;stroke-dasharray:6 6;fill:none;opacity:0.55;stroke-linecap:round;animation:dashMove 1.4s linear infinite}
+        /* Hero visual: fotografia única do profissional a trabalhar */
+        .lp-hero-visual{position:relative;border-radius:20px;overflow:hidden;border:1px solid #e2e8f0;min-height:420px;background:linear-gradient(160deg,#1e293b,#0f172a)}
+        .lp-hero-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}
+        .lp-hero-photo.loaded{opacity:1}
+        .lp-hero-photo-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#94a3b8;font-size:12.5px;text-align:center;padding:24px;line-height:1.6}
+        .lp-visual-card{position:absolute;background:#fff;border-radius:14px;box-shadow:0 10px 24px rgba(15,23,42,0.16);padding:12px 14px;display:flex;align-items:center;gap:10px;z-index:4;border:1px solid #eef1f5;max-width:calc(100% - 24px)}
 
         /* Section shared */
         .lp-section{padding:80px 0}
@@ -171,6 +180,12 @@ export default function HomePage() {
         .lp-tag{display:inline-block;font-size:13px;font-weight:700;color:${BRAND};margin-bottom:14px}
         .lp-h2{font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin-bottom:12px}
         .lp-section-sub{font-size:15.5px;color:#64748b;line-height:1.6}
+
+        /* Solução — bloco simples de transição, sem cards */
+        .lp-solution{padding:8px 0 8px}
+        .lp-solution-inner{max-width:640px}
+        .lp-solution-inner p{font-size:19px;line-height:1.55;color:${INK};font-weight:500}
+        .lp-solution-inner p + p{margin-top:14px;color:#64748b;font-size:16px;font-weight:400}
 
         /* Steps */
         .lp-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid #eef1f5;border-left:1px solid #eef1f5}
@@ -190,8 +205,16 @@ export default function HomePage() {
         .lp-tool-copy p{font-size:15px;color:#64748b;line-height:1.65;max-width:400px}
         .lp-tool-visual{background:#f8fafc;border:1px solid #eef1f5;border-radius:18px;padding:24px;min-height:220px;display:flex;align-items:center;justify-content:center;position:relative}
 
+        /* Mapa animado: ponto a piscar (pulso) + linha de rota a "andar" */
+        .lp-map-dot-wrap{position:absolute;top:50%;left:50%;width:14px;height:14px;transform:translate(-50%,-50%);z-index:5}
+        .lp-map-dot-ring{position:absolute;inset:-10px;border-radius:50%;background:${MAP_ACCENT};opacity:0.35;animation:ringPulse 1.6s ease-out infinite}
+        .lp-map-dot{position:relative;width:14px;height:14px;border-radius:50%;background:${MAP_ACCENT};border:2px solid #fff}
+        .lp-map-route{stroke-dasharray:8 8;stroke-dashoffset:0;animation:dashMove 1s linear infinite}
+        .lp-map-marker{animation:fadeBlink 2.4s ease-in-out infinite}
+        .lp-map-marker.delay{animation-delay:1.1s}
+
         /* iPhone ilustrativo para a secção Chat */
-        .lp-phone{position:relative;width:210px;height:428px;border-radius:36px;background:${INK};padding:10px;box-shadow:0 18px 40px rgba(15,23,42,0.22)}
+        .lp-phone{position:relative;width:210px;height:428px;border-radius:36px;background:${INK};padding:10px;box-shadow:0 18px 40px rgba(15,23,42,0.22);max-width:100%}
         .lp-phone-screen{position:relative;width:100%;height:100%;border-radius:28px;background:#f8fafc;overflow:hidden;display:flex;flex-direction:column}
         .lp-phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:84px;height:22px;background:${INK};border-radius:0 0 14px 14px;z-index:5}
         .lp-phone-status{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 6px;font-size:11px;font-weight:700;color:${INK}}
@@ -210,10 +233,13 @@ export default function HomePage() {
         .lp-cat-name{font-size:15px;font-weight:700;color:#0f172a}
         .lp-cat-desc{font-size:12.5px;color:#64748b;line-height:1.5}
 
-        /* Exemplo real: cadeia horizontal */
-        .lp-chain{display:flex;align-items:center;flex-wrap:wrap;gap:0;background:#fff;border:1px solid #eef1f5;border-radius:18px;padding:28px 24px}
-        .lp-chain-step{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;background:#f8fafc;font-size:13.5px;font-weight:600;color:#334155}
-        .lp-chain-arrow{color:#cbd5e1;margin:0 8px;flex-shrink:0}
+        /* Na prática — história curta em vez de cadeia de labels */
+        .lp-story{background:#fff;border:1px solid #eef1f5;border-radius:18px;padding:36px 32px}
+        .lp-story-lead{font-size:19px;font-weight:700;color:${INK};margin-bottom:20px}
+        .lp-story-steps{display:flex;flex-direction:column;gap:0}
+        .lp-story-step{display:flex;align-items:baseline;gap:14px;padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:15px;color:#334155}
+        .lp-story-step:last-child{border-bottom:none}
+        .lp-story-step b{color:${INK};font-weight:700}
 
         /* Segurança: jornada em 4 etapas, split copy + linha do tempo */
         .lp-journey{display:flex;flex-direction:column}
@@ -230,7 +256,7 @@ export default function HomePage() {
         .lp-provider-panel{position:relative;background:#f8fafc;border:1px solid #eef1f5;border-radius:24px;padding:52px 44px}
         .lp-provider-top{display:grid;grid-template-columns:1.05fr 0.95fr;gap:56px;align-items:center}
         .lp-provider-copy{max-width:460px}
-        .lp-provider-mini-stats{display:flex;align-items:center;gap:20px;margin:24px 0 28px}
+        .lp-provider-mini-stats{display:flex;align-items:center;flex-wrap:wrap;gap:20px;margin:24px 0 28px}
         .lp-mini-v{font-size:20px;font-weight:800;line-height:1;color:${INK}}
         .lp-mini-l{font-size:11px;color:#94a3b8;margin-top:4px}
         .lp-mini-sep{width:1px;height:28px;background:#dbe3ee;flex-shrink:0}
@@ -271,17 +297,29 @@ export default function HomePage() {
         .lp-footer-bottom p{font-size:12.5px;color:#64748b}
         .lp-coverage-note{font-size:12.5px;color:#64748b;max-width:420px;text-align:right}
 
+        /* ===== Responsividade reforçada ===== */
+
+        /* Tablets grandes / laptops pequenos */
+        @media(max-width:1080px){
+          .lp-container{padding:0 20px}
+          .lp-hero-grid{gap:40px}
+          .lp-h1{font-size:36px}
+        }
+
+        /* Tablets */
         @media(max-width:960px){
           .lp-nav{display:none}
           .lp-header-actions .lp-btn-ghost{display:none}
           .lp-menu-toggle{display:block}
+          .lp-hero{padding:36px 0 48px}
           .lp-hero-grid{grid-template-columns:1fr}
           .lp-hero-visual{order:-1;min-height:280px}
           .lp-steps{grid-template-columns:repeat(2,1fr)}
           .lp-cat-grid{grid-template-columns:repeat(2,1fr)}
-          .lp-tool-row,.lp-tool-row.reverse{grid-template-columns:1fr;gap:24px}
+          .lp-tool-row,.lp-tool-row.reverse{grid-template-columns:1fr;gap:24px;padding:32px 0}
           .lp-tool-row.reverse .lp-tool-copy,.lp-tool-row.reverse .lp-tool-visual{order:initial}
           .lp-tool-visual{order:-1}
+          .lp-tool-copy p{max-width:100%}
           .lp-journey-item{grid-template-columns:90px 34px 1fr;column-gap:14px}
           .lp-provider-panel{padding:40px 28px}
           .lp-provider-top{grid-template-columns:1fr;gap:32px}
@@ -289,21 +327,62 @@ export default function HomePage() {
           .lp-provider-grid{grid-template-columns:repeat(2,1fr)}
           .lp-footer-grid{grid-template-columns:1fr 1fr}
           .lp-footer-bottom{flex-direction:column;align-items:flex-start}
-          .lp-coverage-note{text-align:left}
+          .lp-coverage-note{text-align:left;max-width:100%}
+          .lp-section{padding:56px 0}
         }
+
+        /* Telemóveis grandes */
         @media(max-width:600px){
-          .lp-h1{font-size:29px}
+          .lp-container{padding:0 18px}
+          .lp-h1{font-size:29px;line-height:1.2}
           .lp-h2{font-size:23px}
+          .lp-sub{font-size:15.5px}
+          .lp-solution-inner p{font-size:17px}
+          .lp-solution-inner p + p{font-size:14.5px}
+          .lp-hero-actions{flex-direction:column;align-items:flex-start;gap:14px}
+          .lp-btn-primary,.lp-btn-secondary{width:100%;justify-content:center}
+          .lp-hero-link{align-self:flex-start}
           .lp-steps{grid-template-columns:1fr}
           .lp-cat-grid{grid-template-columns:1fr}
-          .lp-cta{padding:40px 22px}
-          .lp-footer-grid{grid-template-columns:1fr}
+          .lp-cta{padding:36px 20px}
+          .lp-cta h2{font-size:22px}
+          .lp-btn-white{width:100%}
+          .lp-footer-grid{grid-template-columns:1fr;gap:28px}
           .lp-stats{gap:18px}
-          .lp-provider-panel{padding:28px 18px}
+          .lp-provider-panel{padding:26px 16px;border-radius:18px}
           .lp-provider-grid{grid-template-columns:1fr}
-          .lp-journey-item{grid-template-columns:60px 34px 1fr;column-gap:14px}
-          .lp-journey-label{font-size:12px}
-          .lp-chain{padding:20px 16px}
+          .lp-provider-mini-stats{gap:14px}
+          .lp-journey-item{grid-template-columns:56px 30px 1fr;column-gap:10px;padding:18px 0}
+          .lp-journey-label{font-size:11.5px}
+          .lp-journey-dot{width:30px;height:30px}
+          .lp-story{padding:22px 18px}
+          .lp-story-lead{font-size:17px}
+          .lp-story-step{font-size:14px;gap:10px}
+          .lp-visual-card{padding:9px 11px}
+          .lp-tool-copy h3{font-size:20px}
+          .lp-phone{width:170px;height:346px}
+          .lp-header-inner{padding:12px 18px}
+          .lp-logo-text{font-size:17px}
+        }
+
+        /* Telemóveis pequenos */
+        @media(max-width:380px){
+          .lp-h1{font-size:25px}
+          .lp-h2{font-size:20px}
+          .lp-eyebrow{font-size:11.5px;padding:6px 12px}
+          .lp-mock-header{flex-wrap:wrap}
+          .lp-mini-v{font-size:17px}
+          .lp-phone{width:150px;height:306px}
+        }
+
+        /* Ecrãs muito grandes: evita esticar demasiado */
+        @media(min-width:1440px){
+          .lp-container{max-width:1280px}
+        }
+
+        /* Acessibilidade: respeita preferência por movimento reduzido */
+        @media (prefers-reduced-motion: reduce){
+          .lp-map-dot,.lp-map-route,.lp-map-marker{animation:none !important}
         }
       `}</style>
 
@@ -342,16 +421,16 @@ export default function HomePage() {
           )}
         </header>
 
-        {/* Hero */}
+        {/* Hero — um único CTA principal, foto real substitui o mapa */}
         <section className="lp-hero">
           <div className="lp-container lp-hero-grid">
             <Reveal>
               <div className="lp-eyebrow"><MapPin size={13} /> A operar em Luanda</div>
               <h1 className="lp-h1">Precisa de alguém para resolver isso?</h1>
-              <p className="lp-sub">Descreva o serviço, veja quem está disponível perto de si e escolha com quem quer trabalhar. Do eletricista à faxineira.</p>
+              <p className="lp-sub">AC avariado, torneira a pingar, uma instalação por fazer. Descreva o que precisa e veja quem está disponível perto de si agora.</p>
               <div className="lp-hero-actions">
                 <button className="lp-btn-primary" onClick={goRegisterClient}>Encontrar um profissional <ArrowRight size={16} /></button>
-                <button className="lp-btn-secondary" onClick={goRegisterProvider}>Quero prestar serviços</button>
+                <a className="lp-hero-link" href="#para-prestadores">Presta serviços? Veja como funciona</a>
               </div>
               <div className="lp-stats">
                 {stats.map((s, i) => (
@@ -364,50 +443,49 @@ export default function HomePage() {
             </Reveal>
             <Reveal delay={120}>
               <div className="lp-hero-visual">
-                <div className="lp-map-bg">
-                  <svg viewBox="0 0 560 420" preserveAspectRatio="xMidYMid slice">
-                    <rect width="560" height="420" fill="#f1f5f9" />
-                    <g fill="#e6ebf1">
-                      <rect x="30" y="20" width="150" height="110" rx="6" />
-                      <rect x="210" y="10" width="120" height="90" rx="6" />
-                      <rect x="360" y="30" width="170" height="120" rx="6" />
-                      <rect x="20" y="170" width="120" height="100" rx="6" />
-                      <rect x="180" y="190" width="150" height="90" rx="6" />
-                      <rect x="370" y="190" width="160" height="110" rx="6" />
-                      <rect x="40" y="310" width="160" height="90" rx="6" />
-                      <rect x="230" y="320" width="140" height="80" rx="6" />
-                      <rect x="400" y="330" width="140" height="80" rx="6" />
-                    </g>
-                    <g stroke="#ffffff" strokeWidth="10" fill="none" strokeLinecap="round">
-                      <path d="M0,150 H560" />
-                      <path d="M0,300 H560" />
-                      <path d="M190,0 V420" />
-                      <path d="M355,0 V420" />
-                    </g>
-                    <g stroke="#ffffff" strokeWidth="5" fill="none" strokeLinecap="round" opacity="0.85">
-                      <path d="M0,95 H560" />
-                      <path d="M0,235 H560" />
-                      <path d="M0,365 H560" />
-                      <path d="M95,0 V420" />
-                      <path d="M275,0 V420" />
-                      <path d="M470,0 V420" />
-                    </g>
-                    <path className="lp-route-line" d="M110,335 C160,260 220,230 280,210 C330,192 360,140 385,95" />
-                  </svg>
-                </div>
-
-                <div className="lp-hero-you" style={{ top: "50%", left: "50%" }} />
-                <div className="lp-pin" style={{ top: "22%", left: "20%" }}><Zap size={18} color={MAP_ACCENT} /></div>
-                <div className="lp-pin" style={{ top: "62%", left: "30%" }}><Wrench size={18} color={MAP_ACCENT} /></div>
-                <div className="lp-pin" style={{ top: "30%", right: "14%" }}><Sparkles size={18} color={MAP_ACCENT} /></div>
+                {/*
+                  ÚNICA fotografia nova de toda a landing page.
+                  Substituir /hero-professional.png por uma fotografia horizontal
+                  realista de um profissional a trabalhar (eletricista, canalizador,
+                  técnico de AC, etc). Sem pose para câmara, sem aspecto de stock corporativo.
+                  Enquanto o ficheiro não existir, mostra-se um placeholder discreto
+                  em vez de um espaço em branco.
+                */}
+                {!heroPhotoFailed && (
+                  <img
+                    className={`lp-hero-photo${heroPhotoLoaded ? " loaded" : ""}`}
+                    src="/hero-professional.png"
+                    alt="Profissional a trabalhar num serviço na casa de um cliente"
+                    onLoad={() => setHeroPhotoLoaded(true)}
+                    onError={() => setHeroPhotoFailed(true)}
+                  />
+                )}
+                {heroPhotoFailed && (
+                  <div className="lp-hero-photo-fallback">
+                    <Wrench size={22} color="#475569" />
+                    <span>Coloque a fotografia em<br /><code>/public/hero-professional.png</code></span>
+                  </div>
+                )}
                 <div className="lp-visual-card" style={{ bottom: 22, left: 18 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 9, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}><Wrench size={16} color="#334155" /></div>
-                  <div><p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>Canalizador</p><p style={{ fontSize: 11.5, color: "#94a3b8" }}>Disponível hoje</p></div>
+                  <div style={{ width: 36, height: 36, borderRadius: 9, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}><Zap size={16} color="#334155" /></div>
+                  <div><p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>Eletricista</p><p style={{ fontSize: 11.5, color: "#94a3b8" }}>Disponível hoje</p></div>
                 </div>
                 <div className="lp-visual-card" style={{ top: 20, right: 18 }}>
                   <div style={{ width: 36, height: 36, borderRadius: 9, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}><Star size={16} color={CONFIRM} /></div>
                   <div><p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>4.9 de avaliação</p><p style={{ fontSize: 11.5, color: "#94a3b8" }}>Serviço concluído</p></div>
                 </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* Solução — ponte curta e humana entre o Hero e as categorias */}
+        <section className="lp-solution">
+          <div className="lp-container">
+            <Reveal>
+              <div className="lp-solution-inner">
+                <p>Tem um serviço para resolver? Encontre quem está disponível perto de si e escolha com quem prefere trabalhar.</p>
+                <p>Sem ligar para vários números à procura de alguém livre. Sem confiar às cegas em quem aparece.</p>
               </div>
             </Reveal>
           </div>
@@ -419,8 +497,8 @@ export default function HomePage() {
             <Reveal>
               <div className="lp-section-head">
                 <span className="lp-tag">Serviços</span>
-                <h2 className="lp-h2">O que precisa de resolver?</h2>
-                <p className="lp-section-sub">Categorias disponíveis na plataforma neste momento.</p>
+                <h2 className="lp-h2">É este tipo de serviço que precisa?</h2>
+                <p className="lp-section-sub">As categorias disponíveis na plataforma neste momento.</p>
               </div>
             </Reveal>
             <Reveal>
@@ -444,7 +522,6 @@ export default function HomePage() {
               <div className="lp-section-head center">
                 <span className="lp-tag">Como funciona</span>
                 <h2 className="lp-h2">Do pedido ao serviço feito, em 4 passos</h2>
-                <p className="lp-section-sub">Um processo simples, pensado para poupar tempo a quem contrata e a quem presta o serviço.</p>
               </div>
             </Reveal>
             <Reveal>
@@ -462,25 +539,25 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Ferramentas: benefício + visual real, alternados */}
+        {/* Ferramentas: benefício primeiro, funcionalidade depois */}
         <section className="lp-section">
           <div className="lp-container">
             <Reveal>
               <div className="lp-section-head">
                 <span className="lp-tag">No dia a dia</span>
-                <h2 className="lp-h2">Ferramentas que facilitam cada pedido</h2>
+                <h2 className="lp-h2">É assim que fica mais simples</h2>
               </div>
             </Reveal>
 
-            {/* Mapa: usa o mesmo mapa real do hero, numa versão compacta */}
+            {/* Mapa — agora com ponto a piscar (pulso) e rota "a andar", eletricista no filtro */}
             <Reveal>
               <div className="lp-tool-row">
                 <div className="lp-tool-copy">
                   <p className="lp-tool-eyebrow">Mapa</p>
-                  <h3>Veja quem está perto de si</h3>
-                  <p>O mapa mostra prestadores e pedidos na sua zona em tempo real, para saber quem pode chegar mais depressa.</p>
+                  <h3>Não é preciso ligar a ninguém às cegas</h3>
+                  <p>Vê no mapa quem está disponível na sua zona agora, e escolhe quem pode chegar mais depressa.</p>
                 </div>
-                <div className="lp-tool-visual" style={{ padding: 0, overflow: "hidden" }}>
+                <div className="lp-tool-visual" style={{ padding: 0 }}>
                   <div style={{ position: "relative", width: "100%", height: 220 }}>
                     <svg viewBox="0 0 560 420" preserveAspectRatio="xMidYMid slice" style={{ width: "100%", height: "100%", display: "block" }}>
                       <rect width="560" height="420" fill="#eef2f7" />
@@ -509,23 +586,31 @@ export default function HomePage() {
                         <path d="M275,0 V420" />
                         <path d="M470,0 V420" />
                       </g>
-                      <path className="lp-route-line" d="M110,335 C160,260 220,230 280,210 C330,192 360,140 385,95" />
+                      <path
+                        className="lp-map-route"
+                        stroke={MAP_ACCENT}
+                        strokeWidth="2.5"
+                        fill="none"
+                        opacity="0.7"
+                        strokeLinecap="round"
+                        d="M110,335 C160,260 220,230 280,210 C330,192 360,140 385,95"
+                      />
                     </svg>
-                    <div className="lp-hero-you" style={{ top: "50%", left: "50%" }} />
-                    <div className="lp-pin" style={{ width: 34, height: 34, top: "24%", left: "18%" }}><Wrench size={15} color={MAP_ACCENT} /></div>
-                    <div className="lp-pin" style={{ width: 34, height: 34, top: "60%", right: "16%" }}><Sparkles size={15} color={MAP_ACCENT} /></div>
+                    <div className="lp-map-dot-wrap"><div className="lp-map-dot-ring" /><div className="lp-map-dot" /></div>
+                    <div className="lp-visual-card lp-map-marker" style={{ width: 34, height: 34, padding: 0, top: "24%", left: "18%", borderRadius: 12, alignItems: "center", justifyContent: "center" }}><Zap size={15} color={MAP_ACCENT} /></div>
+                    <div className="lp-visual-card lp-map-marker delay" style={{ width: 34, height: 34, padding: 0, top: "60%", right: "16%", borderRadius: 12, alignItems: "center", justifyContent: "center" }}><Sparkles size={15} color={MAP_ACCENT} /></div>
                   </div>
                 </div>
               </div>
             </Reveal>
 
-            {/* Chat: iPhone ilustrativo com a conversa */}
+            {/* Chat */}
             <Reveal>
               <div className="lp-tool-row reverse">
                 <div className="lp-tool-copy">
                   <p className="lp-tool-eyebrow">Chat</p>
-                  <h3>Combine tudo sem sair da Mestroo</h3>
-                  <p>Fale com o cliente ou o prestador para acertar horários, endereço e detalhes do serviço. Tudo fica guardado numa só conversa.</p>
+                  <h3>Combina tudo numa única conversa</h3>
+                  <p>Horário, endereço, detalhes do serviço, tudo fica ali. Não precisa de trocar números nem de sair da Mestroo.</p>
                 </div>
                 <div className="lp-tool-visual">
                   <div className="lp-phone">
@@ -540,9 +625,9 @@ export default function HomePage() {
                         </div>
                       </div>
                       <div className="lp-phone-chatbar">
-                        <div className="lp-phone-chatavatar"><Wrench size={13} color="#334155" /></div>
+                        <div className="lp-phone-chatavatar"><Zap size={13} color="#334155" /></div>
                         <div>
-                          <p className="lp-phone-chatname">Canalizador</p>
+                          <p className="lp-phone-chatname">Eletricista</p>
                           <p className="lp-phone-chatstatus">Online agora</p>
                         </div>
                       </div>
@@ -557,12 +642,13 @@ export default function HomePage() {
               </div>
             </Reveal>
 
+            {/* Pagamento */}
             <Reveal>
               <div className="lp-tool-row">
                 <div className="lp-tool-copy">
                   <p className="lp-tool-eyebrow">Pagamento</p>
-                  <h3>O pagamento só sai quando o serviço estiver feito</h3>
-                  <p>O valor fica retido em escrow e só é libertado ao prestador depois de confirmar que o trabalho foi concluído.</p>
+                  <h3>Ninguém recebe antes de entregar</h3>
+                  <p>O valor fica retido até o serviço estar concluído e confirmado. Assim os dois lados ficam protegidos.</p>
                 </div>
                 <div className="lp-tool-visual">
                   <div style={{ background: "#fff", border: "1px solid #eef1f5", borderRadius: 14, padding: "18px 20px", width: "100%", maxWidth: 240 }}>
@@ -579,37 +665,38 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Exemplo real */}
+        {/* Na prática — mini-história em vez de cadeia de labels */}
         <section className="lp-section lp-section-alt">
           <div className="lp-container">
             <Reveal>
               <div className="lp-section-head">
                 <span className="lp-tag">Na prática</span>
                 <h2 className="lp-h2">O seu AC deixou de funcionar</h2>
-                <p className="lp-section-sub">Um exemplo de como um pedido percorre a plataforma, do problema à avaliação.</p>
               </div>
             </Reveal>
             <Reveal>
-              <div className="lp-chain">
-                {["Climatização", "Reparação de AC", "Prestadores disponíveis", "Escolher perfil", "Chat", "Serviço concluído"].map((step, i, arr) => (
-                  <span key={step} style={{ display: "flex", alignItems: "center" }}>
-                    <span className="lp-chain-step">{step}</span>
-                    {i < arr.length - 1 && <ArrowRight size={15} className="lp-chain-arrow" />}
-                  </span>
-                ))}
+              <div className="lp-story">
+                <p className="lp-story-lead">É segunda-feira, 30 graus, e o AC não liga.</p>
+                <div className="lp-story-steps">
+                  <div className="lp-story-step"><span>1.</span><span>Publica o que aconteceu, <b>duas linhas bastam</b>.</span></div>
+                  <div className="lp-story-step"><span>2.</span><span>Em minutos, aparecem <b>técnicos disponíveis</b> perto de si.</span></div>
+                  <div className="lp-story-step"><span>3.</span><span>Escolhe quem tem <b>melhor avaliação</b> ou pode chegar mais rápido.</span></div>
+                  <div className="lp-story-step"><span>4.</span><span>Combina o horário <b>pelo chat</b>, sem trocar números.</span></div>
+                  <div className="lp-story-step"><span>5.</span><span>O técnico vem, resolve, e o pagamento <b>só sai depois</b>.</span></div>
+                </div>
               </div>
             </Reveal>
           </div>
         </section>
 
-        {/* Segurança: jornada em etapas */}
+        {/* Confiança */}
         <section className="lp-section">
           <div className="lp-container">
             <Reveal>
               <div className="lp-section-head">
                 <span className="lp-tag">Confiança</span>
-                <h2 className="lp-h2">Segurança em cada etapa</h2>
-                <p className="lp-section-sub">Não é apenas uma promessa. É o próprio processo, do primeiro contacto à avaliação final.</p>
+                <h2 className="lp-h2">Não basta encontrar alguém</h2>
+                <p className="lp-section-sub">É preciso saber com quem está a contratar. É por isso que o processo funciona assim.</p>
               </div>
             </Reveal>
             <Reveal>
@@ -640,8 +727,8 @@ export default function HomePage() {
                 <div className="lp-provider-top">
                   <div className="lp-provider-copy">
                     <span className="lp-tag">Para prestadores</span>
-                    <h2 className="lp-h2" style={{ marginTop: 4 }}>Tem um serviço para oferecer?</h2>
-                    <p className="lp-section-sub">Crie o seu perfil, defina os serviços que presta e comece a receber pedidos de clientes perto de si.</p>
+                    <h2 className="lp-h2" style={{ marginTop: 4 }}>Tem uma habilidade que pode virar rendimento?</h2>
+                    <p className="lp-section-sub">Crie o seu perfil, mostre o que faz e comece a receber pedidos de clientes perto de si.</p>
 
                     <div className="lp-provider-mini-stats">
                       <div><p className="lp-mini-v">500+</p><p className="lp-mini-l">Prestadores ativos</p></div>
@@ -693,14 +780,14 @@ export default function HomePage() {
         {/* Aplicação (PWA) */}
         <InstallGuideSection />
 
-        {/* CTA final */}
+        {/* CTA final — específico, ligado ao problema */}
         <section className="lp-section">
           <div className="lp-container">
             <Reveal>
               <div className="lp-cta">
-                <h2>Comece a usar a Mestroo</h2>
-                <p>Crie a sua conta gratuita e ligue-se a quem precisa de si ou a quem pode resolver o seu problema.</p>
-                <button className="lp-btn-white" onClick={goRegisterClient}>Criar conta</button>
+                <h2>Tem um serviço para resolver?</h2>
+                <p>Encontre quem pode fazer, perto de si, hoje mesmo.</p>
+                <button className="lp-btn-white" onClick={goRegisterClient}>Encontrar um profissional</button>
               </div>
             </Reveal>
           </div>
