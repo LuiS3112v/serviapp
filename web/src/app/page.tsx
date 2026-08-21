@@ -211,40 +211,41 @@ export default function HomePage() {
         .lp-map-marker.delay{animation-delay:1.1s}
 
         /*
-          iPhone ilustrativo — molde original preservada (bordas finas,
-          proporção real de iPhone). Só o CONTEÚDO INTERNO passa a escalar
-          com o tamanho da moldura via container query, para nunca ficar
-          desalinhado ou cortado em ecrãs pequenos. A moldura em si usa
-          largura fluida com um teto (max-width), como no design original.
+          IPHONE MOCKUP — VERSÃO CORRIGIDA
 
-          FIX DEFINITIVO: o conteúdo do chat (bolhas de mensagem) estava a
-          rasgar a borda preta inferior do telefone em iOS/Safari/PWA.
-          Causa raiz: .lp-phone-messages tinha flex:1 dentro de um pai cuja
-          altura vem de aspect-ratio (não um px fixo). Em flexbox, todo
-          flex item tem min-height:auto por definição — ou seja, mesmo com
-          overflow:hidden no ecrã, o item recusa encolher abaixo do
-          conteúdo e o Safari deixa a caixa crescer/vazar através do
-          border-radius do avô antes de aplicar o clip. A correção correta
-          é declarar min-height:0 em CADA elemento flex da cadeia
-          (.lp-phone, .lp-phone-screen, .lp-phone-messages) — isso obriga
-          o browser a respeitar a altura do pai como teto real, e só
-          depois disso o overflow:hidden consegue cortar de verdade.
-          Também travamos a altura do .lp-phone-screen com height:100% +
-          min-height:0 no pai .lp-phone (que agora usa flex column em vez
-          de confiar apenas no aspect-ratio) para eliminar qualquer
-          diferença de arredondamento entre o cálculo do aspect-ratio e a
-          altura real renderizada pelo Safari em iOS.
+          Causa raiz do corte anterior: não existia elemento de Home
+          Indicator no JSX, e .lp-phone-messages (flex:1, justify-content:
+          flex-end) disputava com o resto do telefone toda a altura
+          disponível dentro de .lp-phone, que tinha padding igual nos
+          4 lados. Como a screen ocupava 100% da altura do pai via
+          height:100%, não sobrava nenhum espaço reservado para mostrar
+          moldura preta + Home Indicator na parte de baixo — o overflow:
+          hidden do .lp-phone cortava exatamente aí.
+
+          Correção: o .lp-phone agora é uma coluna flex com dois filhos
+          reais, ambos dentro da moldura:
+            1) .lp-phone-screen  -> flex:1 1 auto, min-height:0 (a tela)
+            2) .lp-phone-home-row -> altura FIXA, cor da moldura (INK),
+               contém o Home Indicator. Nunca é espremida pelo conteúdo
+               do chat porque tem flex:0 0 auto.
+          O padding do .lp-phone deixa de incluir a base (padding-bottom:0)
+          porque agora a "moldura preta de baixo" é a própria
+          .lp-phone-home-row, com a mesma cor de fundo do .lp-phone,
+          criando o efeito de moldura contínua com cantos inferiores
+          arredondados herdados do border-radius do .lp-phone + overflow:
+          hidden.
         */
         .lp-phone{
           position:relative;
           display:flex;
+          flex-direction:column;
           width:100%;
           max-width:210px;
           aspect-ratio:210/428;
           min-height:0;
           border-radius:36px;
           background:${INK};
-          padding:10px;
+          padding:10px 10px 0 10px;
           box-shadow:0 18px 40px rgba(15,23,42,0.22);
           margin:0 auto;
           container-type:inline-size;
@@ -256,14 +257,29 @@ export default function HomePage() {
           display:flex;
           flex-direction:column;
           width:100%;
-          height:100%;
+          flex:1 1 auto;
           min-height:0;
           max-width:100%;
-          border-radius:28px;
+          border-radius:28px 28px 0 0;
           background:#f8fafc;
           overflow:hidden;
           min-width:0;
           isolation:isolate;
+        }
+        .lp-phone-home-row{
+          flex:0 0 auto;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          height:22px;
+          background:${INK};
+        }
+        .lp-phone-home-indicator{
+          width:34%;
+          height:4px;
+          border-radius:99px;
+          background:#ffffff;
+          opacity:0.85;
         }
         .lp-phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:40%;height:22px;background:${INK};border-radius:0 0 14px 14px;z-index:5}
         .lp-phone-status{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 6px;font-size:11px;font-weight:700;color:${INK};flex-shrink:0}
@@ -277,7 +293,7 @@ export default function HomePage() {
           min-height:0;
           width:100%;
           max-width:100%;
-          padding:14px;
+          padding:14px 14px 16px;
           display:flex;
           flex-direction:column;
           gap:8px;
@@ -295,11 +311,7 @@ export default function HomePage() {
         }
 
         /* Em molduras pequenas (telemóvel), encolhe o texto/ícones internos
-           proporcionalmente em vez de deixá-los grandes demais e a transbordar.
-           As bolhas de mensagem (.lp-phone-bubble) também encolhem aqui —
-           sem isso, em molduras pequenas o texto das 3 mensagens exige mais
-           altura do que o telefone tem, o que é a causa raiz de o conteúdo
-           rasgar a borda inferior mesmo com overflow:hidden. */
+           proporcionalmente em vez de deixá-los grandes demais e a transbordar. */
         @container phone (max-width: 180px){
           .lp-phone-status{padding:12px 14px 4px;font-size:9.5px}
           .lp-phone-notch{height:18px}
@@ -307,14 +319,16 @@ export default function HomePage() {
           .lp-phone-chatavatar{width:22px;height:22px}
           .lp-phone-chatname{font-size:10px}
           .lp-phone-chatstatus{font-size:8.5px}
-          .lp-phone-messages{padding:10px;gap:6px}
+          .lp-phone-messages{padding:10px 10px 12px;gap:6px}
           .lp-phone-bubble{font-size:10.5px !important;padding:7px 10px !important}
+          .lp-phone-home-row{height:18px}
         }
         @container phone (max-width: 155px){
           .lp-phone-status{padding:10px 12px 3px;font-size:8.5px}
           .lp-phone-notch{height:15px;width:44%}
-          .lp-phone-messages{padding:8px;gap:5px}
+          .lp-phone-messages{padding:8px 8px 10px;gap:5px}
           .lp-phone-bubble{font-size:9.5px !important;padding:6px 9px !important;border-radius:10px !important}
+          .lp-phone-home-row{height:16px}
         }
 
         /* Categories */
@@ -535,13 +549,6 @@ export default function HomePage() {
             </Reveal>
             <Reveal delay={120}>
               <div className="lp-hero-visual">
-                {/*
-                  ÚNICA fotografia nova de toda a landing page.
-                  Coloque o ficheiro em /public/hero-professional.png
-                  (fotografia horizontal e realista de um profissional a trabalhar,
-                  sem pose para câmara, sem aspecto de stock corporativo).
-                  next/image com priority evita o "flash preto" em produção.
-                */}
                 {!heroPhotoFailed && (
                   <Image
                     src="/hero-professional.png"
@@ -697,7 +704,9 @@ export default function HomePage() {
               </div>
             </Reveal>
 
-            {/* Chat */}
+            {/* Chat — mockup do iPhone CORRIGIDO: agora inclui a faixa
+                .lp-phone-home-row com o Home Indicator, como irmã de
+                .lp-phone-screen dentro de .lp-phone. */}
             <Reveal>
               <div className="lp-tool-row reverse">
                 <div className="lp-tool-copy">
@@ -729,6 +738,9 @@ export default function HomePage() {
                         <div className="lp-phone-bubble" style={{ alignSelf: "flex-end", background: BRAND, color: "#fff", borderRadius: "12px 12px 3px 12px", padding: "9px 13px", fontSize: 12.5 }}>Sim, chego às 9h</div>
                         <div className="lp-phone-bubble" style={{ alignSelf: "flex-start", background: "#fff", border: "1px solid #eef1f5", borderRadius: "12px 12px 12px 3px", padding: "9px 13px", fontSize: 12.5, color: "#334155" }}>Combinado 👍</div>
                       </div>
+                    </div>
+                    <div className="lp-phone-home-row">
+                      <div className="lp-phone-home-indicator" />
                     </div>
                   </div>
                 </div>
