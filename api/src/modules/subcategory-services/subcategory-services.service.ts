@@ -9,6 +9,7 @@ import { SubcategoryServiceProposal } from '../../database/entities/subcategory-
 import { SubcategoryServiceDismissal } from '../../database/entities/subcategory-service-dismissal.entity';
 import { Service } from '../../database/entities/service.entity';
 import { ProviderCatalog } from '../../database/entities/provider-catalog.entity';
+import { User } from '../../database/entities/user.entity';
 
 import { SubcategoryServiceStatus } from '../../common/enums/subcategory-service-status.enum';
 import { ServiceStatus } from '../../common/enums/service-status.enum';
@@ -36,6 +37,9 @@ export class SubcategoryServicesService {
     @InjectRepository(ProviderCatalog)
     private providerCatalogRepo: Repository<ProviderCatalog>,
 
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
+
     private dataSource: DataSource,
 
     private notificationsService: NotificationsService,
@@ -60,80 +64,124 @@ export class SubcategoryServicesService {
 
 
   // ── Mercado do Prestador ─────────────────────────────────────────────
+  //
+  // CORRIGIDO — causa raiz do bug "Serviço Rápido criado pelo Cliente
+  // não chega ao Provider":
+  //
+  // A versão anterior só considerava as categorias presentes no
+  // catálogo do prestador (ProviderCatalog, tabela 'provider_catalog').
+  // Se o prestador nunca criou nenhuma entrada de catálogo — o que é
+  // perfeitamente possível: o catálogo é uma funcionalidade separada,
+  // preenchida manualmente pelo prestador — `categories` ficava vazio e
+  // o método devolvia `[]` imediatamente, ANTES sequer de consultar a
+  // tabela de Serviços Rápidos. O prestador nunca via nenhum pedido,
+  // independentemente da categoria com que se registou no KYC.
+  //
+  // A categoria "oficial" de especialidade de um prestador é
+  // `User.category` — o campo preenchido durante o KYC
+  // (ver web/src/app/(auth)/kyc/page.tsx, PROVIDER_CATEGORIES, e
+  // api/src/modules/kyc/kyc.service.ts, que grava
+  // `category: dto.category` tanto em ProviderVerification como,
+  // depois de aprovado, é este o valor com que o prestador continua
+  // identificado no sistema). Esta é a fonte de verdade mínima e
+  // sempre presente — o catálogo é um refinamento opcional por cima
+  // dela, não um requisito.
+  //
+  // A correção junta as duas fontes (User.category + categorias do
+  // ProviderCatalog activo) num único conjunto de categorias
+  // elegíveis, sem remover nada do comportamento anterior: um
+  // prestador que já dependia do catálogo continua a funcionar
+  // exactamente como antes (as categorias do catálogo continuam
+  // incluídas); um prestador que nunca mexeu no catálogo passa agora
+  // a ver os Serviços Rápidos da sua categoria de perfil, que é
+  // exactamente o comportamento esperado descrito no prompt.
+  //
+  // Os console.log de debug temporário foram removidos — cumpriram o
+  // propósito de diagnóstico durante esta investigação e não devem
+  // seguir para produção (nomeadamente por imprimirem o conteúdo
+  // completo dos pedidos, incluindo dados do cliente, no log do
+  // servidor a cada chamada).
 
   async findAvailableForProvider(
-  providerId: string,
-): Promise<SubcategoryService[]> {
+    providerId: string,
+  ): Promise<SubcategoryService[]> {
 
-  const providerCatalog =
-    await this.providerCatalogRepo.find({
-      where: {
-        providerId,
-        isActive: true,
-      },
+    const provider = await this.userRepo.findOne({
+      where: { id: providerId },
+      select: { id: true, category: true },
     });
 
-  const categories =
-    providerCatalog.map(
-      item => item.category,
-    );
+    const providerCatalog =
+      await this.providerCatalogRepo.find({
+        where: {
+          providerId,
+          isActive: true,
+        },
+      });
 
-  if (!categories.length) {
-    return [];
-  }
+    const catalogCategories =
+      providerCatalog.map(
+        item => item.category,
+      );
 
-  const dismissedIds =
-    await this.dismissalRepo.find({
-      where: {
-        providerId,
-      },
-      select: {
-        subcategoryServiceId: true,
-      },
-    });
-
-  const dismissedSet =
-    new Set(
-      dismissedIds.map(
-        item => item.subcategoryServiceId,
+    // Junta a categoria de perfil do prestador (fonte sempre presente,
+    // vinda do KYC) às categorias do catálogo (opcional). Set remove
+    // duplicados sem alterar a ordem de relevância.
+    const categories = Array.from(
+      new Set(
+        [
+          ...(provider?.category ? [provider.category] : []),
+          ...catalogCategories,
+        ],
       ),
     );
 
-  // ── DEBUG TEMPORÁRIO ──────────────────────────────────────────────
-  const query = this.subServiceRepo
-    .createQueryBuilder('s')
-    .leftJoinAndSelect('s.client', 'client')
-    .leftJoinAndSelect('s.proposals', 'proposals')
-    .where(
-      's.status IN (:...statuses)',
-      {
-        statuses: [
-          SubcategoryServiceStatus.BROADCASTING,
-          SubcategoryServiceStatus.CLIENT_REVIEWING,
-        ],
-      },
-    )
-    .andWhere(
-      's.category IN (:...categories)',
-      { categories },
-    )
-    .orderBy('s.createdAt', 'DESC');
+    if (!categories.length) {
+      return [];
+    }
 
-  console.log('PROVIDER_ID:', providerId);
-  console.log('CATEGORIES:', categories);
-  console.log('SQL:', query.getSql());
-  console.log('PARAMS:', query.getParameters());
+    const dismissedIds =
+      await this.dismissalRepo.find({
+        where: {
+          providerId,
+        },
+        select: {
+          subcategoryServiceId: true,
+        },
+      });
 
-  const services = await query.getMany();
+    const dismissedSet =
+      new Set(
+        dismissedIds.map(
+          item => item.subcategoryServiceId,
+        ),
+      );
 
-  console.log('RESULT_COUNT:', services.length);
-  console.log('RESULT:', JSON.stringify(services, null, 2));
-  // ── FIM DEBUG ──────────────────────────────────────────────────────
+    const query = this.subServiceRepo
+      .createQueryBuilder('s')
+      .leftJoinAndSelect('s.client', 'client')
+      .leftJoinAndSelect('s.proposals', 'proposals')
+      .where(
+        's.status IN (:...statuses)',
+        {
+          statuses: [
+            SubcategoryServiceStatus.BROADCASTING,
+            SubcategoryServiceStatus.CLIENT_REVIEWING,
+          ],
+        },
+      )
+      .andWhere(
+        's.category IN (:...categories)',
+        { categories },
+      )
+      .orderBy('s.createdAt', 'DESC');
 
-  return services.filter(
-    service => !dismissedSet.has(service.id),
-  );
-}
+    const services = await query.getMany();
+
+    return services.filter(
+      service => !dismissedSet.has(service.id),
+    );
+  }
 
   // ── Serviços do cliente ──────────────────────────────────────────────
 

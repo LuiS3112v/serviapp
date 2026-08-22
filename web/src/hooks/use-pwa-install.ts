@@ -55,6 +55,32 @@ function isStandalone(): boolean {
   return Boolean(mql || iosStandalone);
 }
 
+// NOVO — deteta se existe uma sessão autenticada activa no cliente.
+// Usa exactamente a mesma convenção de storage já usada no resto da
+// app (ver web/src/app/(auth)/kyc/page.tsx: getActiveToken()) —
+// "serviapp_active_role" guarda qual token está activo ("client" ou
+// "provider"), e o token em si fica em "serviapp_token_<role>".
+// Não introduz nenhuma fonte de verdade nova: lê exactamente o que
+// auth.api.ts já grava no login/registo. Síncrono de propósito — corre
+// no mesmo useEffect de montagem que já define platform/browser/
+// standaloneMode, por isso não introduz nenhum frame extra de atraso
+// nem novo risco de flash (o popup já só decide o que mostrar depois
+// deste efeito correr, via `mounted`).
+function hasAuthenticatedSession(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const role = window.localStorage.getItem("serviapp_active_role");
+    if (!role) return false;
+    const token = window.localStorage.getItem(`serviapp_token_${role}`);
+    return Boolean(token);
+  } catch {
+    // localStorage pode lançar em contextos restritos (modo privado
+    // extremo, políticas de browser) — trata como não autenticado,
+    // nunca como autenticado por omissão.
+    return false;
+  }
+}
+
 export interface UsePwaInstallResult {
   /** true quando a app já está a correr como PWA instalado */
   isStandaloneMode: boolean;
@@ -80,8 +106,9 @@ export interface UsePwaInstallResult {
  * Sem cooldown de dispensa: o convite de instalação (popup e secção de
  * tutorial) aparece sempre que a app ainda não está instalada, em toda
  * visita/sessão. Só deixa de aparecer quando a app é mesmo instalada
- * (modo standalone). "Agora não" no popup fecha apenas aquela sessão —
- * não fica gravado entre visitas.
+ * (modo standalone) OU quando existe uma sessão autenticada — ver
+ * `isAuthenticated` abaixo. "Agora não" no popup fecha apenas aquela
+ * sessão — não fica gravado entre visitas.
  */
 export function usePwaInstall(): UsePwaInstallResult {
   const [deferredPrompt, setDeferredPrompt] =
@@ -91,12 +118,16 @@ export function usePwaInstall(): UsePwaInstallResult {
   const [standaloneMode, setStandaloneMode] = useState(false);
   const [dismissedThisSession, setDismissedThisSession] = useState(false);
   const [mounted, setMounted] = useState(false);
+  // NOVO — estado de autenticação, calculado uma vez na montagem
+  // (client-side), igual ao resto das deteções deste hook.
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     setPlatform(detectPlatform());
     setBrowser(detectBrowser());
     setStandaloneMode(isStandalone());
+    setIsAuthenticated(hasAuthenticatedSession());
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -152,9 +183,14 @@ export function usePwaInstall(): UsePwaInstallResult {
   // Mostra UI de instalação quando:
   // - já montou no client (evita hydration mismatch)
   // - não está já em modo standalone (app instalada)
-  // - não foi dispensado NESTA sessão (fecha o popup ao clicar "agora não",
-  //   mas sem persistir entre visitas — a próxima visita mostra de novo)
-  // - E não estamos numa plataforma "unknown" (bots, ambientes sem UA fiável)
+  // - NÃO existe sessão autenticada (utilizador já fez login/registo —
+  //   o popup/guia de instalação é conteúdo da área pública, não deve
+  //   aparecer dentro do dashboard nem logo a seguir a login/registo)
+  // - não foi dispensado NESTA sessão (fecha o popup ao clicar "agora
+  //   não", mas sem persistir entre visitas — a próxima visita mostra
+  //   de novo)
+  // - E não estamos numa plataforma "unknown" (bots, ambientes sem UA
+  //   fiável)
   //
   // Em desktop e Android mostramos mesmo sem o prompt nativo disponível:
   // o Chrome só dispara beforeinstallprompt depois de heurísticas de
@@ -163,7 +199,11 @@ export function usePwaInstall(): UsePwaInstallResult {
   // disso, mostramos sempre instruções válidas (menu do browser) e só
   // trocamos para o botão de instalação nativa quando o evento chega.
   const shouldShowInstallUI =
-    mounted && !standaloneMode && !dismissedThisSession && platform !== "unknown";
+    mounted &&
+    !standaloneMode &&
+    !isAuthenticated &&
+    !dismissedThisSession &&
+    platform !== "unknown";
 
   return {
     isStandaloneMode: standaloneMode,

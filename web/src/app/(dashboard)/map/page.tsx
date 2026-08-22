@@ -16,13 +16,20 @@ import {
 import { activeServiceApi, ActiveServiceSummary } from '@/lib/map/active-service.api';
 import { MapCoordinates } from '@/lib/map/map-provider.types';
 import { chatApi } from '@/lib/chat.api';
+import { CATEGORY_NAMES } from '@/lib/categories';
 import styles from './map-page.module.css';
 
-const CATEGORIES = [
-  'Todos', 'Limpeza', 'Climatização', 'Canalização',
-  'Eletricista', 'TI & Redes', 'Jardinagem', 'Mudanças',
-  'Beleza', 'Automóvel', 'Pintura', 'Construção', 'Segurança',
-];
+// CORRIGIDO — antes existia um array local ['Todos', 'Limpeza', ...,
+// 'Eletricista', ...] duplicado e desalinhado da lista oficial em
+// web/src/lib/categories.ts (que usa 'Eletricidade', não
+// 'Eletricista'). Essa divergência de nomes era uma das causas do
+// Problema 4 (Serviço Rápido não chega ao Provider): um cliente a
+// filtrar/criar pedidos a partir desta página usava uma grafia de
+// categoria que nunca correspondia à categoria real do prestador.
+// Passa a importar CATEGORY_NAMES — a mesma fonte de verdade já usada
+// nos pedidos normais — e antepõe 'Todos' apenas aqui, que é uma opção
+// de filtro desta página e não uma categoria real de negócio.
+const CATEGORIES = ['Todos', ...CATEGORY_NAMES];
 
 const RADIUS_OPTIONS = [2, 5, 10, 20];
 
@@ -228,7 +235,18 @@ export default function MapPage() {
         if (!isMountedRef.current) return;
         setLocationState('denied');
       },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+      // CORRIGIDO (Problema 1 — localização mostra zona errada):
+      // maximumAge estava em 60000 (60s), o que permitia ao browser
+      // devolver uma posição em cache de até um minuto — incluindo uma
+      // posição de uma sessão/local anterior do mesmo dispositivo. Este
+      // é o pedido inicial de localização, feito uma única vez ao
+      // montar a página: exigir maximumAge:0 força o browser a obter
+      // sempre uma leitura fresca do GPS neste momento, eliminando a
+      // possibilidade de mostrar uma zona desatualizada logo na
+      // primeira renderização do mapa. O refresh periódico usado
+      // durante um serviço ativo (refreshClientLocationSilently, abaixo)
+      // mantém a sua tolerância própria de 15s, que já era adequada.
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
     );
   }, []);
 

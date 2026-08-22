@@ -9,6 +9,7 @@ import { SubcategoryServiceProposal } from '../../database/entities/subcategory-
 import { SubcategoryServiceDismissal } from '../../database/entities/subcategory-service-dismissal.entity';
 import { Service } from '../../database/entities/service.entity';
 import { ProviderCatalog } from '../../database/entities/provider-catalog.entity';
+import { User } from '../../database/entities/user.entity';
 
 import { NotificationsModule } from '../notifications/notifications.module';
 
@@ -21,6 +22,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       SubcategoryServiceDismissal,
       Service,
       ProviderCatalog,
+      User,
     ]),
 
     NotificationsModule,

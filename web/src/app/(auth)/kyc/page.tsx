@@ -3,6 +3,7 @@ import { useState, useRef, memo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Shield, CheckCircle, ArrowLeft, Upload, X, Loader2 } from "lucide-react";
 import { Suspense } from "react";
+import { CATEGORY_NAMES } from "@/lib/categories";
 
 function getActiveToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -32,11 +33,15 @@ const ANGOLA_PROVINCES = [
   "Namibe", "Uíge", "Zaire",
 ];
 
-const PROVIDER_CATEGORIES = [
-  "Construção Civil", "Electricidade", "Canalização", "Pintura",
-  "Jardinagem", "Limpeza", "Segurança", "Tecnologia",
-  "Saúde", "Educação", "Carpintaria", "Mecânica", "Outro",
-];
+// Fonte única de categorias — a mesma usada em Serviço Rápido, mapa,
+// pesquisa e landing (web/src/lib/categories.ts). A lista própria que
+// existia aqui antes (PROVIDER_CATEGORIES) tinha 7 categorias sem
+// nenhuma subcategoria nem filtro associado em nenhum outro ponto do
+// sistema (Construção Civil, Tecnologia, Saúde, Educação, Carpintaria,
+// Mecânica, Outro) — um provider que se registasse nelas nunca
+// apareceria em pesquisa nem em Serviço Rápido. Consumir CATEGORY_NAMES
+// aqui garante que o valor gravado em user.category sempre corresponde
+// a uma categoria real e pesquisável do sistema.
 
 const TOTAL_STEPS = 3;
 
@@ -332,7 +337,7 @@ function KYCContent() {
                 style={{ ...INPUT_STYLE, color: info.category ? "#111827" : "#94A3B8" }}
               >
                 <option value="" disabled>Seleciona uma categoria</option>
-                {PROVIDER_CATEGORIES.map(cat => (
+                {CATEGORY_NAMES.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>

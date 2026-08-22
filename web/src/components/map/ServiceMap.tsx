@@ -183,6 +183,16 @@ export function ServiceMap({
   // fazer zoom/pan manualmente — o que seria intrusivo.
   const lastFitBoundsSignatureRef = useRef<string | null>(null);
 
+  // NOVO — guarda se o recentramento automático em modo active-service
+  // já foi feito nesta montagem do componente (ver useEffect logo após
+  // o de fitBounds do modo discovery, mais abaixo). Sem isto, o mapa
+  // em Acompanhamento do Serviço nunca reagia à chegada tardia das
+  // coordenadas reais do cliente: o center do MapContainer só é
+  // aplicado pelo react-leaflet na montagem, e o único useEffect que já
+  // existia para recentrar (fitBounds) tinha guarda explícita
+  // `mode !== 'discovery' -> return`, deixando active-service de fora.
+  const hasCenteredOnClientRef = useRef(false);
+
   const initialCenter = clientCoordinates ?? defaultMapCenter;
 
   // Fase derivada do status real do serviço — nunca persistida, só usada
@@ -236,15 +246,15 @@ export function ServiceMap({
     };
   }, [leafletReady]);
 
-  // NOVO — ResizeObserver sobre o próprio container do mapa.
-  // O listener de 'resize' da window acima cobre mudanças de tamanho
-  // da JANELA, mas numa PWA em modo standalone o container pode mudar
-  // de tamanho (ex: barra do browser a desaparecer, viewport a
-  // assentar no tamanho final) sem que a janela em si dispare um
-  // evento de resize. O ResizeObserver deteta diretamente mudanças no
-  // elemento onde o Leaflet está montado, cobrindo esse cenário.
-  // Um só observer por instância (guardado em ref, desligado no
-  // cleanup) evita observers duplicados ou fugas de memória.
+  // ResizeObserver sobre o próprio container do mapa. O listener de
+  // 'resize' da window acima cobre mudanças de tamanho da JANELA, mas
+  // numa PWA em modo standalone o container pode mudar de tamanho (ex:
+  // barra do browser a desaparecer, viewport a assentar no tamanho
+  // final) sem que a janela em si dispare um evento de resize. O
+  // ResizeObserver deteta diretamente mudanças no elemento onde o
+  // Leaflet está montado, cobrindo esse cenário. Um só observer por
+  // instância (guardado em ref, desligado no cleanup) evita observers
+  // duplicados ou fugas de memória.
   useEffect(() => {
     if (!leafletReady || !containerRef.current) return;
 
@@ -476,12 +486,11 @@ export function ServiceMap({
     [discoveryProviders],
   );
 
-  // ITEM 4 — enquadra automaticamente o mapa (cliente + todos os
-  // prestadores encontrados) sempre que a lista de discoveryMarkers
-  // muda, em vez de manter sempre o mesmo defaultZoom fixo centrado no
-  // cliente. Só corre em modo discovery — em active-service o
-  // enquadramento continua a ser o comportamento existente (centrado no
-  // cliente, com recenter manual via handleRecenter).
+  // Enquadra automaticamente o mapa (cliente + todos os prestadores
+  // encontrados) sempre que a lista de discoveryMarkers muda, em vez
+  // de manter sempre o mesmo defaultZoom fixo centrado no cliente. Só
+  // corre em modo discovery — em active-service o enquadramento é
+  // tratado pelo useEffect seguinte.
   //
   // Guardas aplicadas:
   // - Precisa de leafletReady e do mapRef já montado (whenReady).
@@ -535,6 +544,43 @@ export function ServiceMap({
       maxZoom: getFitBoundsMaxZoom(),
     });
   }, [mode, leafletReady, clientCoordinates, discoveryMarkers]);
+
+  // NOVO (Problema 1 — mapa mostra zona errada no Acompanhamento do
+  // Serviço/active-service):
+  //
+  // O useEffect de fitBounds logo acima só corre para
+  // mode === 'discovery'. Em mode === 'active-service' o MapContainer
+  // é montado uma única vez com center = initialCenter (que é
+  // clientCoordinates ?? defaultMapCenter — Luanda central, ver
+  // map-provider.config.ts), e o react-leaflet só aplica esse `center`
+  // na montagem: não reage a mudanças posteriores na prop.
+  //
+  // Como a página /map obtém a localização do cliente de forma
+  // assíncrona via navigator.geolocation.getCurrentPosition, existe
+  // sempre uma janela em que este componente monta com
+  // clientCoordinates ainda a null. Sem este efeito, o mapa arrancava
+  // centrado no fallback fixo de Luanda e ficava preso ali mesmo depois
+  // de a posição real do cliente chegar — exactamente o sintoma
+  // relatado ("o mapa mostra a zona errada").
+  //
+  // Este efeito centra o mapa nas coordenadas reais do cliente na
+  // PRIMEIRA vez que chegam nesta montagem (hasCenteredOnClientRef
+  // garante que corre uma única vez), sem interferir com o fitBounds do
+  // modo discovery nem com o recentramento manual via handleRecenter, e
+  // sem forçar recentragens repetidas a cada refresh de 30s do GPS
+  // durante o acompanhamento do serviço (ver ACTIVE_SERVICE_LOCATION_
+  // REFRESH_MS em map/page.tsx).
+  useEffect(() => {
+    if (mode !== 'active-service' || !leafletReady || !mapRef.current) return;
+    if (hasCenteredOnClientRef.current) return;
+    if (!clientCoordinates || !isValidCoordinate(clientCoordinates)) return;
+
+    mapRef.current.setView(
+      [clientCoordinates.latitude, clientCoordinates.longitude],
+      mapProviderConfig.discoveryZoom,
+    );
+    hasCenteredOnClientRef.current = true;
+  }, [mode, leafletReady, clientCoordinates]);
 
   const handleRecenter = useCallback(() => {
     if (!mapRef.current) return;

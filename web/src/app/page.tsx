@@ -193,14 +193,14 @@ export default function HomePage() {
         .lp-step p{font-size:13.5px;color:#64748b;line-height:1.55}
 
         /* Ferramentas: blocos split, alternados, com visual real ao lado da copy */
-        .lp-tool-row{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;padding:44px 0;border-bottom:1px solid #eef1f5}
+        .lp-tool-row{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;padding:44px 0;border-bottom:1px solid #eef1f5;min-width:0}
         .lp-tool-row:last-child{border-bottom:none}
         .lp-tool-row.reverse .lp-tool-copy{order:2}
         .lp-tool-row.reverse .lp-tool-visual{order:1}
         .lp-tool-eyebrow{font-size:13px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px}
         .lp-tool-copy h3{font-size:24px;font-weight:800;color:${INK};letter-spacing:-0.01em;margin-bottom:12px;line-height:1.25}
         .lp-tool-copy p{font-size:15px;color:#64748b;line-height:1.65;max-width:400px}
-        .lp-tool-visual{background:#f8fafc;border:1px solid #eef1f5;border-radius:18px;padding:24px;min-height:220px;display:flex;align-items:center;justify-content:center;position:relative}
+        .lp-tool-visual{background:#f8fafc;border:1px solid #eef1f5;border-radius:18px;padding:24px;min-height:220px;display:flex;align-items:center;justify-content:center;position:relative;min-width:0}
 
         /* Mapa animado: ponto a piscar (pulso) + linha de rota a "andar" */
         .lp-map-dot-wrap{position:absolute;top:50%;left:50%;width:14px;height:14px;transform:translate(-50%,-50%);z-index:5}
@@ -242,11 +242,32 @@ export default function HomePage() {
           Também foi adicionado o Home Indicator (barra fina) fixo dentro
           da área do ecrã, e reservado espaço para ele no fundo da lista
           de mensagens para nunca sobrepor a última bolha.
+
+          FIX RESPONSIVIDADE (mobile/PWA perde a estrutura de iPhone):
+          Causa raiz — .lp-tool-row é um CSS Grid, e .lp-tool-visual é o
+          item de grid que contém .lp-phone. Por comportamento padrão do
+          CSS Grid, um item de grid tem min-width:auto implícito — nunca
+          encolhe abaixo do tamanho do seu conteúdo intrínseco. Como
+          .lp-phone usa container-type:inline-size (necessário para as
+          suas próprias @container queries internas, que reescalonam
+          texto/notch em telas pequenas), a medição desse container ficava
+          inconsistente quando o grid não conseguia encolher corretamente
+          — variando entre Chrome mobile e PWA standalone consoante o
+          motor de layout do browser — fazendo o mockup perder a
+          estrutura de iPhone e parecer genérico. min-width:0 foi
+          adicionado a .lp-tool-row, .lp-tool-visual e ao próprio
+          .lp-phone (que também é filho flex de .lp-tool-visual) para
+          forçar todos a respeitarem sempre o espaço real disponível —
+          sem alterar nenhuma dimensão, cor, notch, status bar ou home
+          indicator. As media queries e @container queries já existentes
+          (abaixo) continuam a reescalonar a moldura e o conteúdo interno
+          exactamente como antes, agora com uma medição de base correta.
         */
         .lp-phone{
           position:relative;
           display:flex;
           width:100%;
+          min-width:0;
           max-width:210px;
           aspect-ratio:210/428;
           min-height:0;
@@ -741,8 +762,8 @@ export default function HomePage() {
                       <div className="lp-phone-chatbar">
                         <div className="lp-phone-chatavatar"><Zap size={13} color="#334155" /></div>
                         <div>
-                          <p className="lp-phone-chatname">Eletricista</p>
-                          <p className="lp-phone-chatstatus">Online agora</p>
+                          <p className="lp-phone-chatname">Carlos Manuel</p>
+                          <p className="lp-phone-chatstatus">Eletricista · Online agora</p>
                         </div>
                       </div>
                       <div className="lp-phone-messages">
