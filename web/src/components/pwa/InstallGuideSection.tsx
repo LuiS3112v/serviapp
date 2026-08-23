@@ -202,8 +202,11 @@ function getEyebrow(platform: string, browser: string): string {
 /**
  * Secção de instalação da Home. Segue rigorosamente o design system
  * existente: mesmo padrão .lp-tool-row (copy + visual lado a lado)
- * e o mesmo mockup de iPhone (.lp-phone) já usado na secção de Chat
- * em page.tsx. Nenhuma cor, radius ou sombra nova é introduzida.
+ * e o MESMO mockup de iPhone (.lp-iphone / .lp-iphone-glass) já usado
+ * na secção de Chat em page.tsx — moldura física completa, notch,
+ * status bar, curva inferior e home indicator, em vez de uma versão
+ * própria e desatualizada. Nenhuma cor, radius ou sombra nova é
+ * introduzida.
  *
  * Adapta-se tanto ao tipo de dispositivo (telemóvel/computador) como
  * ao navegador real detetado (Chrome, Safari, Firefox, Edge, Samsung
@@ -311,8 +314,18 @@ export function InstallGuideSection() {
             {isDesktop ? (
               <DesktopMock step={index} browser={browser} />
             ) : (
-              <div className="lp-phone">
-                <div className="lp-phone-screen">
+              /*
+                Mesmo mockup físico de iPhone usado na secção de Chat em
+                page.tsx: .lp-iphone é o chassis (moldura escura, cantos
+                superiores/inferiores assimétricos, sombra de profundidade)
+                e .lp-iphone-glass é o ecrã encaixado dentro, com margem
+                fixa em px (--lp-phone-bezel), notch e home indicator
+                próprios. Isto garante moldura lateral, curva inferior e
+                aparência de dispositivo real em qualquer viewport — ao
+                contrário de um ecrã "solto" sem chassis.
+              */
+              <div className="lp-iphone">
+                <div className="lp-iphone-glass">
                   <div className="lp-phone-notch" />
                   <div className="lp-phone-status">
                     <span>9:41</span>
@@ -329,6 +342,7 @@ export function InstallGuideSection() {
                       <AndroidMock step={index} browser={browser} />
                     )}
                   </div>
+                  <div className="lp-phone-home-indicator" />
                 </div>
               </div>
             )}
@@ -401,10 +415,16 @@ export function InstallGuideSection() {
           display:flex;
           justify-content:center;
         }
+
+        /* Corpo do mockup dentro do ecrã do iPhone (ocupa o espaço entre
+           a barra de estado e o home indicator, tal como .lp-phone-messages
+           faz na secção de Chat). */
         .lp-install-phone-body{
-          flex:1;
+          flex:1 1 0;
+          min-height:0;
           display:flex;
           flex-direction:column;
+          padding-bottom:14px;
         }
 
         /* --- Conteúdo mock dentro do ecrã do iPhone --- */
@@ -413,6 +433,7 @@ export function InstallGuideSection() {
           display:flex;
           flex-direction:column;
           padding:10px;
+          min-width:0;
         }
         .lp-install-mock-page.center{
           align-items:center;
