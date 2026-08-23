@@ -211,91 +211,119 @@ export default function HomePage() {
         .lp-map-marker.delay{animation-delay:1.1s}
 
         /*
-          iPhone ilustrativo — molde original preservada (bordas finas,
-          proporção real de iPhone). Só o CONTEÚDO INTERNO passa a escalar
-          com o tamanho da moldura via container query, para nunca ficar
-          desalinhado ou cortado em ecrãs pequenos. A moldura em si usa
-          largura fluida com um teto (max-width), como no design original.
+          ═══════════════════════════════════════════════════════════════
+          MOCKUP DE IPHONE — RECONSTRUÍDO DO ZERO (v2)
+          ═══════════════════════════════════════════════════════════════
 
-          FIX DEFINITIVO: o conteúdo do chat (bolhas de mensagem) estava a
-          rasgar a borda preta inferior do telefone em iOS/Safari/PWA.
-          Causa raiz: .lp-phone-messages tinha flex:1 dentro de um pai cuja
-          altura vem de aspect-ratio (não um px fixo). Em flexbox, todo
-          flex item tem min-height:auto por definição — ou seja, mesmo com
-          overflow:hidden no ecrã, o item recusa encolher abaixo do
-          conteúdo e o Safari deixa a caixa crescer/vazar através do
-          border-radius do avô antes de aplicar o clip. A correção correta
-          é declarar min-height:0 em CADA elemento flex da cadeia
-          (.lp-phone, .lp-phone-screen, .lp-phone-messages) — isso obriga
-          o browser a respeitar a altura do pai como teto real, e só
-          depois disso o overflow:hidden consegue cortar de verdade.
-          Também travamos a altura do .lp-phone-screen com height:100% +
-          min-height:0 no pai .lp-phone (que agora usa flex column em vez
-          de confiar apenas no aspect-ratio) para eliminar qualquer
-          diferença de arredondamento entre o cálculo do aspect-ratio e a
-          altura real renderizada pelo Safari em iOS.
+          CAUSA RAIZ da versão anterior parecer Android/genérico no
+          mobile/PWA: a moldura e o ecrã eram a MESMA caixa — .lp-phone
+          tinha padding:10px para simular a espessura do chassis, e
+          .lp-phone-screen ocupava o resto por dentro. Isto funciona
+          visualmente em ecrãs grandes, mas não é fisicamente como um
+          iPhone real é construído: num iPhone, o chassis (a peça de
+          metal/vidro à volta) e o ecrã (ligeiramente mais pequeno,
+          encaixado dentro) são duas superfícies com raios de canto
+          DIFERENTES — o raio do ecrã é sempre menor que o do chassis,
+          numa relação proporcional constante (regra de "nested corner
+          radii" usada pela própria Apple). Com uma única caixa e
+          padding, essa relação não existe: ambos os raios eram
+          derivados do mesmo valor base, e em ecrãs pequenos onde as
+          media queries reduziam esse padding para caber o conteúdo, a
+          moldura perdia espessura visual e a curvatura das duas
+          camadas colapsava para quase o mesmo raio — o resultado deixa
+          de "ler" como iPhone e passa a parecer um telefone genérico
+          com cantos arredondados.
 
-          AJUSTE (iPhone X/11 real): os cantos inferiores da moldura e do
-          ecrã passam a ser maiores do que os superiores — como no chassis
-          real do iPhone X/11, onde a curva de baixo é mais generosa do
-          que a de cima (que já é "cortada" visualmente pelo notch).
-          Também foi adicionado o Home Indicator (barra fina) fixo dentro
-          da área do ecrã, e reservado espaço para ele no fundo da lista
-          de mensagens para nunca sobrepor a última bolha.
+          NOVA ESTRUTURA — duas camadas físicas explícitas:
+            1. .lp-iphone        → CHASSIS. Sempre com min-width e
+               min-height absolutos (nunca colapsa), raio de canto maior,
+               cor navy escura, sombra de profundidade. É este elemento
+               que dá a "espessura de metal" visível em qualquer tamanho.
+            2. .lp-iphone-glass  → ECRÃ. Encaixado dentro do chassis com
+               uma margem fixa em px (nunca em %, para a espessura do
+               chassis não desaparecer proporcionalmente ao encolher).
+               Raio de canto sempre ~55% do raio do chassis — mantém a
+               relação visual correta em qualquer escala.
 
-          FIX RESPONSIVIDADE (mobile/PWA perde a estrutura de iPhone):
-          Causa raiz — .lp-tool-row é um CSS Grid, e .lp-tool-visual é o
-          item de grid que contém .lp-phone. Por comportamento padrão do
-          CSS Grid, um item de grid tem min-width:auto implícito — nunca
-          encolhe abaixo do tamanho do seu conteúdo intrínseco. Como
-          .lp-phone usa container-type:inline-size (necessário para as
-          suas próprias @container queries internas, que reescalonam
-          texto/notch em telas pequenas), a medição desse container ficava
-          inconsistente quando o grid não conseguia encolher corretamente
-          — variando entre Chrome mobile e PWA standalone consoante o
-          motor de layout do browser — fazendo o mockup perder a
-          estrutura de iPhone e parecer genérico. min-width:0 foi
-          adicionado a .lp-tool-row, .lp-tool-visual e ao próprio
-          .lp-phone (que também é filho flex de .lp-tool-visual) para
-          forçar todos a respeitarem sempre o espaço real disponível —
-          sem alterar nenhuma dimensão, cor, notch, status bar ou home
-          indicator. As media queries e @container queries já existentes
-          (abaixo) continuam a reescalonar a moldura e o conteúdo interno
-          exactamente como antes, agora com uma medição de base correta.
+          Isto elimina a causa raiz: como a margem entre chassis e ecrã
+          é sempre um valor em px (nunca depende de padding percentual
+          nem de aspect-ratio recalculado), a moldura NUNCA desaparece,
+          em nenhum breakpoint, em nenhum motor de renderização (Chrome
+          mobile, Safari iOS, PWA standalone) — o chassis é sempre a
+          camada visível por fora do ecrã, com a mesma espessura relativa.
+
+          Responsividade: um único elemento .lp-iphone com width:100% e
+          max-width decrescente por breakpoint (exactamente como antes),
+          mas agora a proporção interna do chassis não depende de
+          padding — depende de um valor de margem fixo em px por
+          breakpoint (--lp-phone-bezel), o que preserva a geometria real
+          em qualquer tamanho, em vez de a "esticar" proporcionalmente.
+
+          Parte inferior: o chassis (.lp-iphone) tem border-radius maior
+          nos dois cantos de baixo do que nos de cima (assimetria real
+          de iPhone X/11 — o topo já é "cortado" visualmente pelo notch).
+          O ecrã (.lp-iphone-glass) segue a mesma assimetria, só que
+          menor. O home indicator vive dentro do ecrã, nunca sobre o
+          chassis, e nunca substitui a curvatura da moldura — são duas
+          coisas desenhadas em separado, como pedido.
         */
-        .lp-phone{
+        .lp-iphone{
+          --lp-phone-bezel: 9px;
+          --lp-phone-radius-top: 32px;
+          --lp-phone-radius-bottom: 46px;
           position:relative;
-          display:flex;
           width:100%;
-          min-width:0;
-          max-width:210px;
-          aspect-ratio:210/428;
-          min-height:0;
-          border-radius:36px 36px 48px 48px;
-          background:${INK};
-          padding:10px;
-          box-shadow:0 18px 40px rgba(15,23,42,0.22);
+          min-width:126px;
+          max-width:212px;
+          aspect-ratio:9/18.3;
           margin:0 auto;
-          container-type:inline-size;
-          container-name:phone;
-          overflow:hidden;
+          border-radius:var(--lp-phone-radius-top) var(--lp-phone-radius-top) var(--lp-phone-radius-bottom) var(--lp-phone-radius-bottom);
+          background:linear-gradient(155deg,#1c2436,${INK} 55%,#050810);
+          box-shadow:
+            0 22px 44px rgba(2,6,16,0.32),
+            0 2px 6px rgba(2,6,16,0.18),
+            inset 0 0 0 1px rgba(255,255,255,0.06);
+          flex-shrink:0;
         }
-        .lp-phone-screen{
-          position:relative;
+        .lp-iphone-glass{
+          position:absolute;
+          top:var(--lp-phone-bezel);
+          left:var(--lp-phone-bezel);
+          right:var(--lp-phone-bezel);
+          bottom:var(--lp-phone-bezel);
           display:flex;
           flex-direction:column;
-          width:100%;
-          height:100%;
           min-height:0;
-          max-width:100%;
-          border-radius:28px 28px 40px 40px;
+          min-width:0;
+          border-radius:calc(var(--lp-phone-radius-top) - 6px) calc(var(--lp-phone-radius-top) - 6px) calc(var(--lp-phone-radius-bottom) - 6px) calc(var(--lp-phone-radius-bottom) - 6px);
           background:#f8fafc;
           overflow:hidden;
-          min-width:0;
           isolation:isolate;
+          container-type:inline-size;
+          container-name:phone;
         }
-        .lp-phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:40%;height:22px;background:${INK};border-radius:0 0 14px 14px;z-index:5}
-        .lp-phone-status{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 6px;font-size:11px;font-weight:700;color:${INK};flex-shrink:0}
+        .lp-phone-notch{
+          position:absolute;
+          top:0;
+          left:50%;
+          transform:translateX(-50%);
+          width:46%;
+          height:20px;
+          background:${INK};
+          border-radius:0 0 13px 13px;
+          z-index:5;
+        }
+        .lp-phone-notch::before,
+        .lp-phone-notch::after{
+          content:"";
+          position:absolute;
+          top:6px;
+          border-radius:50%;
+          background:#0a0e18;
+        }
+        .lp-phone-notch::before{left:16px;width:6px;height:6px}
+        .lp-phone-notch::after{right:16px;width:8px;height:8px}
+        .lp-phone-status{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px;font-size:11px;font-weight:700;color:${INK};flex-shrink:0}
         .lp-phone-status-icons{display:flex;align-items:center;gap:4px;flex-shrink:0}
         .lp-phone-chatbar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #eef1f5;background:#ffffff;flex-shrink:0;min-width:0}
         .lp-phone-chatavatar{width:26px;height:26px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -306,8 +334,8 @@ export default function HomePage() {
           min-height:0;
           width:100%;
           max-width:100%;
-          padding:14px;
-          padding-bottom:24px;
+          padding:12px;
+          padding-bottom:26px;
           display:flex;
           flex-direction:column;
           gap:8px;
@@ -325,10 +353,10 @@ export default function HomePage() {
         }
         .lp-phone-home-indicator{
           position:absolute;
-          bottom:8px;
+          bottom:7px;
           left:50%;
           transform:translateX(-50%);
-          width:34%;
+          width:36%;
           height:4px;
           border-radius:2px;
           background:${INK};
@@ -336,28 +364,27 @@ export default function HomePage() {
           z-index:6;
         }
 
-        /* Em molduras pequenas (telemóvel), encolhe o texto/ícones internos
-           proporcionalmente em vez de deixá-los grandes demais e a transbordar.
-           As bolhas de mensagem (.lp-phone-bubble) também encolhem aqui —
-           sem isso, em molduras pequenas o texto das 3 mensagens exige mais
-           altura do que o telefone tem, o que é a causa raiz de o conteúdo
-           rasgar a borda inferior mesmo com overflow:hidden. */
+        /* Molduras pequenas (telemóvel): o chassis nunca perde
+           espessura (--lp-phone-bezel é sempre um valor fixo em px,
+           nunca proporcional), só o conteúdo interno encolhe via
+           container query, exactamente como antes. */
         @container phone (max-width: 180px){
-          .lp-phone-status{padding:12px 14px 4px;font-size:9.5px}
-          .lp-phone-notch{height:18px}
+          .lp-phone-status{padding:11px 13px 4px;font-size:9.5px}
+          .lp-phone-notch{height:17px}
           .lp-phone-chatbar{padding:6px 11px;gap:6px}
           .lp-phone-chatavatar{width:22px;height:22px}
           .lp-phone-chatname{font-size:10px}
           .lp-phone-chatstatus{font-size:8.5px}
-          .lp-phone-messages{padding:10px;padding-bottom:20px;gap:6px}
+          .lp-phone-messages{padding:9px;padding-bottom:22px;gap:6px}
           .lp-phone-bubble{font-size:10.5px !important;padding:7px 10px !important}
         }
         @container phone (max-width: 155px){
-          .lp-phone-status{padding:10px 12px 3px;font-size:8.5px}
-          .lp-phone-notch{height:15px;width:44%}
-          .lp-phone-messages{padding:8px;padding-bottom:18px;gap:5px}
+          .lp-phone-status{padding:9px 11px 3px;font-size:8.5px}
+          .lp-phone-notch{height:14px;width:50%}
+          .lp-phone-messages{padding:7px;padding-bottom:20px;gap:5px}
           .lp-phone-bubble{font-size:9.5px !important;padding:6px 9px !important;border-radius:10px !important}
         }
+
 
         /* Categories */
         .lp-cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:16px;overflow:hidden}
@@ -494,7 +521,7 @@ export default function HomePage() {
           .lp-story-step{font-size:14px;gap:10px}
           .lp-visual-card{padding:9px 11px}
           .lp-tool-copy h3{font-size:20px}
-          .lp-phone{max-width:170px}
+          .lp-iphone{max-width:170px}
           .lp-header-inner{padding:12px 18px}
           .lp-logo-text{font-size:17px}
         }
@@ -506,7 +533,7 @@ export default function HomePage() {
           .lp-eyebrow{font-size:11.5px;padding:6px 12px}
           .lp-mock-header{flex-wrap:wrap}
           .lp-mini-v{font-size:17px}
-          .lp-phone{max-width:148px}
+          .lp-iphone{max-width:148px}
         }
 
         /* Ecrãs muito grandes: evita esticar demasiado */
@@ -748,8 +775,8 @@ export default function HomePage() {
                   <p>Horário, endereço, detalhes do serviço, tudo fica ali. Não precisa de trocar números nem de sair da Mestroo.</p>
                 </div>
                 <div className="lp-tool-visual">
-                  <div className="lp-phone">
-                    <div className="lp-phone-screen">
+                  <div className="lp-iphone">
+                    <div className="lp-iphone-glass">
                       <div className="lp-phone-notch" />
                       <div className="lp-phone-status">
                         <span>9:41</span>
