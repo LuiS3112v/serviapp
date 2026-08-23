@@ -82,6 +82,12 @@ export class AuthService {
       password: hashedPassword,
       role: safeRole,
       phone: dto.phone,
+      // NOVO — categoria escolhida no Passo 2 do registo do provider.
+      // dto.category é undefined para registos de cliente (o DTO não
+      // exige o campo), e o TypeORM/Postgres aceita undefined como
+      // "não definir esta coluna", preservando o comportamento
+      // anterior para clientes sem qualquer alteração.
+      category: dto.category,
     });
 
     const saved = await this.userRepo.save(user);

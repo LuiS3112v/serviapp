@@ -22,13 +22,10 @@ import styles from './map-page.module.css';
 // CORRIGIDO — antes existia um array local ['Todos', 'Limpeza', ...,
 // 'Eletricista', ...] duplicado e desalinhado da lista oficial em
 // web/src/lib/categories.ts (que usa 'Eletricidade', não
-// 'Eletricista'). Essa divergência de nomes era uma das causas do
-// Problema 4 (Serviço Rápido não chega ao Provider): um cliente a
-// filtrar/criar pedidos a partir desta página usava uma grafia de
-// categoria que nunca correspondia à categoria real do prestador.
-// Passa a importar CATEGORY_NAMES — a mesma fonte de verdade já usada
-// nos pedidos normais — e antepõe 'Todos' apenas aqui, que é uma opção
-// de filtro desta página e não uma categoria real de negócio.
+// 'Eletricista'). Passa a importar CATEGORY_NAMES — a mesma fonte de
+// verdade já usada no registo, no KYC e nos Serviços Rápidos — e
+// antepõe 'Todos' apenas aqui, que é uma opção de filtro desta página
+// e não uma categoria real de negócio.
 const CATEGORIES = ['Todos', ...CATEGORY_NAMES];
 
 const RADIUS_OPTIONS = [2, 5, 10, 20];
@@ -243,9 +240,7 @@ export default function MapPage() {
       // montar a página: exigir maximumAge:0 força o browser a obter
       // sempre uma leitura fresca do GPS neste momento, eliminando a
       // possibilidade de mostrar uma zona desatualizada logo na
-      // primeira renderização do mapa. O refresh periódico usado
-      // durante um serviço ativo (refreshClientLocationSilently, abaixo)
-      // mantém a sua tolerância própria de 15s, que já era adequada.
+      // primeira renderização do mapa.
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
     );
   }, []);

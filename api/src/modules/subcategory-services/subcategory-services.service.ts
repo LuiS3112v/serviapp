@@ -66,41 +66,33 @@ export class SubcategoryServicesService {
   // ── Mercado do Prestador ─────────────────────────────────────────────
   //
   // CORRIGIDO — causa raiz do bug "Serviço Rápido criado pelo Cliente
-  // não chega ao Provider":
+  // não chega ao Provider", com duas correções distintas:
   //
-  // A versão anterior só considerava as categorias presentes no
-  // catálogo do prestador (ProviderCatalog, tabela 'provider_catalog').
-  // Se o prestador nunca criou nenhuma entrada de catálogo — o que é
-  // perfeitamente possível: o catálogo é uma funcionalidade separada,
-  // preenchida manualmente pelo prestador — `categories` ficava vazio e
-  // o método devolvia `[]` imediatamente, ANTES sequer de consultar a
-  // tabela de Serviços Rápidos. O prestador nunca via nenhum pedido,
-  // independentemente da categoria com que se registou no KYC.
+  // 1) CATEGORIA: a versão anterior só considerava as categorias
+  //    presentes no catálogo do prestador (ProviderCatalog, tabela
+  //    'provider_catalog'). Se o prestador nunca criou nenhuma entrada
+  //    de catálogo — perfeitamente possível, o catálogo é uma
+  //    funcionalidade separada preenchida manualmente — `categories`
+  //    ficava vazio e o método devolvia `[]` imediatamente, ANTES
+  //    sequer de consultar a tabela de Serviços Rápidos. A categoria
+  //    "oficial" de especialidade de um prestador é `User.category` —
+  //    o campo preenchido no registo (ver register/provider/page.tsx,
+  //    Passo 2) e mantido pelo próprio prestador via PATCH /users/me.
+  //    Esta é a fonte de verdade mínima e sempre presente — o catálogo
+  //    é um refinamento opcional por cima dela, não um requisito.
   //
-  // A categoria "oficial" de especialidade de um prestador é
-  // `User.category` — o campo preenchido durante o KYC
-  // (ver web/src/app/(auth)/kyc/page.tsx, PROVIDER_CATEGORIES, e
-  // api/src/modules/kyc/kyc.service.ts, que grava
-  // `category: dto.category` tanto em ProviderVerification como,
-  // depois de aprovado, é este o valor com que o prestador continua
-  // identificado no sistema). Esta é a fonte de verdade mínima e
-  // sempre presente — o catálogo é um refinamento opcional por cima
-  // dela, não um requisito.
+  // 2) VERIFICAÇÃO: a versão anterior não filtrava por isVerified nem
+  //    profileVisible — um prestador com KYC ainda pendente ou
+  //    rejeitado conseguia ver e receber Serviços Rápidos, ao
+  //    contrário do resto do sistema (ver GeolocationService.
+  //    findNearbyProviders / findOnlineProviders, que já exigem
+  //    isVerified=true e profileVisible=true para um prestador aparecer
+  //    no mapa/pesquisa). Esta correção alinha o Serviço Rápido com a
+  //    mesma regra de negócio.
   //
-  // A correção junta as duas fontes (User.category + categorias do
-  // ProviderCatalog activo) num único conjunto de categorias
-  // elegíveis, sem remover nada do comportamento anterior: um
-  // prestador que já dependia do catálogo continua a funcionar
-  // exactamente como antes (as categorias do catálogo continuam
-  // incluídas); um prestador que nunca mexeu no catálogo passa agora
-  // a ver os Serviços Rápidos da sua categoria de perfil, que é
-  // exactamente o comportamento esperado descrito no prompt.
-  //
-  // Os console.log de debug temporário foram removidos — cumpriram o
-  // propósito de diagnóstico durante esta investigação e não devem
-  // seguir para produção (nomeadamente por imprimirem o conteúdo
-  // completo dos pedidos, incluindo dados do cliente, no log do
-  // servidor a cada chamada).
+  // Os console.log de debug temporário foram removidos — imprimiam o
+  // conteúdo completo dos pedidos, incluindo dados do cliente, no log
+  // do servidor a cada chamada, e não devem seguir para produção.
 
   async findAvailableForProvider(
     providerId: string,
@@ -108,8 +100,12 @@ export class SubcategoryServicesService {
 
     const provider = await this.userRepo.findOne({
       where: { id: providerId },
-      select: { id: true, category: true },
+      select: { id: true, category: true, isVerified: true, profileVisible: true },
     });
+
+    if (!provider || !provider.isVerified || !provider.profileVisible) {
+      return [];
+    }
 
     const providerCatalog =
       await this.providerCatalogRepo.find({
@@ -125,12 +121,13 @@ export class SubcategoryServicesService {
       );
 
     // Junta a categoria de perfil do prestador (fonte sempre presente,
-    // vinda do KYC) às categorias do catálogo (opcional). Set remove
-    // duplicados sem alterar a ordem de relevância.
+    // vinda do registo/edição de perfil) às categorias do catálogo
+    // (opcional). Set remove duplicados sem alterar a ordem de
+    // relevância.
     const categories = Array.from(
       new Set(
         [
-          ...(provider?.category ? [provider.category] : []),
+          ...(provider.category ? [provider.category] : []),
           ...catalogCategories,
         ],
       ),

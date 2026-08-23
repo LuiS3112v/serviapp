@@ -46,6 +46,7 @@ export interface RegisterPayload {
   password: string;
   role: "client" | "provider" | "company";
   phone?: string;
+  category?: string;
 }
 
 export interface LoginPayload {

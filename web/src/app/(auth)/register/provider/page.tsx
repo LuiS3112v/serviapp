@@ -6,14 +6,17 @@ import { ArrowLeft, Zap, Eye, EyeOff, CheckCircle, Upload, Loader2, Sparkles, Sh
 import { authApi, saveSession, getToken } from "@/lib/auth.api";
 import { refreshUserInStorage } from "@/lib/user.api";
 import { renderGoogleButton } from "@/lib/google-auth";
+import { CATEGORY_NAMES } from "@/lib/categories";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-const categories = [
-  "Limpeza", "Climatização", "Canalização", "Eletricista",
-  "TI & Redes", "Jardinagem", "Mudanças", "Beleza",
-  "Automóvel", "Pintura", "Construção", "Segurança",
-];
+// CORRIGIDO — antes existia uma lista local ["Limpeza", ..., "Eletricista",
+// ...] duplicada e desalinhada da fonte oficial em web/src/lib/categories.ts
+// (que usa "Eletricidade"). Consumir CATEGORY_NAMES aqui garante que a
+// categoria escolhida no registo do provider é sempre uma das 12
+// categorias reais e pesquisáveis do sistema — a mesma lista já usada no
+// KYC, no mapa, na pesquisa e nos Serviços Rápidos.
+const categories = CATEGORY_NAMES;
 
 // Wrapper com Suspense mantido por consistência com o resto do projeto.
 export default function RegisterProviderPage() {
@@ -206,6 +209,12 @@ function RegisterProviderPageContent() {
         password: form.password,
         role: "provider",
         phone: form.phone.trim() || undefined,
+        // NOVO — antes esta categoria (obrigatória no Passo 2, ver
+        // handleContinueFromStep2) era validada mas nunca enviada ao
+        // backend: user.category ficava vazio até o provider concluir
+        // o KYC, opcional e posterior ao registo. Agora fica gravada
+        // logo na criação da conta.
+        category: selectedCat,
       });
       saveSession(data);
 
