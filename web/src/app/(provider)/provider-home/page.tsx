@@ -1,81 +1,67 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
-  Briefcase, Wallet, Star, Clock, ArrowRight, ChevronDown,
-  Shield, Zap, Users, TrendingUp, CheckCircle, AlertCircle, Loader2,
-  Handshake, KeyRound, ImagePlus, MapPin,
+  Briefcase, ArrowRight, ChevronRight,
+  Shield, CheckCircle, AlertCircle, Loader2, ShoppingBag,
 } from "lucide-react";
 import { servicesApi, ProviderStats } from "@/lib/services.api";
+import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
+import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
 import { chatApi } from "@/lib/chat.api";
 import { getSession } from "@/lib/auth.api";
 import { kycApi } from "@/lib/api/kyc.api";
+import { TOKENS } from "@/lib/design-tokens";
+import ProviderServiceActionCard from "@/components/services/ProviderServiceActionCard";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   NOTAS DE DESIGN
+   NOTAS DE DESIGN (v2 — foco em "o que tenho para fazer agora")
 
-   Problema do design antigo: cada card/ícone tinha a sua própria cor forte
-   (âmbar, azul, roxo, rosa, verde...) e a informação vivia toda dentro de
-   "caixas" com fundo, borda e sombra — isso é o que faz uma interface
-   parecer "AI dashboard". Os números das estatísticas herdavam a cor do
-   ícone (33 em âmbar, 4.6 em azul, etc.), o que quebra a leitura de dados.
+   O que mudou em relação à versão anterior e porquê:
 
-   Nova estrutura: welcome editorial (nome + foto real, sem hero escuro
-   gigante) → estado do KYC → métricas em linha aberta (não 4 cards
-   idênticos) → Primeiros passos como checklist vertical → Vantagens como
-   lista numerada editorial → CTA de empresa no fim.
+   1. "Vantagens da plataforma" (Wallet/Escrow/Equipa/Ranking) e o CTA
+      "Tens uma empresa?" SAÍRAM daqui. É conteúdo de venda para quem
+      ainda pondera usar a Mestroo — um provider já a trabalhar não
+      precisa de o ver sempre, na Home, ocupando metade da tela.
+      NADA foi apagado — o mesmo texto (mesmos títulos, mesmas
+      descrições) vive agora em /provider/como-funciona, acessível
+      permanentemente a partir da ProviderSidebar (secção "Perfil"), em
+      qualquer ecrã da app. Ver
+      app/(provider)/provider/como-funciona/page.tsx.
 
-   Nova filosofia de cor: fundo #F8FAFC, cards #FFFFFF, texto #0F172A /
-   #64748B / #94A3B8, bordas #E2E8F0. Os NÚMEROS são sempre #0F172A.
-   O âmbar (#EF9F27) da identidade Provider fica reservado a: botão
-   principal, badge "activo", ícone do passo com ação pendente e CTA de
-   empresa. O verde da Mestroo aparece só no ícone de pagamento/escrow.
-   Nada de roxo, rosa ou azul elétrico.
+   2. "Primeiros passos" (8 passos) também saiu — mesmo motivo e mesmo
+      destino: /provider/como-funciona.
 
-   Nenhuma API, rota, lógica de estado, polling ou dado foi alterado —
-   apenas a apresentação visual (JSX/CSS) foi reescrita. STEPS e FEATS
-   perderam apenas os campos de cor por item (eram só estilo), o conteúdo
-   textual é o mesmo.
+   3. A duplicação de números foi resolvida: antes, Pedidos/Ganhos/
+      Avaliação apareciam duas vezes na mesma página (heroStats no topo
+      E dashStats mais abaixo, com os mesmos valores). Agora só existe
+      uma vez, no topo.
+
+   4. Entrou o bloco "Pedidos perto de ti", ocupando o espaço que sobrou
+      — usa servicesApi.getAvailable() + subcategoryServicesApi.getAvailable()
+      (já existiam, usados em /provider/services, não estavam a ser
+      chamados aqui) com o mesmo ProviderServiceActionCard que essa
+      página já usa (tab="available") — por isso o visual e as acções
+      (aceitar, propor preço) são idênticos aos que o provider já
+      conhece de lá.
+
+   O que ficou exactamente igual: ProviderChrome/ProviderSidebar/
+   BottomNav (montados pelo layout.tsx do grupo), welcome com foto e
+   nome real, estado do KYC, nenhuma API nova a não ser as já existentes
+   reaproveitadas, nenhuma rota nova a não ser /provider/como-funciona.
 ────────────────────────────────────────────────────────────────────────── */
 
-const INK = "#0F172A";
-const MUTED = "#64748B";
-const FAINT = "#94A3B8";
-const LINE = "#E2E8F0";
-const SURFACE = "#F8FAFC";
-const AMBER = "#EF9F27";
-const AMBER_SOFT = "#FDF1DF";
-const GREEN = "#0E7A5F";
-const GREEN_SOFT = "#E9F5F0";
+const INK = TOKENS.color.ink;
+const MUTED = TOKENS.color.muted;
+const FAINT = TOKENS.color.faint;
+const LINE = TOKENS.color.line;
+const SURFACE = TOKENS.color.surface;
+const AMBER = TOKENS.color.provider;
+const GREEN = TOKENS.color.brand;
+const GREEN_SOFT = TOKENS.color.brandSoft;
 
-// 3 sempre visíveis + 5 atrás de "Ver todos" (8 no total) — igual ao original.
-const STEPS = [
-  { Icon: CheckCircle, title: "Completa o KYC",              desc: "Verifica a tua identidade para activar o perfil e receber pedidos.", action: "Verificar agora", href: "/kyc?role=provider", tone: "amber" },
-  { Icon: ImagePlus,   title: "Cria o teu portfólio",         desc: "Adiciona fotos e descrição dos serviços que ofereces.",               action: "Editar perfil",   href: "/provider/profile", tone: "neutral" },
-  { Icon: Zap,         title: "Recebe o primeiro pedido",     desc: "Quando o perfil estiver activo, os clientes vão encontrar-te.",        action: "Ver pedidos",     href: "/provider/services", tone: "neutral" },
-  { Icon: MapPin,      title: "Activa a tua localização",     desc: "Liga a partilha de localização no teu painel para apareceres no mapa e receberes pedidos perto de ti.", tone: "neutral" },
-  { Icon: Handshake,   title: "Aceita e negoceia",            desc: "Analisa o pedido, propõe um preço se quiseres, e aceita para começar.", tone: "neutral" },
-  { Icon: KeyRound,    title: "Valida o PIN no local",        desc: "O cliente dá-te um código quando chegares introduz para iniciares o serviço com segurança.", tone: "neutral" },
-  { Icon: Wallet,      title: "Recebe o pagamento protegido", desc: "O valor fica reservado desde o início; depois de confirmado, a comissão é descontada automaticamente e transferido para ti.", tone: "green" },
-  { Icon: TrendingUp,  title: "Constrói a tua reputação",     desc: "Cada serviço concluído soma avaliações e aumenta a tua visibilidade nas pesquisas.", tone: "neutral" },
-];
-
-const FEATS = [
-  { Icon: Wallet,     title: "Wallet integrada",   desc: "Recebe pagamentos directamente na tua wallet. Levanta quando quiseres." },
-  { Icon: Shield,     title: "Pagamento garantido", desc: "O escrow protege-te o valor é retido até confirmares a conclusão." },
-  { Icon: Users,      title: "Gestão de equipa",    desc: "Tens uma empresa? Adiciona funcionários e distribui os serviços." },
-  { Icon: TrendingUp, title: "Sistema de ranking",  desc: "Quanto mais serviços via app, maior a tua visibilidade e ranking." },
-];
-
-// Nova fotografia: prestador em contexto real de trabalho, luz natural —
-// substitui a antiga photo-1504307651254-35680f356dfd.
+// Nova fotografia: prestador em contexto real de trabalho, luz natural.
 const HERO_PROV = "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=1000&auto=format&fit=crop";
-
-function toneColor(tone: string) {
-  if (tone === "amber") return { fg: AMBER, bg: AMBER_SOFT };
-  if (tone === "green") return { fg: GREEN, bg: GREEN_SOFT };
-  return { fg: MUTED, bg: "#F1F5F9" };
-}
 
 export default function ProviderHomePage() {
   const router = useRouter();
@@ -86,11 +72,12 @@ export default function ProviderHomePage() {
   const [stats, setStats] = useState<ProviderStats | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
-
   const [kycStatus, setKycStatus] = useState<string | null>(null);
 
-  const [showAllSteps, setShowAllSteps] = useState(false);
-  const visibleSteps = showAllSteps ? STEPS : STEPS.slice(0, 3);
+  const [available, setAvailable] = useState<ServiceListItem[]>([]);
+  const [loadingAvailable, setLoadingAvailable] = useState(true);
+
+  const currentUserId = user?.id ?? user?.userId;
 
   useEffect(() => {
     let cancelled = false;
@@ -114,37 +101,36 @@ export default function ProviderHomePage() {
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
+  const fetchAvailable = useCallback(async () => {
+    setLoadingAvailable(true);
+    try {
+      const [regular, quick] = await Promise.all([
+        servicesApi.getAvailable(),
+        subcategoryServicesApi.getAvailable(),
+      ]);
+      const unified = buildUnifiedList(regular, quick, { forProviderId: currentUserId });
+      setAvailable(unified.slice(0, 3));
+    } catch {
+      setAvailable([]);
+    } finally {
+      setLoadingAvailable(false);
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await fetchAvailable();
+      if (cancelled) return;
+    })();
+    return () => { cancelled = true; };
+  }, [fetchAvailable]);
+
   const heroStats = [
     { value: loadingStats ? "…" : stats ? String(stats.totalOrders) : "0", label: "Pedidos" },
     { value: loadingStats ? "…" : stats ? `${stats.totalEarnings.toLocaleString("pt-PT")} Kz` : "0 Kz", label: "Ganhos" },
     { value: loadingStats ? "…" : stats?.averageRating != null ? stats.averageRating.toFixed(1) : "—", label: "Avaliação" },
-  ];
-
-  const dashStats = [
-    {
-      label: "Pedidos recebidos",
-      value: loadingStats ? "…" : stats ? String(stats.totalOrders) : "0",
-      sub: stats && stats.totalOrders > 0 ? `${stats.activeOrders} activo${stats.activeOrders !== 1 ? "s" : ""}` : "Nenhum ainda",
-      Icon: Briefcase, href: "/provider/services",
-    },
-    {
-      label: "Ganhos totais",
-      value: loadingStats ? "…" : stats ? `${stats.totalEarnings.toLocaleString("pt-PT")} Kz` : "0 Kz",
-      sub: "Serviços concluídos",
-      Icon: Wallet, href: "/provider/wallet",
-    },
-    {
-      label: "Avaliação média",
-      value: loadingStats ? "…" : stats?.averageRating != null ? `${stats.averageRating.toFixed(1)} ★` : "—",
-      sub: stats?.averageRating != null ? "Baseado em reviews" : "Sem avaliações",
-      Icon: Star, href: "/provider/reviews",
-    },
-    {
-      label: "Mensagens",
-      value: loadingStats ? "…" : String(unreadMessages),
-      sub: unreadMessages > 0 ? `${unreadMessages} não lida${unreadMessages !== 1 ? "s" : ""}` : "Sem mensagens novas",
-      Icon: Clock, href: "/provider/chat",
-    },
+    { value: loadingStats ? "…" : String(unreadMessages), label: "Mensagens" },
   ];
 
   const isVerified = kycStatus === "approved";
@@ -167,7 +153,7 @@ export default function ProviderHomePage() {
         .ph-hello{font-size:13px;color:${MUTED};font-weight:500;margin-bottom:4px}
         .ph-name{font-size:26px;font-weight:700;color:${INK};letter-spacing:-0.02em;margin-bottom:18px}
 
-        .ph-inline-stats{display:flex;gap:0}
+        .ph-inline-stats{display:flex;gap:0;flex-wrap:wrap}
         .ph-istat{padding-right:24px;margin-right:24px;border-right:1px solid ${LINE}}
         .ph-istat:last-child{border-right:none;padding-right:0;margin-right:0}
         .ph-istat-val{font-size:20px;font-weight:700;color:${INK};line-height:1.2;display:block}
@@ -202,7 +188,7 @@ export default function ProviderHomePage() {
         /* ── KYC banner: linha aberta, não um card colorido ── */
         .kyc-row{display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid ${LINE}}
         .kyc-ico{
-          width:38px;height:38px;border-radius:10px;background:${AMBER_SOFT};
+          width:38px;height:38px;border-radius:10px;background:${TOKENS.color.providerSoft};
           display:flex;align-items:center;justify-content:center;flex-shrink:0;
         }
         .kyc-ico.verified{background:${GREEN_SOFT}}
@@ -213,65 +199,28 @@ export default function ProviderHomePage() {
         }
         .btn-kyc:hover{background:#D98E1A}
 
-        /* ── Estatísticas: linha aberta com separadores, não 4 cards iguais ── */
-        .sec-label{font-size:12px;font-weight:700;color:${FAINT};text-transform:uppercase;letter-spacing:0.07em;margin-bottom:16px}
-        .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:#fff;border:1px solid ${LINE};border-radius:16px;overflow:hidden}
-        .sc{padding:20px 22px;cursor:pointer;transition:background 0.15s;border-right:1px solid ${LINE}}
-        .sc:last-child{border-right:none}
-        .sc:hover{background:${SURFACE}}
-        .sc-top{display:flex;align-items:center;gap:8px;margin-bottom:14px}
-        .sc-ico{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:#F1F5F9;flex-shrink:0}
-        .sc-label{font-size:12.5px;color:${MUTED};font-weight:600}
-        .sc-value{font-size:22px;font-weight:700;color:${INK};margin-bottom:4px;line-height:1.15;letter-spacing:-0.01em}
-        .sc-sub{font-size:11.5px;color:${FAINT}}
-
-        /* ═══════════ SECTIONS ═══════════ */
-        .grid2{display:grid;grid-template-columns:1.05fr 0.95fr;gap:28px;align-items:start}
+        /* ═══════════ SECTION HEADERS ═══════════ */
+        .sec-hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;gap:16px}
         .psec-title{font-size:16.5px;font-weight:700;color:${INK};margin-bottom:4px;letter-spacing:-0.01em}
-        .psec-sub{font-size:13px;color:${MUTED};margin-bottom:20px}
+        .psec-sub{font-size:13px;color:${MUTED}}
+        .sec-link{
+          display:flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:${INK};
+          background:#fff;border:1px solid ${LINE};cursor:pointer;font-family:inherit;padding:9px 14px;
+          border-radius:10px;transition:all .18s;flex-shrink:0;
+        }
+        .sec-link:hover{border-color:${AMBER};color:${AMBER}}
 
-        /* ── Primeiros passos: checklist vertical, sem card por passo ── */
-        .pstep{display:flex;align-items:flex-start;gap:13px;padding:14px 0;border-bottom:1px solid ${LINE}}
-        .pstep:last-of-type{border-bottom:none}
-        .pstep-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-        .btn-step{
-          display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:6px 12px;border-radius:8px;
-          background:${INK};border:none;color:#fff;font-size:11.5px;font-weight:700;
-          cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap;
+        .ph-empty{
+          display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:24px;
+          border:1px dashed ${LINE};border-radius:16px;background:#fff;
         }
-        .btn-step:hover{background:#1E293B}
-        .psteps-more-wrap{display:flex;justify-content:flex-start;margin-top:14px}
-        .btn-psteps-more{
-          display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:9px;
-          background:#fff;border:1px solid ${LINE};color:${MUTED};font-size:12.5px;font-weight:700;
-          cursor:pointer;font-family:inherit;transition:all 0.16s ease;
-        }
-        .btn-psteps-more:hover{border-color:#CBD5E1;color:${INK}}
-        .btn-psteps-more svg{transition:transform 0.2s ease}
-        .btn-psteps-more.open svg{transform:rotate(180deg)}
-
-        /* ── Vantagens: lista numerada editorial ── */
-        .pfeat{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid ${LINE}}
-        .pfeat:last-of-type{border-bottom:none}
-        .pfeat-num{font-size:12px;font-weight:700;color:${FAINT};width:22px;flex-shrink:0;padding-top:2px}
-        .pfeat-ico{width:32px;height:32px;border-radius:9px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-
-        .company-cta{
-          margin-top:18px;padding:16px 18px;border-radius:14px;background:${SURFACE};border:1px solid ${LINE};
-          display:flex;align-items:center;justify-content:space-between;gap:16px;
-        }
-        .btn-company{
-          padding:9px 16px;border-radius:9px;background:${AMBER};border:none;color:#fff;font-size:12.5px;font-weight:700;
-          cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all 0.15s;white-space:nowrap;flex-shrink:0;
-        }
-        .btn-company:hover{background:#D98E1A}
+        .ph-empty p{font-size:13.5px;color:${MUTED}}
 
         /* ═══════════ RESPONSIVE ═══════════ */
         @media(max-width:1024px){
           .ph-shell{padding:0 24px}
           .ph-welcome-row{grid-template-columns:1fr}
           .ph-photo{height:180px;order:-1}
-          .grid2{grid-template-columns:1fr}
         }
         @media(max-width:768px){
           .ph-shell{padding:0 16px}
@@ -279,18 +228,12 @@ export default function ProviderHomePage() {
           .ph-name{font-size:21px}
           .ph-inline-stats{flex-wrap:wrap;row-gap:12px}
           .ph-cta-row{flex-direction:column;align-items:stretch}
-          .stats-row{grid-template-columns:1fr 1fr}
-          .sc{border-bottom:1px solid ${LINE}}
-          .sc:nth-child(2n){border-right:none}
           .ph-body{gap:26px;padding-top:26px}
           .kyc-row{flex-wrap:wrap}
           .btn-kyc{margin-left:0;width:100%;justify-content:center}
-          .company-cta{flex-direction:column;text-align:center}
-          .btn-company{width:100%;justify-content:center}
+          .sec-hdr{flex-direction:column;align-items:flex-start;gap:10px}
         }
         @media(max-width:480px){
-          .stats-row{grid-template-columns:1fr}
-          .sc{border-right:none !important}
           .ph-istat{padding-right:16px;margin-right:16px}
           .ph-istat-val{font-size:17px}
         }
@@ -320,8 +263,8 @@ export default function ProviderHomePage() {
                   <button className="btn-ph-primary" onClick={() => router.push("/provider/services")}>
                     <Briefcase size={15} /> Ver pedidos
                   </button>
-                  <button className="btn-ph-ghost" onClick={() => router.push("/provider/profile")}>
-                    Ver perfil <ArrowRight size={14} />
+                  <button className="btn-ph-ghost" onClick={() => router.push("/provider/como-funciona")}>
+                    Como funciona <ArrowRight size={14} />
                   </button>
                 </div>
               </div>
@@ -364,104 +307,39 @@ export default function ProviderHomePage() {
             )}
           </div>
 
-          {/* ═══ ESTATÍSTICAS ═══ */}
+          {/* ═══ PEDIDOS PERTO DE TI — foco principal da Home ═══ */}
           <div>
-            <p className="sec-label">Resumo rápido</p>
-            <div className="stats-row">
-              {dashStats.map((s, i) => {
-                const Icon = s.Icon;
-                return (
-                  <div className="sc" key={i} onClick={() => router.push(s.href)}>
-                    <div className="sc-top">
-                      <div className="sc-ico"><Icon size={14} style={{ color: MUTED }} /></div>
-                      <span className="sc-label">{s.label}</span>
-                    </div>
-                    {loadingStats
-                      ? <div style={{ height: 26, display: "flex", alignItems: "center" }}>
-                          <Loader2 size={15} style={{ color: FAINT, animation: "spin 1s linear infinite" }} />
-                        </div>
-                      : <p className="sc-value">{s.value}</p>
-                    }
-                    <p className="sc-sub">{s.sub}</p>
-                  </div>
-                );
-              })}
+            <div className="sec-hdr">
+              <div>
+                <p className="psec-title">Pedidos perto de ti</p>
+                <p className="psec-sub">Os mais recentes disponíveis na tua área</p>
+              </div>
+              <button className="sec-link" onClick={() => router.push("/provider/services")}>
+                Ver todos <ChevronRight size={15} />
+              </button>
             </div>
+
+            {loadingAvailable ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: MUTED, fontSize: 13.5, padding: "12px 0" }}>
+                <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> A carregar...
+              </div>
+            ) : available.length === 0 ? (
+              <div className="ph-empty">
+                <ShoppingBag size={22} style={{ color: FAINT }} />
+                <p>Ainda não há pedidos disponíveis na tua área. Verifica se a tua localização está activa no perfil.</p>
+              </div>
+            ) : (
+              available.map((item) => (
+                <ProviderServiceActionCard
+                  key={item.id}
+                  item={item}
+                  tab="available"
+                  onActionComplete={fetchAvailable}
+                />
+              ))
+            )}
           </div>
 
-          {/* ═══ PRIMEIROS PASSOS + VANTAGENS ═══ */}
-          <div className="grid2">
-
-            <div>
-              <p className="psec-title">Primeiros passos</p>
-              <p className="psec-sub">Completa estes passos para activar o teu perfil</p>
-              {visibleSteps.map((s) => {
-                const Icon = s.Icon;
-                const c = toneColor(s.tone);
-                return (
-                  <div className="pstep" key={s.title}>
-                    <div className="pstep-ico" style={{ background: c.bg }}>
-                      <Icon size={17} style={{ color: c.fg }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13.5, fontWeight: 700, color: INK, marginBottom: 3 }}>{s.title}</p>
-                      <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.55 }}>{s.desc}</p>
-                      {s.action && s.href && (
-                        <button className="btn-step" onClick={() => router.push(s.href)}>
-                          {s.action} <ArrowRight size={11} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="psteps-more-wrap">
-                <button
-                  className={`btn-psteps-more${showAllSteps ? " open" : ""}`}
-                  onClick={() => setShowAllSteps((v) => !v)}
-                >
-                  {showAllSteps ? "Ver menos" : "Ver todos"} <ChevronDown size={14} />
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <p className="psec-title">Vantagens da plataforma</p>
-              <p className="psec-sub">Tudo o que precisas para gerir o teu negócio</p>
-              {FEATS.map((f, i) => {
-                const Icon = f.Icon;
-                return (
-                  <div key={i} className="pfeat">
-                    <span className="pfeat-num">{String(i + 1).padStart(2, "0")}</span>
-                    <div className="pfeat-ico"><Icon size={15} style={{ color: MUTED }} /></div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13.5, fontWeight: 700, color: INK, marginBottom: 3 }}>{f.title}</p>
-                      <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.55 }}>{f.desc}</p>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div className="company-cta">
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{
-                    width: 34, height: 34, borderRadius: 9, background: "#fff", border: `1px solid ${LINE}`,
-                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                  }}>
-                    <Users size={15} style={{ color: MUTED }} />
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 13.5, fontWeight: 700, color: INK, marginBottom: 2 }}>Tens uma empresa?</p>
-                    <p style={{ fontSize: 12, color: MUTED }}>Activa o perfil de empresa e gere toda a equipa.</p>
-                  </div>
-                </div>
-                <button className="btn-company" onClick={() => router.push("/provider/company")}>
-                  Activar <ArrowRight size={12} />
-                </button>
-              </div>
-            </div>
-
-          </div>
         </div>
       </div>
     </>

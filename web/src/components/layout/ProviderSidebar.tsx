@@ -5,9 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Home, BarChart3, MessageCircle, Bell,
   Wallet, User, Settings, LogOut, Zap,
-  Star, X, Menu, ShoppingBag, ClipboardList,
+  Star, X, Menu, ShoppingBag, ClipboardList, HelpCircle,
 } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
+import BottomNav from "@/components/layout/BottomNav";
  
 const NAV = [
   {
@@ -40,9 +41,10 @@ const NAV = [
   {
     section: "Perfil",
     items: [
-      { label: "Perfil & Catálogo", icon: User,     href: "/provider/profile" },
-      { label: "Avaliações",        icon: Star,     href: "/provider/reviews" },
-      { label: "Definições",        icon: Settings, href: "/provider/settings" },
+      { label: "Perfil & Catálogo", icon: User,        href: "/provider/profile" },
+      { label: "Avaliações",        icon: Star,        href: "/provider/reviews" },
+      { label: "Como funciona",     icon: HelpCircle,  href: "/provider/como-funciona" },
+      { label: "Definições",        icon: Settings,    href: "/provider/settings" },
     ],
   },
 ];
@@ -243,6 +245,9 @@ export default function ProviderSidebar() {
       <aside className={`psb-dr${open ? " open" : ""}`}>
         <SidebarContent onClose={() => setOpen(false)}/>
       </aside>
+
+      {/* Bottom navigation — mobile only (ver media query no BottomNav) */}
+      <BottomNav role="provider" />
     </>
   );
 }

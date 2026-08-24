@@ -93,3 +93,44 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
+
+/* =========================
+   BOTTOM NAV (mobile) — reserva de espaço global
+========================= */
+
+/*
+  O <BottomNav/> (dentro de Sidebar.tsx e ProviderSidebar.tsx) é
+  position:fixed no fundo do ecrã, abaixo de 1024px — ver
+  design-tokens.ts (MOBILE_BREAKPOINT/BOTTOM_NAV_HEIGHT). Sendo fixed,
+  não ocupa espaço no fluxo normal de nenhuma página.
+
+  Em vez de editar manualmente o CSS de cada uma das ~17 páginas do
+  Cliente (cada uma com a sua própria classe de wrapper local —
+  .hm, .sm, .sv-main, .prof-main, etc. — sem um layout.tsx central
+  partilhado, ao contrário do Provider), a reserva de espaço é feita
+  aqui uma única vez, de forma global e seletiva:
+
+  1) padding-bottom no body: garante que existe sempre espaço extra
+     por baixo do conteúdo real da página, independentemente da altura
+     do documento em cada rota.
+  2) scroll-padding-bottom no html: garante que ao dar scroll até ao
+     fim (ex: ver o botão "Publicar pedido" no fim de um formulário),
+     o browser pára ANTES da barra tapar esse conteúdo.
+
+  Isto é aditivo e não-destrutivo: nenhuma classe, layout flex ou
+  margin-left existente em cada página é alterado. Só acrescenta
+  espaço extra no fim do documento.
+
+  Nas rotas de chat individual (/chat/[id], /provider/chat/[id]) o
+  BottomNav já não é montado (ver BottomNav.tsx) e essas páginas usam
+  position:fixed + inset:0 nos seus próprios wrappers — não são filhas
+  do fluxo normal do body, por isso este padding não as afecta.
+*/
+@media (max-width: 1024px) {
+  body {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+  html {
+    scroll-padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+}

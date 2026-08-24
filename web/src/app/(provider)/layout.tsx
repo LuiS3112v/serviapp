@@ -1,5 +1,6 @@
 import ProviderChrome from "../../components/layout/ProviderChrome";
 import { requireRole } from "@/lib/session.server";
+import { BOTTOM_NAV_HEIGHT, BOTTOM_NAV_SAFE_AREA, MOBILE_BREAKPOINT } from "@/lib/design-tokens";
 
 // ═══════════════════════════════════════════════════════════════════════
 // Layout do grupo (provider) — PROVIDER / COMPANY ONLY
@@ -29,6 +30,17 @@ import { requireRole } from "@/lib/session.server";
 //    filho que precise de height:100% não tem uma base de altura
 //    fiável, porque um flex item em coluna não encolhe abaixo do seu
 //    conteúdo por definição.
+//
+// BOTTOM NAV (mobile): o <ProviderSidebar/> passou a renderizar também
+// um <BottomNav/> fixo no fundo do ecrã abaixo de 1024px (ver
+// ProviderSidebar.tsx e BottomNav.tsx). Esse componente nunca ocupa
+// espaço no fluxo normal (position:fixed), por isso .prov-main precisa
+// de reservar esse espaço manualmente via padding-bottom, ou o fim do
+// conteúdo de qualquer página (ex: botão de submeter um formulário)
+// ficaria escondido atrás da barra. A própria rota de chat individual
+// não é afectada por este padding porque o ProviderChrome não monta
+// .prov-main nela (ver isChatDetail acima) — o que também é exactamente
+// a rota em que o BottomNav já se auto-exclui.
 // ═══════════════════════════════════════════════════════════════════════
 
 export default async function ProviderLayout({
@@ -43,7 +55,12 @@ export default async function ProviderLayout({
       <style>{`
         .prov-layout{display:flex;min-height:100vh;min-height:100dvh;background:#f8fafc}
         .prov-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;min-width:0;overflow-x:hidden}
-        @media(max-width:1024px){.prov-main{margin-left:0}}
+        @media(max-width:${MOBILE_BREAKPOINT}px){
+          .prov-main{
+            margin-left:0;
+            padding-bottom:calc(${BOTTOM_NAV_HEIGHT}px + ${BOTTOM_NAV_SAFE_AREA});
+          }
+        }
       `}</style>
       <ProviderChrome>{children}</ProviderChrome>
     </>

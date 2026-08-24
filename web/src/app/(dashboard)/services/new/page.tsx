@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
 import { ArrowLeft, MapPin, Calendar, Clock, CheckCircle, Loader2, AlertCircle } from "lucide-react";
@@ -20,11 +20,24 @@ function validate(form: FormState): string|null {
 }
 
 export default function NewServicePage() {
+  return (
+    <Suspense fallback={null}>
+      <NewServicePageContent />
+    </Suspense>
+  );
+}
+
+function NewServicePageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialCategoryParam = searchParams.get("category");
+  const initialCategory = initialCategoryParam && CATEGORY_NAMES.includes(initialCategoryParam)
+    ? initialCategoryParam
+    : "";
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError]     = useState("");
-  const [form, setForm]       = useState<FormState>({title:"",category:"",description:"",address:"",date:"",time:"",budget:""});
+  const [form, setForm]       = useState<FormState>({title:"",category:initialCategory,description:"",address:"",date:"",time:"",budget:""});
 
   const set = (key: keyof FormState, val: string) => {
     setForm(f=>({...f,[key]:val}));

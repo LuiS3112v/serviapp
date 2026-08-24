@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home, Search, MapPin, Briefcase, MessageCircle,
-  Bell, Wallet, User, Settings, LogOut, Zap, X, Menu,
+  Bell, Wallet, User, Settings, LogOut, Zap, X, Menu, HelpCircle,
 } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
+import BottomNav from "@/components/layout/BottomNav";
 
 const navItems = [
   { section: "Principal", items: [
@@ -23,8 +24,9 @@ const navItems = [
     { label: "Pagamentos",   icon: Wallet,  href: "/wallet" },
   ]},
   { section: "Conta", items: [
-    { label: "Perfil",      icon: User,     href: "/profile/client" },
-    { label: "Definições",  icon: Settings, href: "/settings"       },
+    { label: "Perfil",         icon: User,        href: "/profile/client" },
+    { label: "Como funciona",  icon: HelpCircle,  href: "/como-funciona"  },
+    { label: "Definições",     icon: Settings,    href: "/settings"       },
   ]},
 ];
 
@@ -160,6 +162,9 @@ export default function Sidebar() {
       <aside className={`sb-drawer${open ? " open" : ""}`}>
         <SidebarContent onClose={() => setOpen(false)}/>
       </aside>
+
+      {/* Bottom navigation — mobile only (ver media query no BottomNav) */}
+      <BottomNav role="client" />
     </>
   );
 }
