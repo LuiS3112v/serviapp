@@ -131,11 +131,11 @@ export default function HomePage() {
         .h-hero-media{
           position:relative;border-radius:20px;overflow:hidden;
           background:#F1F0EC;
-          aspect-ratio:16/9;
+          min-height:220px;
           display:flex;
         }
         .h-hero-media img{
-          width:100%;height:100%;object-fit:cover;display:block;
+          width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;
         }
         .h-hero-fallback{
           width:100%;height:100%;display:flex;align-items:center;justify-content:center;
@@ -223,7 +223,7 @@ export default function HomePage() {
         }
         @media(max-width:768px){
           .hi{padding:72px 16px calc(32px + ${BOTTOM_NAV_HEIGHT}px + ${BOTTOM_NAV_SAFE_AREA});gap:32px}
-          .h-hero-media{aspect-ratio:4/3}
+          .h-hero-media{min-height:180px}
           .cat-grid{grid-template-columns:repeat(2,1fr)}
           .sec-hdr{flex-direction:column;align-items:flex-start}
         }
@@ -326,7 +326,7 @@ export default function HomePage() {
                   <p className="sec-sub">Escolhe a categoria que precisas</p>
                 </div>
                 <button className="sec-link" onClick={() => router.push("/categories")}>
-                  Ver todas <ArrowRight size={14} />
+                  Ver subcategorias <ArrowRight size={14} />
                 </button>
               </div>
               <div className="cat-grid">
