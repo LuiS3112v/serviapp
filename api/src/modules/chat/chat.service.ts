@@ -300,4 +300,21 @@ export class ChatService {
 
     return Number(asClient?.total ?? 0) + Number(asProvider?.total ?? 0);
   }
+
+  // NOVO — usado exclusivamente pelo ChatGateway.handleJoinRoom, ANTES
+  // de client.join(`room:${roomId}`). Reutiliza a mesma verificação de
+  // ownership já aplicada em getMessages()/saveMessage()
+  // (room.clientId !== userId && room.providerId !== userId), para que
+  // um socket só possa subscrever eventos em tempo real (new_message,
+  // typing) de salas onde é realmente participante — o mesmo padrão já
+  // usado em ActiveServiceLocationService.assertParticipant() para as
+  // salas de localização de serviço.
+  async assertParticipant(roomId: string, userId: string): Promise<ChatRoom> {
+    const room = await this.roomRepo.findOne({ where: { id: roomId } });
+    if (!room) throw new NotFoundException('Conversa não encontrada.');
+    if (room.clientId !== userId && room.providerId !== userId) {
+      throw new ForbiddenException('Sem acesso a esta conversa.');
+    }
+    return room;
+  }
 }

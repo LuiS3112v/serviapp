@@ -86,11 +86,45 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  // SECURITY FIX (IDOR): antes, qualquer socket autenticado conseguia
+  // entrar em QUALQUER room:${roomId} só por conhecer o UUID — sem
+  // nenhuma verificação de que o utilizador é realmente clientId ou
+  // providerId dessa ChatRoom. A partir desse join, o socket passava a
+  // receber em tempo real todos os eventos 'new_message' emitidos
+  // pelo handleMessage para essa sala (this.server.to(`room:${roomId}`)
+  // .emit('new_message', ...)), ou seja, conseguia ler conversas
+  // alheias em tempo real mesmo sem conseguir aceder ao histórico via
+  // REST (que já validava ownership em chatService.getMessages).
+  //
+  // Corrigido replicando o mesmo padrão já usado e correto em
+  // active-service-location.gateway.ts (handleJoinService): valida
+  // participante ANTES de client.join(), usando um método dedicado no
+  // ChatService (assertParticipant), que segue a mesma verificação já
+  // existente em chatService.getMessages()/saveMessage()
+  // (room.clientId !== userId && room.providerId !== userId).
+  //
+  // Passou a ser assíncrono porque assertParticipant faz uma query.
+  // Em caso de falha (sala inexistente ou utilizador não participante),
+  // o socket recebe 'join_error' e NÃO é adicionado à room — nunca
+  // chega a receber nenhum evento dela.
   @SubscribeMessage('join_room')
-  handleJoinRoom(
+  async handleJoinRoom(
     @MessageBody() roomId: string,
     @ConnectedSocket() client: Socket,
   ) {
+    const userId = client.data.userId;
+    if (!userId) {
+      client.emit('join_error', { error: 'Sessão inválida.' });
+      return;
+    }
+
+    try {
+      await this.chatService.assertParticipant(roomId, userId);
+    } catch (e) {
+      client.emit('join_error', { error: (e as any).message ?? 'Sem acesso a esta conversa.' });
+      return;
+    }
+
     client.join(`room:${roomId}`);
     return { event: 'joined', data: roomId };
   }
