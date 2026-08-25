@@ -11,18 +11,47 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/*
+  FUNDO GLOBAL (html + body) + OVERSCROLL
+  ========================================
+  Causa raiz das "barras/áreas pretas" durante overscroll (rubber-band
+  no iOS Safari, "bounce" no Chrome Android/PWA): o body usava
+  background-color: var(--dark) (#0d1117, quase preto) — resquício de
+  um tema dark antigo do design system. Nenhuma página real do projeto
+  usa var(--dark) ou qualquer uma das variáveis dark abaixo (confirmado
+  por pesquisa em toda a app) — todas definem o próprio fundo branco/
+  off-white localmente. Como o body ficava escuro por baixo de tudo,
+  essa cor só se tornava visível na área extra que o browser mostra
+  durante o overscroll — exactamente a "borda preta" reportada.
+
+  Correcção: o fundo do html/body passa a ser o mesmo cinza muito claro
+  (#F8FAFC) já usado como "surface" em todo o projeto (TOKENS.color.surface
+  em lib/design-tokens.ts) — a mesma cor que já se via por cima do body
+  em qualquer página normal, por isso não há mudança visual nenhuma no
+  uso normal da app, em nenhum breakpoint, incluindo desktop. A área
+  extra do overscroll passa a mostrar essa mesma cor em vez de preto.
+
+  overscroll-behavior-y:none no html/body reduz adicionalmente o efeito
+  de "rubber-band" em iOS Safari e o "bounce" do Chrome — sem impedir o
+  scroll normal da página (isto NÃO é overflow:hidden, que bloquearia
+  o scroll; overscroll-behavior só contém o efeito nos limites).
+*/
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  background-color: var(--surface);
+  overscroll-behavior-y: none;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--dark);
-  color: var(--text-primary);
+  background-color: var(--surface);
+  color: var(--ink);
   font-family: var(--font-manrope), sans-serif;
   min-height: 100vh;
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -39,15 +68,13 @@ body {
   --amber: #EF9F27;
   --amber-dark: #BA7517;
 
-  --dark: #0d1117;
-  --dark-mid: #0a0f1a;
-  --dark-surface: #131b27;
-  --dark-border: #1a2535;
-  --dark-hero: #0b2a2a;
-
-  --text-primary: #e2e8f0;
-  --text-secondary: #8a9ab0;
-  --text-muted: #4a6a6a;
+  /* Fundo/texto reais usados pela app (Light Theme) — mesmos valores
+     de lib/design-tokens.ts (TOKENS.color.surface / TOKENS.color.ink).
+     Substituem --dark/--dark-mid/--dark-surface/--text-primary/etc.,
+     que não eram referenciadas por nenhuma página (só existiam aqui). */
+  --surface: #F8FAFC;
+  --ink: #0F172A;
+  --line: #E2E8F0;
 
   --red: #E24B4A;
   --blue: #378ADD;
@@ -62,11 +89,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--dark);
+  background: var(--surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--dark-border);
+  background: var(--line);
   border-radius: 3px;
 }
 
@@ -100,9 +127,10 @@ h1, h2, h3 {
 
 /*
   O <BottomNav/> (dentro de Sidebar.tsx e ProviderSidebar.tsx) é
-  position:fixed no fundo do ecrã, abaixo de 1024px — ver
-  design-tokens.ts (MOBILE_BREAKPOINT/BOTTOM_NAV_HEIGHT). Sendo fixed,
-  não ocupa espaço no fluxo normal de nenhuma página.
+  position:fixed no fundo do ecrã, abaixo de 1024px, e agora só é
+  montado nas rotas /home e /provider-home (ver BottomNav.tsx) — não
+  em todas as páginas como antes. Sendo fixed, não ocupa espaço no
+  fluxo normal de nenhuma página.
 
   Em vez de editar manualmente o CSS de cada uma das ~17 páginas do
   Cliente (cada uma com a sua própria classe de wrapper local —
@@ -112,10 +140,16 @@ h1, h2, h3 {
 
   1) padding-bottom no body: garante que existe sempre espaço extra
      por baixo do conteúdo real da página, independentemente da altura
-     do documento em cada rota.
+     do documento em cada rota. Isto continua a aplicar-se a QUALQUER
+     página abaixo de 1024px (não só /home e /provider-home) — mesmo
+     que uma página não tenha o BottomNav, ter um pouco de espaço extra
+     no fundo não causa nenhum problema visual, e simplifica a regra
+     (não precisamos de saber, aqui no CSS global, exactamente em que
+     rota o componente React decidiu ou não renderizar-se).
   2) scroll-padding-bottom no html: garante que ao dar scroll até ao
      fim (ex: ver o botão "Publicar pedido" no fim de um formulário),
-     o browser pára ANTES da barra tapar esse conteúdo.
+     o browser pára ANTES da barra tapar esse conteúdo, nas páginas
+     onde a barra existe.
 
   Isto é aditivo e não-destrutivo: nenhuma classe, layout flex ou
   margin-left existente em cada página é alterado. Só acrescenta

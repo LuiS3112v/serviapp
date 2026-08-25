@@ -56,3 +56,12 @@ export const BOTTOM_NAV_SAFE_AREA = "env(safe-area-inset-bottom, 0px)";
 /** Breakpoint a partir do qual a bottom nav aparece — mesmo breakpoint
  * já usado em Sidebar.tsx/ProviderSidebar.tsx para trocar para o drawer. */
 export const MOBILE_BREAKPOINT = 1024;
+
+/**
+ * Rotas onde a BottomNav é mostrada — só as duas Homes, não a app
+ * inteira. Fora destas rotas o BottomNav não é montado (ver
+ * BottomNav.tsx), tal como pedido: navegação contextual da Home, não
+ * um elemento permanente em todas as páginas.
+ */
+export const CLIENT_HOME_ROUTE = "/home";
+export const PROVIDER_HOME_ROUTE = "/provider-home";
