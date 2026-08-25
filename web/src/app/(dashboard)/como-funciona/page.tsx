@@ -80,7 +80,7 @@ export default function ComoFuncionaPage() {
                 <ArrowLeft size={15} /> Voltar
               </button>
               <h1 className="cf-title">Como funciona a Mestroo</h1>
-              <p className="cf-sub">Do pedido à conclusão, passo a passo — e o que garante a tua segurança em cada etapa.</p>
+              <p className="cf-sub">Do pedido à conclusão, passo a passo e o que garante a tua segurança em cada etapa.</p>
             </div>
 
             <section>

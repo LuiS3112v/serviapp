@@ -21,7 +21,7 @@ interface BottomNavItem {
 // duplicada aqui.
 const CLIENT_ITEMS: BottomNavItem[] = [
   { label: "Início",    icon: Home,          href: "/home"     },
-  { label: "Mapa",      icon: MapPin,         href: "/map"      },
+  { label: "carteira",  icon: Wallet,        href: "/wallet"      },
   { label: "Serviços",  icon: Briefcase,      href: "/services" },
   { label: "Chat",      icon: MessageCircle,  href: "/chat"     },
 ];
