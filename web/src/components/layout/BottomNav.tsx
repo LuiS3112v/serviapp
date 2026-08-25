@@ -87,7 +87,18 @@ export default function BottomNav({ role }: BottomNavProps) {
           display:flex;
           align-items:stretch;
           justify-content:space-around;
-          height:${BOTTOM_NAV_HEIGHT}px;
+          /* CORREÇÃO ESTRUTURAL: antes esta caixa tinha height:60px
+             fixo E padding-bottom:safe-area ao mesmo tempo. Com
+             box-sizing:border-box (aplicado globalmente), o
+             padding-bottom é SUBTRAÍDO dos 60px em vez de somado —
+             no iPhone (safe-area ~34px), sobravam só ~26px de área
+             útil real para ícone+label, esmagando tudo no topo da
+             barra (exactamente o que a captura de ecrã mostrava).
+             Agora a altura soma os dois, tal como o wrapper .bnav
+             já fazia — os 60px de área útil ficam sempre completos,
+             e a safe-area passa a ser espaço extra reservado por
+             baixo, não subtraído do espaço dos ícones. */
+          height:calc(${BOTTOM_NAV_HEIGHT}px + ${BOTTOM_NAV_SAFE_AREA});
           padding-bottom:${BOTTOM_NAV_SAFE_AREA};
           background:${TOKENS.color.white};
           border-top:1px solid ${TOKENS.color.line};
