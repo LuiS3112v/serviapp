@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
-import { ChevronRight, X, MapPin, Loader2, Check } from "lucide-react";
+import { ChevronRight, X, MapPin, Loader2, Check, ArrowLeft } from "lucide-react";
 import { getToken } from "@/lib/auth.api";
 import { CATEGORIES } from "@/lib/categories";
 import { SUBCATEGORIES } from "@/lib/subcategories-data";
@@ -465,6 +465,17 @@ export default function CategoriesPage() {
         <div className="cm">
           <Navbar />
           <div className="ci">
+            <button
+              onClick={() => router.push("/home")}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontSize: 13, fontWeight: 600, color: "#475569",
+                background: "none", border: "none", cursor: "pointer",
+                fontFamily: "inherit", padding: 0, marginBottom: 16,
+              }}
+            >
+              <ArrowLeft size={15} /> Voltar
+            </button>
             <div style={{ marginBottom: 8 }}>
               <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
                 Todas as categorias

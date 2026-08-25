@@ -59,15 +59,9 @@ const INK = TOKENS.color.ink;
 const MUTED = TOKENS.color.muted;
 const LINE = TOKENS.color.line;
 
-// Estatísticas rápidas — mesmo conteúdo que já existia na versão
-// original desta página (500+ prestadores, 12 categorias, 4.9 de
-// avaliação média), agora dentro do cartão de resumo em vez de sob o
-// hero fotográfico.
-const STATS = [
-  { value: "500+", label: "Prestadores" },
-  { value: "12",   label: "Categorias" },
-  { value: "4.9★", label: "Avaliação média" },
-];
+// Fotografia editorial do hero — distinta da usada em provider-home
+// (HERO_PROV), para os dois lados não repetirem a mesma imagem.
+const HERO_CLIENT = "https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=1200&auto=format&fit=crop";
 
 // Categorias — mesmos 12 itens, mesma rota de clique de antes.
 const CATS = [
@@ -88,6 +82,7 @@ const CATS = [
 export default function HomePage() {
   const router = useRouter();
   const [firstName, setFirstName] = useState<string | null>(null);
+  const [heroImgOk, setHeroImgOk] = useState(true);
 
   const [myItems, setMyItems] = useState<ServiceListItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
@@ -129,26 +124,36 @@ export default function HomePage() {
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         .fade-up{animation:fadeUp 0.5s cubic-bezier(.16,1,.3,1) both}
 
-        /* ═══════════ SAUDAÇÃO + CARTÃO DE RESUMO — sem fotografia ═══════════ */
+        /* ═══════════ SAUDAÇÃO + CARTÃO COM FOTO ═══════════ */
         .h-greet{font-size:26px;font-weight:700;color:${INK};letter-spacing:-0.02em;margin-bottom:4px}
         .h-greet-sub{font-size:14.5px;color:${MUTED};margin-bottom:22px}
 
-        .h-summary-card{
-          border-radius:20px;padding:28px 30px;background:${INK};position:relative;overflow:hidden;
+        .h-hero-media{
+          position:relative;border-radius:20px;overflow:hidden;
+          background:#F1F0EC;
+          aspect-ratio:16/9;
+          display:flex;
         }
-        .h-summary-top{display:flex;align-items:center;gap:12px;margin-bottom:24px}
-        .h-summary-ico{
-          width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.1);
-          display:flex;align-items:center;justify-content:center;flex-shrink:0;
+        .h-hero-media img{
+          width:100%;height:100%;object-fit:cover;display:block;
         }
-        .h-summary-top p:first-child{font-size:14.5px;font-weight:700;color:#fff}
-        .h-summary-top p:last-child{font-size:12px;color:rgba(255,255,255,0.55);margin-top:1px}
-
-        .h-summary-stats{display:flex;gap:0}
-        .h-sstat{padding-right:28px;margin-right:28px;border-right:1px solid rgba(255,255,255,0.14)}
-        .h-sstat:last-child{border-right:none;padding-right:0;margin-right:0}
-        .h-sstat b{font-size:22px;font-weight:700;color:#fff;display:block;line-height:1}
-        .h-sstat span{font-size:11.5px;color:rgba(255,255,255,0.55);margin-top:6px;display:block}
+        .h-hero-fallback{
+          width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+          background:${BRAND_SOFT};
+        }
+        .h-hero-caption{
+          position:absolute;left:16px;right:16px;bottom:16px;z-index:2;
+          background:rgba(255,255,255,0.94);backdrop-filter:blur(6px);
+          border-radius:14px;padding:14px 16px;
+          display:flex;align-items:center;gap:12px;
+          box-shadow:0 8px 24px rgba(15,23,42,0.12);
+        }
+        .h-hero-caption-ico{
+          width:36px;height:36px;border-radius:10px;background:${BRAND_SOFT};flex-shrink:0;
+          display:flex;align-items:center;justify-content:center;
+        }
+        .h-hero-caption p:first-child{font-size:13px;font-weight:700;color:${INK};line-height:1.3}
+        .h-hero-caption p:last-child{font-size:11.5px;color:${MUTED};margin-top:1px;line-height:1.3}
 
         /* ═══════════ AÇÕES RÁPIDAS ═══════════ */
         .h-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -218,8 +223,7 @@ export default function HomePage() {
         }
         @media(max-width:768px){
           .hi{padding:72px 16px calc(32px + ${BOTTOM_NAV_HEIGHT}px + ${BOTTOM_NAV_SAFE_AREA});gap:32px}
-          .h-summary-card{padding:22px 20px}
-          .h-summary-stats{flex-wrap:wrap;row-gap:14px}
+          .h-hero-media{aspect-ratio:4/3}
           .cat-grid{grid-template-columns:repeat(2,1fr)}
           .sec-hdr{flex-direction:column;align-items:flex-start}
         }
@@ -240,21 +244,25 @@ export default function HomePage() {
               <p className="h-greet">{firstName ? `Olá, ${firstName}` : "Olá"}</p>
               <p className="h-greet-sub">O que precisas hoje?</p>
 
-              <div className="h-summary-card">
-                <div className="h-summary-top">
-                  <div className="h-summary-ico"><Shield size={19} color="#fff" /></div>
+              <div className="h-hero-media">
+                {heroImgOk ? (
+                  <img
+                    src={HERO_CLIENT}
+                    alt="Prestadora de serviço a trabalhar"
+                    loading="lazy"
+                    onError={() => setHeroImgOk(false)}
+                  />
+                ) : (
+                  <div className="h-hero-fallback">
+                    <Wrench size={40} color={BRAND} />
+                  </div>
+                )}
+                <div className="h-hero-caption">
+                  <div className="h-hero-caption-ico"><Shield size={17} color={BRAND} /></div>
                   <div>
                     <p>Pagamento protegido</p>
                     <p>Só liberto quando confirmas o serviço</p>
                   </div>
-                </div>
-                <div className="h-summary-stats">
-                  {STATS.map((s, i) => (
-                    <div className="h-sstat" key={i}>
-                      <b>{s.value}</b>
-                      <span>{s.label}</span>
-                    </div>
-                  ))}
                 </div>
               </div>
             </section>

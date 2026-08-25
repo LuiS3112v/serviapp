@@ -43,7 +43,7 @@ export default function ComoFuncionaPage() {
         .cf-wrap{display:flex;min-height:100vh;background:#FFFFFF}
         .cf-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
         .cf-inner{padding:32px;display:flex;flex-direction:column;gap:48px;max-width:900px}
-        .cf-back{display:flex;align-items:center;gap:6px;font-size:13px;color:${MUTED};background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
+        .cf-back{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:${INK};background:#fff;border:1px solid ${LINE};cursor:pointer;font-family:inherit;padding:10px 16px;border-radius:10px;margin-top:8px}
         .cf-title{font-size:26px;font-weight:700;color:${INK};letter-spacing:-0.02em;margin-top:16px}
         .cf-sub{font-size:14.5px;color:${MUTED};margin-top:6px}
 

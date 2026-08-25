@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Home, BarChart3, MessageCircle, Bell,
   Wallet, User, Settings, LogOut, Zap,
-  Star, X, Menu, ShoppingBag, ClipboardList, HelpCircle,
+  Star, X, Menu, ShoppingBag, ClipboardList,
 } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
 import BottomNav from "@/components/layout/BottomNav";
@@ -43,7 +43,6 @@ const NAV = [
     items: [
       { label: "Perfil & Catálogo", icon: User,        href: "/provider/profile" },
       { label: "Avaliações",        icon: Star,        href: "/provider/reviews" },
-      { label: "Como funciona",     icon: HelpCircle,  href: "/provider/como-funciona" },
       { label: "Definições",        icon: Settings,    href: "/provider/settings" },
     ],
   },

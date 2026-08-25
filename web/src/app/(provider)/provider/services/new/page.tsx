@@ -74,8 +74,8 @@ export default function ProviderNewServicePage() {
         .submit-btn{width:100%;padding:15px;border-radius:12px;border:none;background:#D97706;color:#FFFFFF;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.2s}
         .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
         .submit-btn:hover:not(:disabled){opacity:0.9}
-        .back-btn{display:flex;align-items:center;gap:6px;font-size:13px;color:#475569;background:none;border:none;cursor:pointer;margin-bottom:24px;font-family:inherit;padding:0}
-        .back-btn:hover{color:#D97706}
+        .back-btn{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:#0F172A;background:#fff;border:1px solid #E2E8F0;cursor:pointer;margin-top:4px;margin-bottom:20px;font-family:inherit;padding:10px 16px;border-radius:10px}
+        .back-btn:hover{border-color:#D97706;color:#D97706}
         .error-box{background:#FEF2F2;border:1px solid #FCA5A5;border-radius:10px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#B91C1C;margin-bottom:16px;line-height:1.5}
         @media(max-width:640px){.ns-inner{padding:70px 16px 20px}.cat-grid{grid-template-columns:repeat(2,1fr)}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}

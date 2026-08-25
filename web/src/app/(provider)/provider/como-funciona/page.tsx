@@ -52,11 +52,30 @@ export default function ProviderComoFuncionaPage() {
         .pcf-sub{font-size:14.5px;color:${MUTED};margin-top:6px}
 
         .pcf-sec-title{font-size:18px;font-weight:700;color:${INK};margin-bottom:4px}
-        .pcf-sec-sub{font-size:13px;color:${MUTED};margin-bottom:20px}
+        .pcf-sec-sub{font-size:13px;color:${MUTED};margin-bottom:24px}
 
-        .pcf-step{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid ${LINE}}
-        .pcf-step:last-child{border-bottom:none}
-        .pcf-step-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .pcf-timeline{position:relative}
+        .pcf-step{
+          position:relative;display:flex;gap:16px;padding-bottom:24px;
+        }
+        .pcf-step:last-child{padding-bottom:0}
+        .pcf-step-num-col{
+          display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:38px;
+        }
+        .pcf-step-num{
+          width:38px;height:38px;border-radius:12px;
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;
+          font-size:14px;font-weight:700;
+        }
+        .pcf-step-line{
+          width:2px;flex:1;margin-top:6px;background:${LINE};border-radius:1px;
+        }
+        .pcf-step-body{
+          flex:1;min-width:0;background:#FFFFFF;border:1px solid ${LINE};
+          border-radius:14px;padding:14px 16px;
+        }
+        .pcf-step-body h3{font-size:14px;font-weight:700;color:${INK};margin-bottom:4px;display:flex;align-items:center;gap:8px}
+        .pcf-step-body p{font-size:13px;color:${MUTED};line-height:1.55}
 
         .pcf-feats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
         .pcf-feat-card{background:#FFFFFF;border:1px solid ${LINE};border-radius:14px;padding:18px}
@@ -76,27 +95,33 @@ export default function ProviderComoFuncionaPage() {
             <ArrowLeft size={15} /> Voltar
           </button>
           <h1 className="pcf-title">Como funciona para prestadores</h1>
-          <p className="pcf-sub">Do primeiro pedido ao pagamento — o percurso completo na Mestroo.</p>
+          <p className="pcf-sub">Do primeiro pedido ao pagamento, o percurso completo na Mestroo.</p>
         </div>
 
         <section>
           <p className="pcf-sec-title">Passo a passo</p>
           <p className="pcf-sec-sub">O caminho completo, da verificação ao pagamento</p>
-          {STEPS.map((s) => {
-            const Icon = s.Icon;
-            const c = toneColor(s.tone);
-            return (
-              <div className="pcf-step" key={s.title}>
-                <div className="pcf-step-ico" style={{ background: c.bg }}>
-                  <Icon size={18} style={{ color: c.fg }} />
+          <div className="pcf-timeline">
+            {STEPS.map((s, i) => {
+              const Icon = s.Icon;
+              const c = toneColor(s.tone);
+              const isLast = i === STEPS.length - 1;
+              return (
+                <div className="pcf-step" key={s.title}>
+                  <div className="pcf-step-num-col">
+                    <div className="pcf-step-num" style={{ background: c.bg, color: c.fg }}>
+                      {i + 1}
+                    </div>
+                    {!isLast && <div className="pcf-step-line" />}
+                  </div>
+                  <div className="pcf-step-body">
+                    <h3><Icon size={15} style={{ color: c.fg, flexShrink: 0 }} /> {s.title}</h3>
+                    <p>{s.desc}</p>
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: INK, marginBottom: 3 }}>{s.title}</p>
-                  <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6 }}>{s.desc}</p>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </section>
 
         <section>
