@@ -176,11 +176,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  // SECURITY FIX (H-3): antes, qualquer socket autenticado podia emitir
+  // 'typing' com qualquer roomId arbitrário, mesmo sem ter feito join
+  // nessa sala. O socket.io não entregaria o evento a sockets que não
+  // estivessem nessa room, mas o servidor processava o pedido e emitia
+  // client.to() sem qualquer guarda — a falta de controlo é uma
+  // violação do princípio de menor privilégio e um ponto de abuso
+  // (spam de eventos typing para salas alheias, caso a lógica de
+  // entrega mude). Verificamos que o próprio socket está na room antes
+  // de emitir — client.rooms é um Set<string> com todas as rooms onde
+  // este socket está activo.
   @SubscribeMessage('typing')
   handleTyping(
     @MessageBody() data: { roomId: string; isTyping: boolean },
     @ConnectedSocket() client: Socket,
   ) {
+    if (!client.rooms.has(`room:${data.roomId}`)) return;
+
     client.to(`room:${data.roomId}`).emit('typing', {
       userId: client.data.userId,
       isTyping: data.isTyping,

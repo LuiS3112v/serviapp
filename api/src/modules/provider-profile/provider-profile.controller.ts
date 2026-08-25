@@ -1,6 +1,7 @@
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards,
   UseInterceptors, UploadedFile, ParseUUIDPipe, ParseIntPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProviderProfileService } from './provider-profile.service';
@@ -42,9 +43,27 @@ export class ProviderProfileController {
     return this.providerProfileService.getMyGallery(user.id);
   }
 
+  // SECURITY FIX (H-1): adicionados fileFilter (validação de MIME type
+  // antes de o ficheiro ser materializado em memória) e limits.fileSize.
+  // Sem fileFilter, um atacante podia enviar SVG com <script> ou HTML
+  // malicioso — o Cloudinary acabaria por rejeitar com allowed_formats,
+  // mas o ficheiro inteiro já estaria em memória no processo Node.
+  // O fileFilter rejeita a stream logo no início, sem consumir memória.
+  // Tipos permitidos: jpeg/jpg/png/webp — os mesmos aceites pelo
+  // Cloudinary para imagens de galeria.
   @Post('me/gallery')
   @UseGuards(JwtGuard)
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', {
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (allowed.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new BadRequestException('Tipo de ficheiro não permitido. Usa JPEG, PNG ou WebP.'), false);
+      }
+    },
+  }))
   addGalleryImage(
     @CurrentUser() user: any,
     @UploadedFile() file: Express.Multer.File,

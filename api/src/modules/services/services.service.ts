@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import {
   Injectable, NotFoundException, BadRequestException,
   ForbiddenException, Logger,
@@ -17,6 +18,85 @@ import { BankAccountsService } from '../bank-accounts/bank-accounts.service';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { Role } from '../../common/enums/role.enum';
+
+// ── Campos seguros do User quando carregado em relações ──────────────────────
+const SAFE_USER_RELATION = {
+  id: true,
+  fullName: true,
+  avatarUrl: true,
+  isVerified: true,
+} as const;
+
+// ── Select base para detalhe de um serviço ────────────────────────────────────
+// NÃO inclui servicePin — é adicionado apenas para o clientId em
+// findByIdForUser().
+const SERVICE_DETAIL_SELECT_BASE = {
+  id: true,
+  title: true,
+  description: true,
+  category: true,
+  address: true,
+  province: true,
+  budget: true,
+  agreedPrice: true,
+  proposedPrice: true,
+  proposedByProviderId: true,
+  status: true,
+  clientId: true,
+  providerId: true,
+  targetProviderId: true,
+  catalogItemId: true,
+  warrantyDays: true,
+  warrantyExpiresAt: true,
+  cancelReason: true,
+  disputeReason: true,
+  clientRating: true,
+  clientReview: true,
+  scheduledAt: true,
+  acceptedAt: true,
+  paymentHeldAt: true,
+  startedAt: true,
+  providerCompletedAt: true,
+  completedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+// ── Select para listagens (my-jobs, my-requests) ──────────────────────────────
+// Menos campos que o detalhe — não inclui servicePin, pinExpiresAt,
+// pinUsed (desnecessários em cards de lista) nem os campos de detalhe
+// de cancelamento/disputa que só são relevantes no ecrã de detalhe.
+const SERVICE_LIST_SELECT = {
+  id: true,
+  title: true,
+  description: true,
+  category: true,
+  address: true,
+  province: true,
+  budget: true,
+  agreedPrice: true,
+  proposedPrice: true,
+  proposedByProviderId: true,
+  status: true,
+  clientId: true,
+  providerId: true,
+  targetProviderId: true,
+  catalogItemId: true,
+  warrantyDays: true,
+  warrantyExpiresAt: true,
+  cancelReason: true,
+  clientRating: true,
+  clientReview: true,
+  scheduledAt: true,
+  acceptedAt: true,
+  startedAt: true,
+  providerCompletedAt: true,
+  completedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  client: SAFE_USER_RELATION,
+  provider: SAFE_USER_RELATION,
+} as const;
 
 @Injectable()
 export class ServicesService {
@@ -73,19 +153,32 @@ export class ServicesService {
   async findByClient(clientId: string, status?: string): Promise<Service[]> {
     const where: any = { clientId };
     if (status) where.status = status;
+    // SECURITY FIX: select explícito para excluir servicePin (o PIN é
+    // um segredo gerado pelo cliente para mostrar presencialmente ao
+    // prestador — expô-lo em listagens de cards é desnecessário e
+    // viola o modelo de segurança do PIN). Também restringe os campos
+    // da relação provider para não devolver dados sensíveis do User.
     return this.serviceRepo.find({
       where,
       order: { createdAt: 'DESC' },
       relations: { provider: true },
+      select: SERVICE_LIST_SELECT,
     });
   }
 
   async findByProvider(providerId: string, status?: string): Promise<Service[]> {
+    // SECURITY FIX: select explícito em ambos os ramos para excluir
+    // servicePin. Sem este select, o TypeORM devolvia TODAS as colunas
+    // da entidade Service — incluindo servicePin, que o prestador NÃO
+    // deve conseguir ler via API (o PIN é gerado pelo cliente para ser
+    // mostrado presencialmente; se o prestador o lê pela API, toda a
+    // lógica de verificação de presença física é contornada).
     if (status) {
       return this.serviceRepo.find({
         where: { providerId, status: status as ServiceStatus },
         order: { createdAt: 'DESC' },
         relations: { client: true },
+        select: SERVICE_LIST_SELECT,
       });
     }
     return this.serviceRepo.find({
@@ -95,6 +188,7 @@ export class ServicesService {
       ],
       order: { createdAt: 'DESC' },
       relations: { client: true },
+      select: SERVICE_LIST_SELECT,
     });
   }
 
@@ -128,63 +222,31 @@ export class ServicesService {
       .getMany();
   }
 
+  // ── Selects internos ─────────────────────────────────────────────────────
+  //
+  // SERVICE_DETAIL_SELECT_BASE — campos comuns devolvidos a QUALQUER
+  // participante autenticado de um serviço (cliente, prestador, ou
+  // prestador a ver um pedido disponível). NÃO inclui servicePin.
+  //
+  // findByIdForUser() adiciona servicePin apenas quando userId ===
+  // clientId — o único utilizador que deve ver o PIN é quem o gerou,
+  // para o mostrar presencialmente ao prestador.
+  //
+  // SECURITY FIX (C-1): servicePin foi removido do select genérico.
+  // Antes estava em: true para todos, o que permitia ao prestador lê-
+  // lo via GET /services/:id e contornar o mecanismo de verificação de
+  // presença física (o prestador podia iniciar o serviço sem que o
+  // cliente estivesse presente, porque via API obtinha o PIN sem que o
+  // cliente lho mostrasse).
+
   async findById(id: string): Promise<Service> {
     const service = await this.serviceRepo.findOne({
       where: { id },
       relations: { client: true, provider: true },
-      // Restringe explicitamente os campos das relações User carregadas
-      // junto com o Service. Sem este `select`, o TypeORM devolvia o
-      // User completo (incluindo password e twoFactorSecret) dentro de
-      // service.client e service.provider — exposto directamente pelo
-      // GET /services/:id e por qualquer chamador de findById/
-      // findByIdForUser. Aqui listamos todas as colunas reais de
-      // Service (conforme service.entity.ts) e, para as relações,
-      // apenas os campos não sensíveis necessários à UI.
       select: {
-        id: true,
-        title: true,
-        description: true,
-        category: true,
-        address: true,
-        province: true,
-        budget: true,
-        agreedPrice: true,
-        proposedPrice: true,
-        proposedByProviderId: true,
-        status: true,
-        clientId: true,
-        providerId: true,
-        targetProviderId: true,
-        catalogItemId: true,
-        servicePin: true,
-        pinExpiresAt: true,
-        pinUsed: true,
-        warrantyDays: true,
-        warrantyExpiresAt: true,
-        cancelReason: true,
-        disputeReason: true,
-        clientRating: true,
-        clientReview: true,
-        scheduledAt: true,
-        acceptedAt: true,
-        paymentHeldAt: true,
-        startedAt: true,
-        providerCompletedAt: true,
-        completedAt: true,
-        createdAt: true,
-        updatedAt: true,
-        client: {
-          id: true,
-          fullName: true,
-          avatarUrl: true,
-          isVerified: true,
-        },
-        provider: {
-          id: true,
-          fullName: true,
-          avatarUrl: true,
-          isVerified: true,
-        },
+        ...SERVICE_DETAIL_SELECT_BASE,
+        client: SAFE_USER_RELATION,
+        provider: SAFE_USER_RELATION,
       },
     });
     if (!service) throw new NotFoundException('Serviço não encontrado.');
@@ -194,8 +256,30 @@ export class ServicesService {
   async findByIdForUser(id: string, userId: string, userRole?: Role): Promise<Service> {
     const service = await this.findById(id);
 
-    if (service.clientId === userId) return service;
-    if (service.providerId === userId) return service;
+    const isClient  = service.clientId  === userId;
+    const isProvider = service.providerId === userId;
+
+    if (isClient) {
+      // O cliente vê o servicePin — é ele quem o mostra presencialmente
+      // ao prestador. Buscamos o serviço de novo com select que inclui
+      // o PIN, em vez de o ter sempre no select base (que iria expô-lo
+      // ao prestador nos outros ramos abaixo).
+      const withPin = await this.serviceRepo.findOne({
+        where: { id },
+        relations: { client: true, provider: true },
+        select: {
+          ...SERVICE_DETAIL_SELECT_BASE,
+          servicePin: true,
+          pinExpiresAt: true,
+          pinUsed: true,
+          client: SAFE_USER_RELATION,
+          provider: SAFE_USER_RELATION,
+        },
+      });
+      return withPin!;
+    }
+
+    if (isProvider) return service;
 
     const isProviderRole = userRole === Role.PROVIDER || userRole === Role.COMPANY;
     const isStillAvailable =
@@ -414,7 +498,10 @@ export class ServicesService {
       throw new BadRequestException('O pagamento tem de estar confirmado antes de gerar o PIN.');
     }
 
-    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    // SECURITY FIX (L-2): substituído Math.random() (não criptograficamente
+    // seguro) por crypto.randomInt() — CSPRNG do Node.js. O intervalo
+    // [100000, 1000000) garante sempre 6 dígitos, idêntico ao anterior.
+    const pin = randomInt(100000, 1000000).toString();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     service.servicePin = pin;

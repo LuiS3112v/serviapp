@@ -1,6 +1,6 @@
 import {
   Controller, Get, Patch, Post, Body, Query, UseGuards,
-  UseInterceptors, UploadedFile,
+  UseInterceptors, UploadedFile, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
@@ -40,10 +40,23 @@ export class UsersController {
   // limite no próprio FileInterceptor, o multer rejeita a stream assim
   // que o limite é excedido, sem materializar o ficheiro completo em
   // memória.
+  // SECURITY FIX (H-1): adicionado fileFilter ao FileInterceptor.
+  // Sem este filtro, qualquer tipo de ficheiro era aceite em memória
+  // antes de o Cloudinary o rejeitar com allowed_formats. Um SVG com
+  // <script> ou um HTML malicioso chegava ao buffer do processo Node
+  // antes de qualquer rejeição. O fileFilter rejeita a stream no início.
   @Post('me/avatar')
   @UseGuards(JwtGuard)
   @UseInterceptors(FileInterceptor('avatar', {
     limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (allowed.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new BadRequestException('Tipo de ficheiro não permitido. Usa JPEG, PNG ou WebP.'), false);
+      }
+    },
   }))
   uploadAvatar(@CurrentUser() user: any, @UploadedFile() file: Express.Multer.File) {
     return this.usersService.uploadAvatar(user.id, file);
