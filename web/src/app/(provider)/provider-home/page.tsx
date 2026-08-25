@@ -11,7 +11,7 @@ import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
 import { chatApi } from "@/lib/chat.api";
 import { getSession } from "@/lib/auth.api";
 import { kycApi } from "@/lib/api/kyc.api";
-import { TOKENS } from "@/lib/design-tokens";
+import { TOKENS, BOTTOM_NAV_HEIGHT, BOTTOM_NAV_SAFE_AREA } from "@/lib/design-tokens";
 import ProviderServiceActionCard from "@/components/services/ProviderServiceActionCard";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -217,7 +217,15 @@ export default function ProviderHomePage() {
         .ph-empty p{font-size:13.5px;color:${MUTED}}
 
         /* ═══════════ RESPONSIVE ═══════════ */
+        /* A BottomNav (ver BottomNav.tsx) só existe nesta página
+           (/provider-home) abaixo de 1024px — o mesmo breakpoint
+           usado aqui. O espaço para ela deixou de ser reservado
+           globalmente no body (globals.css) porque isso criava um gap
+           vazio em TODAS as outras páginas do Provider, que nunca têm
+           a barra. Agora soma-se ao padding-bottom de 64px que .ph já
+           tinha (esse continua igual no desktop), só neste breakpoint. */
         @media(max-width:1024px){
+          .ph{padding-bottom:calc(64px + ${BOTTOM_NAV_HEIGHT}px + ${BOTTOM_NAV_SAFE_AREA})}
           .ph-shell{padding:0 24px}
           .ph-welcome-row{grid-template-columns:1fr}
           .ph-photo{height:180px;order:-1}

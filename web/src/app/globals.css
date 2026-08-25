@@ -122,48 +122,33 @@ h1, h2, h3 {
 }
 
 /* =========================
-   BOTTOM NAV (mobile) — reserva de espaço global
+   BOTTOM NAV (mobile) — reserva de espaço
 ========================= */
 
 /*
   O <BottomNav/> (dentro de Sidebar.tsx e ProviderSidebar.tsx) é
-  position:fixed no fundo do ecrã, abaixo de 1024px, e agora só é
-  montado nas rotas /home e /provider-home (ver BottomNav.tsx) — não
-  em todas as páginas como antes. Sendo fixed, não ocupa espaço no
-  fluxo normal de nenhuma página.
+  position:fixed, abaixo de 1024px, e só é montado nas rotas /home
+  (Cliente) e /provider-home (Provider) — nunca noutra página.
 
-  Em vez de editar manualmente o CSS de cada uma das ~17 páginas do
-  Cliente (cada uma com a sua própria classe de wrapper local —
-  .hm, .sm, .sv-main, .prof-main, etc. — sem um layout.tsx central
-  partilhado, ao contrário do Provider), a reserva de espaço é feita
-  aqui uma única vez, de forma global e seletiva:
+  ANTES: esta secção aplicava padding-bottom a QUALQUER página abaixo
+  de 1024px, no body inteiro, independentemente de ter ou não
+  BottomNav. Isso criava um gap vazio artificial no fim de TODAS as
+  outras páginas (login, landing pública, perfil de prestador, perfil
+  de empresa, etc.) — nelas o padding nunca tinha função nenhuma,
+  porque não existe nenhuma barra fixed a compensar ali. Em páginas
+  como /home e /provider-home, que já reservam o seu próprio espaço no
+  fim (.hi e .ph, respectivamente — ver esses ficheiros), esse padding
+  global somava-se ao padding próprio da página, duplicando o espaço.
 
-  1) padding-bottom no body: garante que existe sempre espaço extra
-     por baixo do conteúdo real da página, independentemente da altura
-     do documento em cada rota. Isto continua a aplicar-se a QUALQUER
-     página abaixo de 1024px (não só /home e /provider-home) — mesmo
-     que uma página não tenha o BottomNav, ter um pouco de espaço extra
-     no fundo não causa nenhum problema visual, e simplifica a regra
-     (não precisamos de saber, aqui no CSS global, exactamente em que
-     rota o componente React decidiu ou não renderizar-se).
-  2) scroll-padding-bottom no html: garante que ao dar scroll até ao
-     fim (ex: ver o botão "Publicar pedido" no fim de um formulário),
-     o browser pára ANTES da barra tapar esse conteúdo, nas páginas
-     onde a barra existe.
-
-  Isto é aditivo e não-destrutivo: nenhuma classe, layout flex ou
-  margin-left existente em cada página é alterado. Só acrescenta
-  espaço extra no fim do documento.
-
-  Nas rotas de chat individual (/chat/[id], /provider/chat/[id]) o
-  BottomNav já não é montado (ver BottomNav.tsx) e essas páginas usam
-  position:fixed + inset:0 nos seus próprios wrappers — não são filhas
-  do fluxo normal do body, por isso este padding não as afecta.
+  AGORA: só o scroll-padding-bottom global permanece aqui — não cria
+  nenhum espaço visível (só ajusta ONDE o browser pára ao dar scroll
+  até ao fim com teclado/atalhos), por isso é inofensivo em páginas
+  sem BottomNav e continua útil nas duas que têm. O padding-bottom que
+  efectivamente reserva espaço visível passou a viver dentro do
+  próprio CSS de cada Home (.hi em app/(dashboard)/home/page.tsx e .ph
+  em app/(provider)/provider-home/page.tsx), scoped só a essas rotas.
 */
 @media (max-width: 1024px) {
-  body {
-    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-  }
   html {
     scroll-padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   }
