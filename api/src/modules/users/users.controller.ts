@@ -63,11 +63,13 @@ export class UsersController {
   }
 
   @Get('category-counts')
+  @UseGuards(JwtGuard)
   getCategoryCounts() {
     return this.usersService.getCategoryCounts();
   }
 
   @Get('providers')
+  @UseGuards(JwtGuard)
   getProviders(@Query('category') category?: string) {
     return this.usersService.findProviders(category);
   }

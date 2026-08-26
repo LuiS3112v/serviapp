@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, UseGuards,
-  UseInterceptors, UploadedFile, UploadedFiles,
+  UseInterceptors, UploadedFile, UploadedFiles, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { CompaniesService } from './companies.service';
@@ -20,6 +20,30 @@ import { CreateCompanyServiceDto } from './dto/create-company-service.dto';
 import { CreatePortfolioItemDto } from './dto/create-portfolio-item.dto';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
+
+// SECURITY FIX (H-1): fileFilter partilhado para todos os uploads de
+// imagem da empresa. Valida file.mimetype antes de o ficheiro ser
+// materializado em memória no processo Node. Sem este filtro, um
+// atacante podia enviar SVG com <script> ou HTML malicioso — o
+// Cloudinary acabaria por rejeitar, mas o conteúdo inteiro já estava
+// no buffer do processo Node. O fileFilter rejeita no início do stream.
+const IMAGE_FILE_FILTER = (
+  _req: any,
+  file: Express.Multer.File,
+  cb: (error: Error | null, acceptFile: boolean) => void,
+) => {
+  const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new BadRequestException('Tipo de ficheiro não permitido. Usa JPEG, PNG ou WebP.'), false);
+  }
+};
+
+const IMAGE_UPLOAD_OPTIONS = {
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: IMAGE_FILE_FILTER,
+};
 
 @Controller('company')
 @UseGuards(JwtGuard)
@@ -100,7 +124,7 @@ export class CompaniesController {
   @Post(':companyId/logo')
   @UseGuards(CompanyRolesGuard)
   @RequireCompanyRole(CompanyEmployeeRole.ADMIN, CompanyEmployeeRole.MANAGER)
-  @UseInterceptors(FileInterceptor('logo'))
+  @UseInterceptors(FileInterceptor('logo', IMAGE_UPLOAD_OPTIONS))
   uploadLogo(@Param('companyId') companyId: string, @UploadedFile() file: Express.Multer.File) {
     return this.companiesService.uploadLogo(companyId, file);
   }
@@ -108,7 +132,7 @@ export class CompaniesController {
   @Post(':companyId/banner')
   @UseGuards(CompanyRolesGuard)
   @RequireCompanyRole(CompanyEmployeeRole.ADMIN, CompanyEmployeeRole.MANAGER)
-  @UseInterceptors(FileInterceptor('banner'))
+  @UseInterceptors(FileInterceptor('banner', IMAGE_UPLOAD_OPTIONS))
   uploadBanner(@Param('companyId') companyId: string, @UploadedFile() file: Express.Multer.File) {
     return this.companiesService.uploadBanner(companyId, file);
   }
@@ -216,7 +240,7 @@ export class CompaniesController {
   @Post(':companyId/portfolio/:itemId/photos')
   @UseGuards(CompanyRolesGuard)
   @RequireCompanyRole(CompanyEmployeeRole.ADMIN, CompanyEmployeeRole.MANAGER)
-  @UseInterceptors(FilesInterceptor('photos', 10))
+  @UseInterceptors(FilesInterceptor('photos', 10, IMAGE_UPLOAD_OPTIONS))
   addPortfolioPhotos(
     @Param('companyId') companyId: string,
     @Param('itemId') itemId: string,
@@ -242,7 +266,7 @@ export class CompaniesController {
   @Post(':companyId/gallery')
   @UseGuards(CompanyRolesGuard)
   @RequireCompanyRole(CompanyEmployeeRole.ADMIN, CompanyEmployeeRole.MANAGER)
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', IMAGE_UPLOAD_OPTIONS))
   addGalleryImage(
     @Param('companyId') companyId: string,
     @UploadedFile() file: Express.Multer.File,

@@ -294,4 +294,34 @@ export class KycService {
       }
     }
   }
+
+  // SECURITY FIX (KYC URLs publicas): devolve URLs assinadas com
+  // expiracao de 15 minutos para os documentos KYC de um prestador.
+  // So acessivel pelo admin. As URLs directas deixaram de funcionar
+  // desde que o upload passou a usar type:'authenticated' no Cloudinary.
+  async getSignedDocumentUrls(id: string): Promise<{
+    frontBiUrl: string;
+    backBiUrl: string;
+    selfieUrl: string;
+  }> {
+    const verification = await this.verificationRepo.findOne({
+      where: { id },
+      select: {
+        id: true,
+        frontBiPublicId: true,
+        backBiPublicId: true,
+        selfiePublicId: true,
+      },
+    });
+
+    if (!verification) {
+      throw new NotFoundException('Verificacao nao encontrada.');
+    }
+
+    return {
+      frontBiUrl: this.cloudinaryService.generateSignedUrl(verification.frontBiPublicId),
+      backBiUrl: this.cloudinaryService.generateSignedUrl(verification.backBiPublicId),
+      selfieUrl: this.cloudinaryService.generateSignedUrl(verification.selfiePublicId),
+    };
+  }
 }

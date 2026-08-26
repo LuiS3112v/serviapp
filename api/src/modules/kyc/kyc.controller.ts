@@ -84,4 +84,16 @@ export class KycController {
   ) {
     return this.kycService.reject(id, admin.id, dto);
   }
+
+  // SECURITY FIX (KYC URLs publicas): devolve URLs assinadas com
+  // expiracao de 15 minutos para os documentos KYC. So o admin pode
+  // chamar este endpoint. As URLs directas do Cloudinary deixaram de
+  // funcionar porque o upload passou a usar type:'authenticated'.
+  // O frontend deve chamar este endpoint sempre que quiser visualizar
+  // os documentos — nao guardar as URLs em cache.
+  @Get('admin/kyc/:id/signed-urls')
+  @Roles(Role.ADMIN)
+  async getSignedUrls(@Param('id') id: string) {
+    return this.kycService.getSignedDocumentUrls(id);
+  }
 }

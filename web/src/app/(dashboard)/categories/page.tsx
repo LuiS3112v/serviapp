@@ -478,7 +478,7 @@ export default function CategoriesPage() {
             </button>
             <div style={{ marginBottom: 8 }}>
               <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
-                Todas as categorias
+                Serviços rapidos
               </h1>
               <p style={{ fontSize: 13, color: "#64748b" }}>
                 {CATEGORIES.length} categorias ·{" "}

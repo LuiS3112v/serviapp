@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Zap, Menu, X, ArrowRight, Target, Heart, Users, MapPin,
+  Zap, Menu, X, Target, Heart, MapPin,
   ShieldCheck, Lock, MessageCircle, Star, Handshake, Globe, Camera,
-  Link2, CheckCircle2, Sparkles, Rocket, Building2, Clock, HelpCircle,
+  Link2, CheckCircle2, Sparkles, Rocket, Building2, Clock, Send,
 } from "lucide-react";
 
 function useReveal() {
@@ -16,7 +16,7 @@ function useReveal() {
     if (!el) return;
     const obs = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.unobserve(el); } },
-      { threshold: 0.15 }
+      { threshold: 0.12 }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -41,7 +41,6 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 }
 
 const BRAND = "#1e293b";
-const CONFIRM = "#1D9E75";
 const INK = "#0f172a";
 const LOGO_ACCENT = "#7C6FE0";
 
@@ -50,6 +49,8 @@ export default function SobrePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [formSent, setFormSent] = useState(false);
+  const [form, setForm] = useState({ nome: "", email: "", assunto: "", mensagem: "" });
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -60,6 +61,12 @@ export default function SobrePage() {
   const goLogin = () => router.push("/login");
   const goRegisterClient = () => router.push("/register/client");
   const goHome = () => router.push("/");
+
+  const handleSubmit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!form.nome || !form.email || !form.mensagem) return;
+    setFormSent(true);
+  };
 
   const values = [
     { icon: ShieldCheck, title: "Confiança antes de tudo", text: "Nenhum prestador aparece na plataforma sem passar por verificação de identidade. Isso não é opcional." },
@@ -75,13 +82,6 @@ export default function SobrePage() {
     { year: "O futuro", title: "Todo o país pela frente", text: "O objetivo é chegar progressivamente a outras províncias de Angola, sem perder o nível de confiança que construímos até agora." },
   ];
 
-  const howItWorks = [
-    { icon: Users, title: "Dois lados, uma plataforma", text: "Pessoas que precisam de um serviço feito bem. Profissionais que querem trabalho a sério, sem depender só do boca a boca. A Mestroo liga os dois." },
-    { icon: Lock, title: "O dinheiro fica retido até o serviço terminar", text: "O valor combinado fica em segurança e só é entregue ao prestador depois do cliente confirmar que o trabalho ficou feito como esperado." },
-    { icon: MessageCircle, title: "A conversa fica toda num só sítio", text: "Horário, endereço, detalhes: tudo combinado pelo chat da Mestroo. Sem trocar números antes de haver confiança." },
-    { icon: Star, title: "Avaliações de serviços reais", text: "Cada avaliação está ligada a um serviço que foi mesmo realizado. Não é um sistema de estrelas genérico." },
-  ];
-
   const faqs = [
     { q: "Quanto custa usar a Mestroo?", a: "Para clientes é gratuito: criar conta, publicar pedidos e receber propostas não tem custo nenhum. Os prestadores pagam uma taxa de 10% apenas sobre os pagamentos que recebem pela plataforma." },
     { q: "Como sei que o prestador é de confiança?", a: "Todos os prestadores passam por verificação de identidade antes de poderem ser contactados. O histórico de avaliações de cada um fica visível no perfil." },
@@ -93,123 +93,152 @@ export default function SobrePage() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&family=Inter:wght@700;800&display=swap');
+
         .lp *{box-sizing:border-box}
-        .lp{background:#ffffff;color:#111827;font-family:inherit;overflow-x:hidden}
+        .lp{background:#ffffff;color:#111827;font-family:'DM Sans',sans-serif;overflow-x:hidden}
         .lp-container{max-width:1180px;margin:0 auto;padding:0 24px}
 
+        /* ── HEADER ── */
         .lp-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.9);backdrop-filter:blur(10px);border-bottom:1px solid #eef1f5;transition:box-shadow .2s}
         .lp-header.scrolled{box-shadow:0 2px 16px rgba(15,23,42,0.06)}
         .lp-header-inner{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
         .lp-logo{display:flex;align-items:center;gap:10px;cursor:pointer}
         .lp-logo-mark{width:38px;height:38px;border-radius:11px;background:${BRAND};display:flex;align-items:center;justify-content:center;flex-shrink:0}
-        .lp-logo-text{font-size:19px;font-weight:800;color:#0f172a;letter-spacing:-0.02em}
+        .lp-logo-text{font-size:19px;font-weight:500;color:#0f172a;letter-spacing:-0.02em;font-family:'DM Sans',sans-serif}
         .lp-nav{display:flex;align-items:center;gap:32px}
-        .lp-nav a,.lp-nav a:visited{font-size:14.5px;font-weight:600;color:#475569;text-decoration:none;transition:color .15s}
+        .lp-nav a,.lp-nav a:visited{font-size:14.5px;font-weight:600;color:#475569;text-decoration:none;transition:color .15s;font-family:'DM Sans',sans-serif}
         .lp-nav a:hover{color:${BRAND}}
         .lp-nav a.active{color:${BRAND}}
         .lp-header-actions{display:flex;align-items:center;gap:10px}
-        .lp-btn-ghost{padding:10px 18px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
+        .lp-btn-ghost{padding:10px 18px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
         .lp-btn-ghost:hover{border-color:${BRAND};color:${BRAND}}
-        .lp-btn-solid{padding:10px 20px;border-radius:10px;border:none;background:${BRAND};color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s;font-family:inherit}
+        .lp-btn-solid{padding:10px 20px;border-radius:10px;border:none;background:${BRAND};color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:transform .15s;font-family:'DM Sans',sans-serif}
         .lp-btn-solid:hover{transform:translateY(-1px)}
         .lp-menu-toggle{display:none;background:none;border:none;cursor:pointer;color:#0f172a}
 
+        /* ── HERO ── */
         .lp-about-hero{padding:64px 0 56px}
-        .lp-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;background:#f1f5f9;color:#475569;font-size:12.5px;font-weight:700;margin-bottom:20px}
-        .lp-about-h1{font-size:40px;line-height:1.16;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin:0 0 18px;max-width:680px}
-        .lp-about-sub{font-size:16.5px;line-height:1.65;color:#64748b;max-width:580px}
+        .lp-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;background:#f1f5f9;color:#475569;font-size:12.5px;font-weight:400;margin-bottom:20px}
+        .lp-about-h1{font-size:40px;line-height:1.1;font-weight:800;color:#1e293b;letter-spacing:-0.03em;margin:0 0 18px;max-width:680px;font-family:'Inter',sans-serif;text-transform:uppercase}
+        .lp-about-sub{font-size:16.5px;line-height:1.65;color:#64748b;max-width:580px;font-weight:400}
 
+        /* ── SECTIONS ── */
         .lp-section{padding:76px 0}
         .lp-section-alt{background:#f8fafc}
         .lp-section-head{max-width:640px;margin:0 0 44px}
         .lp-section-head.center{text-align:center;margin-left:auto;margin-right:auto}
-        .lp-tag{display:inline-block;font-size:13px;font-weight:700;color:${BRAND};margin-bottom:14px}
-        .lp-h2{font-size:29px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin-bottom:12px}
-        .lp-section-sub{font-size:15px;color:#64748b;line-height:1.65}
+        .lp-tag{display:inline-block;font-size:13px;font-weight:400;color:${BRAND};margin-bottom:14px}
+        .lp-h2{font-size:29px;font-weight:400;color:#0f172a;letter-spacing:-0.02em;margin-bottom:12px;font-family:'DM Sans',sans-serif}
+        .lp-section-sub{font-size:15px;color:#64748b;line-height:1.65;font-weight:400}
 
+        /* ── MISSION ── */
         .lp-mission-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:18px;overflow:hidden}
         .lp-mission-card{padding:36px 32px;background:#fff}
         .lp-mission-icon{width:48px;height:48px;border-radius:13px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:#334155}
-        .lp-mission-card h3{font-size:18px;font-weight:800;color:#0f172a;margin-bottom:12px}
-        .lp-mission-card p{font-size:14.5px;color:#475569;line-height:1.7}
+        .lp-mission-card h3{font-size:18px;font-weight:500;color:#0f172a;margin-bottom:12px}
+        .lp-mission-card p{font-size:14.5px;color:#475569;line-height:1.7;font-weight:400}
 
+        /* ── TIMELINE ── */
         .lp-timeline{position:relative;max-width:720px}
         .lp-timeline-rule{position:absolute;left:9px;top:8px;bottom:8px;width:1px;background:#e2e8f0}
         .lp-timeline-item{position:relative;padding-left:42px;padding-bottom:36px}
         .lp-timeline-item:last-child{padding-bottom:0}
         .lp-timeline-dot{position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid ${BRAND};z-index:2}
-        .lp-timeline-year{display:block;font-size:11.5px;font-weight:800;color:#94a3b8;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
-        .lp-timeline-item h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px}
-        .lp-timeline-item p{font-size:14px;color:#64748b;line-height:1.65;max-width:520px}
+        .lp-timeline-year{display:block;font-size:11.5px;font-weight:400;color:#94a3b8;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+        .lp-timeline-item h3{font-size:16px;font-weight:500;color:#0f172a;margin-bottom:8px}
+        .lp-timeline-item p{font-size:14px;color:#64748b;line-height:1.65;max-width:520px;font-weight:400}
 
-        .lp-how-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:18px;overflow:hidden}
-        .lp-how-card{padding:30px 28px;background:#fff}
-        .lp-how-icon{width:46px;height:46px;border-radius:13px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:#334155}
-        .lp-how-card h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:10px}
-        .lp-how-card p{font-size:13.5px;color:#475569;line-height:1.65}
-
+        /* ── VALUES ── */
         .lp-values-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#eef1f5;border:1px solid #eef1f5;border-radius:16px;overflow:hidden}
         .lp-value-card{background:#fff;padding:26px 22px}
         .lp-value-icon{width:42px;height:42px;border-radius:12px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:#334155}
-        .lp-value-card h3{font-size:14.5px;font-weight:700;color:#0f172a;margin-bottom:8px}
-        .lp-value-card p{font-size:13px;color:#64748b;line-height:1.6}
+        .lp-value-card h3{font-size:14.5px;font-weight:500;color:#0f172a;margin-bottom:8px}
+        .lp-value-card p{font-size:13px;color:#64748b;line-height:1.6;font-weight:400}
 
+        /* ── STATS ── */
         .lp-stats-band{border:1px solid #eef1f5;border-radius:18px;padding:36px 40px;display:grid;grid-template-columns:repeat(4,1fr);text-align:center}
         .lp-stats-band > div{border-left:1px solid #eef1f5;padding:0 12px}
         .lp-stats-band > div:first-child{border-left:none}
-        .lp-stats-num{font-size:27px;font-weight:800;color:${INK}}
-        .lp-stats-lbl{font-size:12.5px;color:#94a3b8;margin-top:4px}
+        .lp-stats-num{font-size:27px;font-weight:500;color:${INK}}
+        .lp-stats-lbl{font-size:12.5px;color:#94a3b8;margin-top:4px;font-weight:400}
 
+        /* ── COVERAGE ── */
         .lp-coverage-panel{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;background:#f8fafc;border:1px solid #eef1f5;border-radius:20px;padding:44px 40px}
         .lp-coverage-list{display:flex;flex-direction:column;gap:14px;margin-top:20px}
         .lp-coverage-item{display:flex;align-items:flex-start;gap:12px}
-        .lp-coverage-item span{font-size:14px;color:#334155;line-height:1.55}
+        .lp-coverage-item span{font-size:14px;color:#334155;line-height:1.55;font-weight:400}
         .lp-coverage-icon{width:28px;height:28px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#334155}
         .lp-map-mini{position:relative;border-radius:16px;overflow:hidden;min-height:250px;border:1px solid #e2e8f0}
         .lp-map-mini svg{width:100%;height:100%;display:block}
         .lp-map-pin{position:absolute;width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(15,23,42,0.14);border:1px solid #eef1f5}
 
+        /* ── FAQ ── */
         .lp-faq-list{max-width:760px;display:flex;flex-direction:column;gap:10px}
         .lp-faq-item{background:#fff;border:1px solid #eef1f5;border-radius:14px;overflow:hidden;transition:border-color .2s}
         .lp-faq-item.open{border-color:#cbd5e1}
-        .lp-faq-q{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 22px;font-size:15px;font-weight:700;color:#0f172a;cursor:pointer;user-select:none}
-        .lp-faq-a{padding:0 22px 20px;font-size:14px;color:#64748b;line-height:1.65}
+        .lp-faq-q{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 22px;font-size:15px;font-weight:500;color:#0f172a;cursor:pointer;user-select:none}
+        .lp-faq-a{padding:0 22px 20px;font-size:14px;color:#64748b;line-height:1.65;font-weight:400}
 
+        /* ── CONTACT FORM ── */
+        .lp-contact-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:56px;align-items:start}
+        .lp-contact-info h3{font-size:22px;font-weight:400;color:#0f172a;margin-bottom:12px;letter-spacing:-0.01em}
+        .lp-contact-info p{font-size:14.5px;color:#64748b;line-height:1.7;margin-bottom:24px;font-weight:400}
+        .lp-contact-detail{display:flex;align-items:center;gap:10px;font-size:14px;color:#334155;margin-bottom:12px;font-weight:400}
+        .lp-contact-detail-icon{width:34px;height:34px;border-radius:9px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#334155}
+        .lp-form{display:flex;flex-direction:column;gap:16px}
+        .lp-form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .lp-field{display:flex;flex-direction:column;gap:6px}
+        .lp-field label{font-size:13px;font-weight:500;color:#334155}
+        .lp-field input,.lp-field textarea{padding:12px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:400;color:#0f172a;background:#fff;outline:none;transition:border-color .15s;resize:none}
+        .lp-field input:focus,.lp-field textarea:focus{border-color:#334155}
+        .lp-field input::placeholder,.lp-field textarea::placeholder{color:#94a3b8}
+        .lp-form-submit{padding:14px 24px;border-radius:11px;border:none;background:${BRAND};color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s}
+        .lp-form-submit:hover{transform:translateY(-1px)}
+        .lp-form-success{padding:24px;border-radius:14px;background:#f0fdf4;border:1px solid #bbf7d0;text-align:center}
+        .lp-form-success p{font-size:15px;color:#15803d;font-weight:500}
+
+        /* ── CTA ── */
         .lp-cta{background:${INK};border-radius:22px;padding:52px 48px;text-align:center;color:#fff}
-        .lp-cta h2{font-size:27px;font-weight:800;margin-bottom:14px;letter-spacing:-0.02em}
-        .lp-cta p{font-size:15px;color:#cbd5e1;max-width:480px;margin:0 auto 28px;line-height:1.6}
+        .lp-cta h2{font-size:27px;font-weight:400;margin-bottom:14px;letter-spacing:-0.02em}
+        .lp-cta p{font-size:15px;color:#cbd5e1;max-width:480px;margin:0 auto 28px;line-height:1.6;font-weight:400}
         .lp-cta-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-        .lp-btn-white{padding:15px 28px;border-radius:12px;border:none;background:#fff;color:${INK};font-size:15px;font-weight:800;cursor:pointer;transition:transform .15s;font-family:inherit}
+        .lp-btn-white{padding:15px 28px;border-radius:12px;border:none;background:#fff;color:${INK};font-size:15px;font-weight:500;cursor:pointer;transition:transform .15s;font-family:'DM Sans',sans-serif}
         .lp-btn-white:hover{transform:translateY(-2px)}
-        .lp-btn-outline-white{padding:15px 28px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.3);background:transparent;color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
+        .lp-btn-outline-white{padding:15px 28px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.3);background:transparent;color:#fff;font-size:15px;font-weight:400;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
         .lp-btn-outline-white:hover{background:rgba(255,255,255,0.08)}
 
+        /* ── FOOTER ── */
         .lp-footer{background:#0f172a;color:#cbd5e1;padding:56px 0 28px}
         .lp-footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;margin-bottom:40px}
-        .lp-footer h4{font-size:13.5px;font-weight:700;color:#fff;margin-bottom:16px}
-        .lp-footer a,.lp-footer a:visited{display:block;font-size:13.5px;color:#94a3b8;text-decoration:none;margin-bottom:10px;transition:color .15s}
+        .lp-footer h4{font-size:13.5px;font-weight:500;color:#fff;margin-bottom:16px}
+        .lp-footer a,.lp-footer a:visited{display:block;font-size:13.5px;color:#94a3b8;text-decoration:none;margin-bottom:10px;transition:color .15s;font-weight:400}
         .lp-footer a:hover{color:#fff}
         .lp-footer-social{display:flex;gap:10px;margin-top:16px}
         .lp-footer-social a,.lp-footer-social a:visited{width:36px;height:36px;border-radius:10px;background:#1e293b;display:flex;align-items:center;justify-content:center;margin:0}
         .lp-footer-social a:hover{background:${BRAND}}
         .lp-footer-bottom{border-top:1px solid #1e293b;padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-        .lp-footer-bottom p{font-size:12.5px;color:#64748b}
+        .lp-footer-bottom p{font-size:12.5px;color:#64748b;font-weight:400}
 
+        /* ── RESPONSIVE ── */
         @media(max-width:960px){
           .lp-nav{display:none}
           .lp-header-actions .lp-btn-ghost{display:none}
           .lp-menu-toggle{display:block}
-          .lp-mission-grid,.lp-how-grid{grid-template-columns:1fr}
+          .lp-mission-grid{grid-template-columns:1fr}
+          .lp-services-grid{grid-template-columns:repeat(2,1fr)}
           .lp-values-grid{grid-template-columns:repeat(2,1fr)}
           .lp-stats-band{grid-template-columns:repeat(2,1fr);row-gap:20px}
           .lp-stats-band > div:nth-child(3){border-left:none}
           .lp-coverage-panel{grid-template-columns:1fr;padding:32px 26px}
+          .lp-contact-grid{grid-template-columns:1fr;gap:36px}
           .lp-footer-grid{grid-template-columns:1fr 1fr}
           .lp-footer-bottom{flex-direction:column;align-items:flex-start}
         }
         @media(max-width:600px){
           .lp-about-h1{font-size:27px}
           .lp-h2{font-size:22px}
+          .lp-services-grid{grid-template-columns:1fr}
           .lp-values-grid{grid-template-columns:1fr}
           .lp-stats-band{grid-template-columns:1fr;padding:28px 24px}
           .lp-stats-band > div{border-left:none;border-top:1px solid #eef1f5;padding-top:16px}
@@ -217,11 +246,13 @@ export default function SobrePage() {
           .lp-cta{padding:38px 22px}
           .lp-footer-grid{grid-template-columns:1fr}
           .lp-coverage-panel{padding:24px 18px}
+          .lp-form-row{grid-template-columns:1fr}
         }
       `}</style>
 
       <div className="lp">
-        {/* Header */}
+
+        {/* ── HEADER ── */}
         <header className={`lp-header${scrolled ? " scrolled" : ""}`}>
           <div className="lp-header-inner">
             <div className="lp-logo" onClick={goHome}>
@@ -232,7 +263,7 @@ export default function SobrePage() {
               <a href="/#como-funciona">Como funciona</a>
               <a href="/sobre" className="active">Sobre</a>
               <a href="/#para-prestadores">Para prestadores</a>
-              <a href="/#contacto">Contacto</a>
+              <a href="#contacto">Contacto</a>
             </nav>
             <div className="lp-header-actions">
               <button className="lp-btn-ghost" onClick={goLogin}>Entrar</button>
@@ -244,8 +275,8 @@ export default function SobrePage() {
           </div>
           {menuOpen && (
             <div style={{ padding: "8px 24px 20px", display: "flex", flexDirection: "column", gap: 4, borderTop: "1px solid #eef1f5" }}>
-              {[["Como funciona", "/#como-funciona"], ["Sobre", "/sobre"], ["Para prestadores", "/#para-prestadores"], ["Contacto", "/#contacto"]].map(([label, href]) => (
-                <a key={href} href={href} onClick={() => setMenuOpen(false)} style={{ padding: "12px 0", fontSize: 14.5, fontWeight: 600, color: "#334155", textDecoration: "none", borderBottom: "1px solid #f1f5f9" }}>{label}</a>
+              {[["Como funciona", "/#como-funciona"], ["Sobre", "/sobre"], ["Para prestadores", "/#para-prestadores"], ["Contacto", "#contacto"]].map(([label, href]) => (
+                <a key={href} href={href} onClick={() => setMenuOpen(false)} style={{ padding: "12px 0", fontSize: 14.5, fontWeight: 600, color: "#334155", textDecoration: "none", borderBottom: "1px solid #f1f5f9", fontFamily: "'DM Sans',sans-serif" }}>{label}</a>
               ))}
               <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
                 <button className="lp-btn-ghost" style={{ flex: 1 }} onClick={goLogin}>Entrar</button>
@@ -255,7 +286,7 @@ export default function SobrePage() {
           )}
         </header>
 
-        {/* Hero */}
+        {/* ── HERO ── */}
         <section className="lp-about-hero">
           <div className="lp-container">
             <Reveal>
@@ -266,7 +297,7 @@ export default function SobrePage() {
           </div>
         </section>
 
-        {/* Missão e visão */}
+        {/* ── MISSÃO ── */}
         <section className="lp-section lp-section-alt">
           <div className="lp-container">
             <Reveal>
@@ -286,7 +317,7 @@ export default function SobrePage() {
           </div>
         </section>
 
-        {/* Como surgimos */}
+        {/* ── HISTÓRIA ── */}
         <section className="lp-section">
           <div className="lp-container">
             <Reveal>
@@ -311,31 +342,7 @@ export default function SobrePage() {
           </div>
         </section>
 
-        {/* Como funciona por dentro */}
-        <section className="lp-section lp-section-alt">
-          <div className="lp-container">
-            <Reveal>
-              <div className="lp-section-head">
-                <span className="lp-tag">Por dentro</span>
-                <h2 className="lp-h2">Como garantimos que funciona de verdade</h2>
-                <p className="lp-section-sub">Cada detalhe da plataforma foi pensado para proteger tanto quem contrata como quem trabalha.</p>
-              </div>
-            </Reveal>
-            <Reveal>
-              <div className="lp-how-grid">
-                {howItWorks.map((h, i) => (
-                  <div className="lp-how-card" key={i}>
-                    <div className="lp-how-icon"><h.icon size={22} /></div>
-                    <h3>{h.title}</h3>
-                    <p>{h.text}</p>
-                  </div>
-                ))}
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* Valores */}
+        {/* ── VALORES ── */}
         <section className="lp-section">
           <div className="lp-container">
             <Reveal>
@@ -358,7 +365,7 @@ export default function SobrePage() {
           </div>
         </section>
 
-        {/* Números */}
+        {/* ── NÚMEROS ── */}
         <section className="lp-section lp-section-alt">
           <div className="lp-container">
             <Reveal>
@@ -372,7 +379,7 @@ export default function SobrePage() {
           </div>
         </section>
 
-        {/* Cobertura */}
+        {/* ── COBERTURA ── */}
         <section className="lp-section">
           <div className="lp-container">
             <Reveal>
@@ -425,7 +432,7 @@ export default function SobrePage() {
           </div>
         </section>
 
-        {/* FAQ */}
+        {/* ── FAQ ── */}
         <section className="lp-section lp-section-alt">
           <div className="lp-container">
             <Reveal>
@@ -455,8 +462,92 @@ export default function SobrePage() {
           </div>
         </section>
 
-        {/* CTA final */}
-        <section className="lp-section">
+        {/* ── CONTACTO (com formulário) ── */}
+        <section className="lp-section" id="contacto">
+          <div className="lp-container">
+            <Reveal>
+              <div className="lp-section-head">
+                <span className="lp-tag">Fale connosco</span>
+                <h2 className="lp-h2">Tem alguma questão? Estamos aqui.</h2>
+              </div>
+            </Reveal>
+            <Reveal delay={80}>
+              <div className="lp-contact-grid">
+                <div className="lp-contact-info">
+                  <h3>Respondemos a todas as mensagens</h3>
+                  <p>Seja para uma dúvida sobre a plataforma, um problema num serviço ou simplesmente para nos dar feedback a nossa equipa lê tudo e responde em até 24 horas.</p>
+                  <div className="lp-contact-detail">
+                    <div className="lp-contact-detail-icon"><MessageCircle size={15} /></div>
+                    suporte@mestroo.ao
+                  </div>
+                  <div className="lp-contact-detail">
+                    <div className="lp-contact-detail-icon"><MapPin size={15} /></div>
+                    Luanda, Angola
+                  </div>
+                  <div className="lp-contact-detail">
+                    <div className="lp-contact-detail-icon"><Globe size={15} /></div>
+                    mestroo.ao
+                  </div>
+                </div>
+
+                <div>
+                  {formSent ? (
+                    <div className="lp-form-success">
+                      <p>✓ Mensagem enviada! Respondemos em breve.</p>
+                    </div>
+                  ) : (
+                    <div className="lp-form">
+                      <div className="lp-form-row">
+                        <div className="lp-field">
+                          <label>Nome</label>
+                          <input
+                            type="text"
+                            placeholder="O seu nome"
+                            value={form.nome}
+                            onChange={e => setForm({ ...form, nome: e.target.value })}
+                          />
+                        </div>
+                        <div className="lp-field">
+                          <label>Email</label>
+                          <input
+                            type="email"
+                            placeholder="seu@email.com"
+                            value={form.email}
+                            onChange={e => setForm({ ...form, email: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="lp-field">
+                        <label>Assunto</label>
+                        <input
+                          type="text"
+                          placeholder="Sobre o que quer falar?"
+                          value={form.assunto}
+                          onChange={e => setForm({ ...form, assunto: e.target.value })}
+                        />
+                      </div>
+                      <div className="lp-field">
+                        <label>Mensagem</label>
+                        <textarea
+                          rows={5}
+                          placeholder="Escreva a sua mensagem aqui..."
+                          value={form.mensagem}
+                          onChange={e => setForm({ ...form, mensagem: e.target.value })}
+                        />
+                      </div>
+                      <button className="lp-form-submit" onClick={handleSubmit}>
+                        <Send size={15} /> Enviar mensagem
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ── CTA FINAL ── */}
+        <section className="lp-section lp-section-alt">
           <div className="lp-container">
             <Reveal>
               <div className="lp-cta">
@@ -471,8 +562,8 @@ export default function SobrePage() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="lp-footer" id="contacto">
+        {/* ── FOOTER ── */}
+        <footer className="lp-footer">
           <div className="lp-container">
             <div className="lp-footer-grid">
               <div>
@@ -480,7 +571,7 @@ export default function SobrePage() {
                   <div className="lp-logo-mark"><Zap size={17} color="#fff" /></div>
                   <span className="lp-logo-text" style={{ color: "#fff" }}>Mestr<span style={{ color: LOGO_ACCENT }}>oo</span></span>
                 </div>
-                <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6, maxWidth: 260 }}>A plataforma que liga clientes a prestadores de serviços de confiança.</p>
+                <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6, maxWidth: 260, fontWeight: 400 }}>A plataforma que liga clientes a prestadores de serviços de confiança.</p>
                 <div className="lp-footer-social">
                   <a href="#"><Globe size={16} color="#cbd5e1" /></a>
                   <a href="#"><Camera size={16} color="#cbd5e1" /></a>
@@ -495,7 +586,7 @@ export default function SobrePage() {
               </div>
               <div>
                 <h4>Empresa</h4>
-                <a href="/sobre">Sobre</a>
+                <a href="#contacto">Fale connosco</a>
                 <a href="/termos">Termos de uso</a>
                 <a href="/privacidade">Privacidade</a>
               </div>
@@ -506,6 +597,7 @@ export default function SobrePage() {
             </div>
           </div>
         </footer>
+
       </div>
     </>
   );

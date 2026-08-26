@@ -277,12 +277,29 @@ export class ChatService {
   async markAsRead(roomId: string, userId: string): Promise<void> {
     const room = await this.roomRepo.findOne({ where: { id: roomId } });
     if (!room) return;
+
+    // SECURITY FIX (M-1): antes, o update marcava TODAS as mensagens da
+    // sala como lidas (independentemente do senderId), o que significa
+    // que quando o cliente chamava markAsRead tambem marcava as mensagens
+    // do prestador como lidas e vice-versa — um utilizador manipulava o
+    // estado de leitura do outro participante.
+    //
+    // Correccao: marca como lidas apenas as mensagens enviadas pelo OUTRO
+    // participante (senderId do outro lado). As proprias mensagens do
+    // utilizador nao precisam de ser marcadas como lidas — ele enviou-as.
     if (room.clientId === userId) {
       await this.roomRepo.update(roomId, { clientUnread: 0 });
+      await this.messageRepo.update(
+        { roomId, isRead: false, senderId: room.providerId },
+        { isRead: true },
+      );
     } else if (room.providerId === userId) {
       await this.roomRepo.update(roomId, { providerUnread: 0 });
+      await this.messageRepo.update(
+        { roomId, isRead: false, senderId: room.clientId },
+        { isRead: true },
+      );
     }
-    await this.messageRepo.update({ roomId, isRead: false }, { isRead: true });
   }
 
   async getTotalUnread(userId: string): Promise<number> {

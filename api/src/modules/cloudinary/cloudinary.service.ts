@@ -28,6 +28,12 @@ export class CloudinaryService {
           folder: `serviapp/kyc/${folder}`,
           public_id: filename,
           resource_type: 'image',
+          // SECURITY FIX (KYC URLs publicas): type:'authenticated' torna
+          // o recurso privado no Cloudinary — a URL directa deixa de
+          // funcionar sem assinatura. O acesso passa a ser feito via
+          // generateSignedUrl() com expiracao de 15 minutos, chamado
+          // apenas pelo admin atraves de GET /kyc/:id/signed-urls.
+          type: 'authenticated',
           allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
           max_bytes: 5 * 1024 * 1024,
         },
@@ -74,5 +80,22 @@ export class CloudinaryService {
 
   async deleteFile(publicId: string): Promise<void> {
     await cloudinary.uploader.destroy(publicId);
+  }
+
+  // SECURITY FIX (KYC URLs publicas): gera uma URL assinada com
+  // expiracao para aceder a recursos do tipo 'authenticated' no
+  // Cloudinary. A URL expira ao fim de 15 minutos — tempo suficiente
+  // para o admin visualizar o documento sem deixar a URL acessivel
+  // indefinidamente. So funciona se o recurso foi carregado com
+  // type:'authenticated'; recursos 'upload' publicos nao beneficiam
+  // desta assinatura (continuam publicos).
+  generateSignedUrl(publicId: string, expiresInSeconds = 900): string {
+    const expireAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
+    return cloudinary.url(publicId, {
+      type: 'authenticated',
+      sign_url: true,
+      expires_at: expireAt,
+      secure: true,
+    });
   }
 }
