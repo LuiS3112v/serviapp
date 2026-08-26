@@ -695,7 +695,7 @@ export function ServiceMap({
                 color: route?.isEstimate ? '#6b7280' : '#2563EB',
                 weight: 6,
                 opacity: 1,
-                dashArray: undefined,
+                dashArray: route?.isEstimate ? '10 8' : undefined,
                 lineCap: 'round',
                 lineJoin: 'round',
               }}
