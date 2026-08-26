@@ -663,13 +663,6 @@ export function ServiceMap({
           <Marker position={[clientCoordinates.latitude, clientCoordinates.longitude]} icon={clientMarkerIcon} />
         )}
 
-        {showProviderMarker && (
-          <Marker
-            position={[providerSnapshot!.latitude, providerSnapshot!.longitude]}
-            icon={activeServiceProviderIcon}
-          />
-        )}
-
         {mode === 'active-service' && isProviderOnTheWay && routeLatLng.length > 0 && (
           <>
             {/* Contorno branco por baixo (casing) — garante que a rota
@@ -688,19 +681,32 @@ export function ServiceMap({
               }}
             />
             {/* Linha da rota por cima — azul vivo (confirmado) ou
-                cinzento tracejado (estimativa) */}
+                cinzento (estimativa) */}
             <Polyline
               positions={routeLatLng}
               pathOptions={{
                 color: route?.isEstimate ? '#6b7280' : '#2563EB',
                 weight: 6,
                 opacity: 1,
-                dashArray: route?.isEstimate ? '10 8' : undefined,
+                dashArray: undefined,
                 lineCap: 'round',
                 lineJoin: 'round',
               }}
             />
           </>
+        )}
+
+        {/* Marcador do prestador desenhado DEPOIS da rota, para ficar
+            sempre visualmente por cima da ponta da linha — evita o
+            efeito de a linha "cortar" ou passar ao lado do pin. No
+            Leaflet, a ordem de montagem dos elementos define a ordem
+            de sobreposição (z-order), e antes o Marker vinha antes da
+            Polyline, fazendo a rota tapar parte do pin. */}
+        {showProviderMarker && (
+          <Marker
+            position={[providerSnapshot!.latitude, providerSnapshot!.longitude]}
+            icon={activeServiceProviderIcon}
+          />
         )}
       </MapContainer>
 
