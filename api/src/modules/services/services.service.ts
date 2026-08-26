@@ -253,6 +253,27 @@ export class ServicesService {
     return service;
   }
 
+  // findByIdInternal — usado APENAS por operações internas de negócio
+  // que precisam de ler e/ou escrever servicePin, pinExpiresAt, pinUsed.
+  //
+  // NÃO expõe este método via API — é private ao service.
+  //
+  // PORQUÊ EXISTE SEPARADO:
+  // findById() usa SERVICE_DETAIL_SELECT_BASE que nao inclui servicePin
+  // (security fix C-1 — impede que o prestador leia o PIN via API).
+  // Mas generatePin() e startService() precisam de ler e escrever o PIN
+  // internamente. Se usassem findById(), o TypeORM receberia um objecto
+  // com servicePin:undefined e ao fazer .save() escreveria NULL na BD,
+  // apagando o PIN imediatamente apos o guardar. Com findByIdInternal()
+  // os campos do PIN sao sempre lidos e escritos correctamente.
+  private async findByIdInternal(id: string): Promise<Service> {
+    const service = await this.serviceRepo.findOne({
+      where: { id },
+    });
+    if (!service) throw new NotFoundException('Servico nao encontrado.');
+    return service;
+  }
+
   async findByIdForUser(id: string, userId: string, userRole?: Role): Promise<Service> {
     const service = await this.findById(id);
 
@@ -491,7 +512,9 @@ export class ServicesService {
   // ── Estado 3 → 4: Gerar PIN para início do serviço ───────────────────────
 
   async generatePin(serviceId: string, clientId: string): Promise<{ pin: string; expiresAt: Date }> {
-    const service = await this.findById(serviceId);
+    // USA findByIdInternal (com servicePin no select) para que o .save()
+    // nao sobrescreva o campo com undefined/NULL na BD.
+    const service = await this.findByIdInternal(serviceId);
 
     if (service.clientId !== clientId) throw new ForbiddenException('Sem permissão.');
     if (service.status !== ServiceStatus.PAYMENT_HELD) {
@@ -519,7 +542,11 @@ export class ServicesService {
   // ── Estado 4 → 5: Prestador valida PIN e inicia serviço ──────────────────
 
   async startService(serviceId: string, providerId: string, pin: string): Promise<Service> {
-    const service = await this.findById(serviceId);
+    // USA findByIdInternal para ler servicePin, pinUsed e pinExpiresAt.
+    // Se usasse findById() (sem esses campos no select), service.servicePin
+    // seria sempre undefined e o backend responderia erroneamente
+    // "O cliente ainda nao gerou o PIN" mesmo quando o PIN existe na BD.
+    const service = await this.findByIdInternal(serviceId);
 
     if (service.providerId !== providerId) throw new ForbiddenException('Sem permissão.');
     if (service.status !== ServiceStatus.PAYMENT_HELD) {
