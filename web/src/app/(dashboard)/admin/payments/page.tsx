@@ -443,7 +443,10 @@ export default function AdminPaymentsPage() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .ap-wrap { padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; max-width: 900px; width: 100%; }
+        html, body { background: #0a0e14; }
+        .ap-page { min-height: 100vh; width: 100%; background: #0a0e14; }
+        .ap-wrap { padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; max-width: 900px; width: 100%;
+                   margin: 0 auto; background: #0a0e14; }
         .ap-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
         .ap-tab  { padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
                    cursor: pointer; white-space: nowrap; border: 1px solid #1a2535;
@@ -454,92 +457,94 @@ export default function AdminPaymentsPage() {
         @media(max-width:640px) { .ap-wrap { padding: 20px 16px; } }
       `}</style>
 
-      <div className="ap-wrap">
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
-          <div>
-            <h1 style={{ fontSize:22, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>Pagamentos</h1>
-            <p style={{ fontSize:13, color:"#4a6a6a" }}>
-              {loading ? "A carregar..." : tab === "disputed"
-                ? `${disputed.length} registo${disputed.length !== 1 ? "s" : ""}`
-                : `${rows.length} registo${rows.length !== 1 ? "s" : ""}`}
-            </p>
-          </div>
-          <button onClick={load} disabled={loading}
-            style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px", borderRadius:12,
-              border:"1px solid #1a2535", background:"#131b27", color:"#6a7a8a", fontSize:13,
-              cursor:"pointer", fontFamily:"inherit" }}>
-            <RefreshCw size={13} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
-            Actualizar
-          </button>
-        </div>
-
-        <div className="ap-tabs">
-          {TABS.map(t => (
-            <button
-              key={t.key}
-              className={`ap-tab${tab === t.key ? (t.key === "disputed" ? " disputed-on" : " on") : ""}`}
-              onClick={() => setTab(t.key)}
-            >
-              {t.label}
+      <div className="ap-page">
+        <div className="ap-wrap">
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
+            <div>
+              <h1 style={{ fontSize:22, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>Pagamentos</h1>
+              <p style={{ fontSize:13, color:"#4a6a6a" }}>
+                {loading ? "A carregar..." : tab === "disputed"
+                  ? `${disputed.length} registo${disputed.length !== 1 ? "s" : ""}`
+                  : `${rows.length} registo${rows.length !== 1 ? "s" : ""}`}
+              </p>
+            </div>
+            <button onClick={load} disabled={loading}
+              style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 16px", borderRadius:12,
+                border:"1px solid #1a2535", background:"#131b27", color:"#6a7a8a", fontSize:13,
+                cursor:"pointer", fontFamily:"inherit" }}>
+              <RefreshCw size={13} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
+              Actualizar
             </button>
-          ))}
-        </div>
-
-        <p style={{ fontSize:12, color:"#4a6a6a", marginTop:-8 }}>
-          {TABS.find(t => t.key === tab)?.desc}
-        </p>
-
-        {loading ? (
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"80px 20px" }}>
-            <Loader2 size={28} style={{ color:"#378ADD", animation:"spin 1s linear infinite" }} />
           </div>
-        ) : tab === "disputed" ? (
-          disputed.length === 0 ? (
+
+          <div className="ap-tabs">
+            {TABS.map(t => (
+              <button
+                key={t.key}
+                className={`ap-tab${tab === t.key ? (t.key === "disputed" ? " disputed-on" : " on") : ""}`}
+                onClick={() => setTab(t.key)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <p style={{ fontSize:12, color:"#4a6a6a", marginTop:-8 }}>
+            {TABS.find(t => t.key === tab)?.desc}
+          </p>
+
+          {loading ? (
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"80px 20px" }}>
+              <Loader2 size={28} style={{ color:"#378ADD", animation:"spin 1s linear infinite" }} />
+            </div>
+          ) : tab === "disputed" ? (
+            disputed.length === 0 ? (
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                padding:"80px 20px", gap:14, textAlign:"center", background:"#131b27",
+                border:"1px solid #1a2535", borderRadius:16 }}>
+                <Scale size={32} style={{ color:"#2a3a4a" }} />
+                <p style={{ fontSize:15, fontWeight:700, color:"#c0d0e0" }}>Sem disputas abertas</p>
+                <p style={{ fontSize:13, color:"#4a6a6a" }}>Disputas reportadas por clientes ou prestadores aparecem aqui.</p>
+              </div>
+            ) : (
+              <div className="ap-grid">
+                {disputed.map(item => (
+                  <DisputedServiceCard
+                    key={item.serviceId}
+                    item={item}
+                    actionLoading={actionLoading}
+                    onResolveClient={() => setResolvingDispute({ serviceId: item.serviceId, favor: "client" })}
+                    onResolveProvider={() => setResolvingDispute({ serviceId: item.serviceId, favor: "provider" })}
+                    onViewProof={() => item.latestProof && setViewingProof({ proofId: item.latestProof.id, fileType: item.latestProof.fileType })}
+                  />
+                ))}
+              </div>
+            )
+          ) : rows.length === 0 ? (
             <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
               padding:"80px 20px", gap:14, textAlign:"center", background:"#131b27",
               border:"1px solid #1a2535", borderRadius:16 }}>
-              <Scale size={32} style={{ color:"#2a3a4a" }} />
-              <p style={{ fontSize:15, fontWeight:700, color:"#c0d0e0" }}>Sem disputas abertas</p>
-              <p style={{ fontSize:13, color:"#4a6a6a" }}>Disputas reportadas por clientes ou prestadores aparecem aqui.</p>
+              <FileText size={32} style={{ color:"#2a3a4a" }} />
+              <p style={{ fontSize:15, fontWeight:700, color:"#c0d0e0" }}>Nada por aqui</p>
+              <p style={{ fontSize:13, color:"#4a6a6a" }}>Não há registos nesta categoria de momento.</p>
             </div>
           ) : (
             <div className="ap-grid">
-              {disputed.map(item => (
-                <DisputedServiceCard
-                  key={item.serviceId}
-                  item={item}
+              {rows.map(row => (
+                <PaymentRowCard
+                  key={row.id}
+                  row={row}
+                  tab={tab}
                   actionLoading={actionLoading}
-                  onResolveClient={() => setResolvingDispute({ serviceId: item.serviceId, favor: "client" })}
-                  onResolveProvider={() => setResolvingDispute({ serviceId: item.serviceId, favor: "provider" })}
-                  onViewProof={() => item.latestProof && setViewingProof({ proofId: item.latestProof.id, fileType: item.latestProof.fileType })}
+                  onConfirm={() => handleConfirm(row.id)}
+                  onReject={() => setRejectingId(row.id)}
+                  onMarkPayout={() => handleMarkPayout(row.id)}
+                  onViewProof={() => row.latestProof && setViewingProof({ proofId: row.latestProof.id, fileType: row.latestProof.fileType })}
                 />
               ))}
             </div>
-          )
-        ) : rows.length === 0 ? (
-          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-            padding:"80px 20px", gap:14, textAlign:"center", background:"#131b27",
-            border:"1px solid #1a2535", borderRadius:16 }}>
-            <FileText size={32} style={{ color:"#2a3a4a" }} />
-            <p style={{ fontSize:15, fontWeight:700, color:"#c0d0e0" }}>Nada por aqui</p>
-            <p style={{ fontSize:13, color:"#4a6a6a" }}>Não há registos nesta categoria de momento.</p>
-          </div>
-        ) : (
-          <div className="ap-grid">
-            {rows.map(row => (
-              <PaymentRowCard
-                key={row.id}
-                row={row}
-                tab={tab}
-                actionLoading={actionLoading}
-                onConfirm={() => handleConfirm(row.id)}
-                onReject={() => setRejectingId(row.id)}
-                onMarkPayout={() => handleMarkPayout(row.id)}
-                onViewProof={() => row.latestProof && setViewingProof({ proofId: row.latestProof.id, fileType: row.latestProof.fileType })}
-              />
-            ))}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {viewingProof && (

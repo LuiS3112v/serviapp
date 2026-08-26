@@ -671,15 +671,36 @@ export function ServiceMap({
         )}
 
         {mode === 'active-service' && isProviderOnTheWay && routeLatLng.length > 0 && (
-          <Polyline
-            positions={routeLatLng}
-            pathOptions={{
-              color: route?.isEstimate ? '#9ca3af' : '#1D9E75',
-              weight: 4,
-              opacity: 0.85,
-              dashArray: route?.isEstimate ? '8 8' : undefined,
-            }}
-          />
+          <>
+            {/* Contorno branco por baixo (casing) — garante que a rota
+                se destaca em qualquer fundo de mapa, seja OSM cheio de
+                ícones, seja CARTO ou qualquer outro tile provider.
+                É a mesma técnica usada pelo Google Maps e Waze. */}
+            <Polyline
+              positions={routeLatLng}
+              pathOptions={{
+                color: '#ffffff',
+                weight: 10,
+                opacity: 0.9,
+                dashArray: undefined,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+            {/* Linha da rota por cima — azul vivo (confirmado) ou
+                cinzento tracejado (estimativa) */}
+            <Polyline
+              positions={routeLatLng}
+              pathOptions={{
+                color: route?.isEstimate ? '#6b7280' : '#2563EB',
+                weight: 6,
+                opacity: 1,
+                dashArray: route?.isEstimate ? '10 8' : undefined,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          </>
         )}
       </MapContainer>
 
