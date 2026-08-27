@@ -640,7 +640,11 @@ export function ServiceMap({
           }
         }}
       >
-        <TileLayer url={mapProviderConfig.tileUrl} attribution={mapProviderConfig.attribution} />
+        <TileLayer
+          url={mapProviderConfig.tileUrl}
+          attribution={mapProviderConfig.attribution}
+          detectRetina
+        />
 
         {mode === 'discovery' && clientCoordinates && clientMarkerIcon && (
           <Marker position={[clientCoordinates.latitude, clientCoordinates.longitude]} icon={clientMarkerIcon} />
