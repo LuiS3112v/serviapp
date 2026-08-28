@@ -193,6 +193,34 @@ export function ServiceMap({
   // `mode !== 'discovery' -> return`, deixando active-service de fora.
   const hasCenteredOnClientRef = useRef(false);
 
+  // BUG 2 FIX — O Leaflet mantém o seu próprio estado interno de zoom
+  // mesmo depois de um logout/remount. No Next.js App Router, o
+  // componente pode ser preservado em cache entre navegações (soft
+  // navigation), herdando o zoom da sessão anterior. Um `key` único
+  // por montagem destrói e recria a instância do Leaflet de raiz,
+  // garantindo que o zoom e a posição começam sempre no valor inicial
+  // definido em mapProviderConfig — sem herdar estado visual de
+  // sessões anteriores.
+  //
+  // CORRIGIDO (2 vezes) — a primeira versão gerava o key com
+  // useMemo(() => `map-${mode}-${Date.now()}`, [mode]), o que já foi
+  // corrigido para useRef (valor gerado uma única vez, nunca
+  // recalculado). Mas esse useRef tinha sido colocado DEPOIS do
+  // `if (!leafletReady) return (...)` mais abaixo neste componente —
+  // uma violação das regras dos hooks do React: no primeiro render,
+  // leafletReady é false, o componente retorna antes de chegar a esse
+  // useRef (que nunca chega a ser chamado); no render seguinte, quando
+  // leafletReady passa a true, o código já não entra no early return e
+  // chama esse useRef pela primeira vez — um hook a mais em relação ao
+  // render anterior. É exactamente isto que o React reporta como
+  // "Rendered more hooks than during the previous render" (erro #310),
+  // que aparecia sempre, em qualquer dispositivo, e derrubava a página
+  // inteira ("This page couldn't load"). A correcção definitiva é
+  // hooks nunca depois de um return condicional — por isso o useRef
+  // sobe para aqui, ao lado dos restantes hooks incondicionais do
+  // topo do componente.
+  const mapKeyRef = useRef(`map-${mode}-${Math.random().toString(36).slice(2)}`);
+
   const initialCenter = clientCoordinates ?? defaultMapCenter;
 
   // Fase derivada do status real do serviço — nunca persistida, só usada
@@ -623,31 +651,9 @@ export function ServiceMap({
     />
   ));
 
-  // BUG 2 FIX — O Leaflet mantém o seu próprio estado interno de zoom
-  // mesmo depois de um logout/remount. No Next.js App Router, o
-  // componente pode ser preservado em cache entre navegações (soft
-  // navigation), herdando o zoom da sessão anterior. Um `key` único
-  // por montagem destrói e recria a instância do Leaflet de raiz,
-  // garantindo que o zoom e a posição começam sempre no valor inicial
-  // definido em mapProviderConfig — sem herdar estado visual de
-  // sessões anteriores.
-  //
-  // CORRIGIDO — a versão anterior gerava o key com useMemo(() =>
-  // `map-${mode}-${Date.now()}`, [mode]). Se o useMemo fosse
-  // reavaliado por qualquer motivo sem `mode` ter mudado, um novo
-  // Date.now() gerava um key diferente do anterior, forçando o React
-  // a desmontar e montar de novo o MapContainer sobre um elemento DOM
-  // que já tinha tido uma instância Leaflet anexada. O Leaflet lança
-  // "Map container is already initialized" nesse cenário — um erro
-  // não apanhado que derruba a página inteira (o ecrã genérico "This
-  // page couldn't load" do Chrome). Gerar o key uma única vez via
-  // useRef (nunca recalculado) elimina esse risco: o valor é estável
-  // durante toda a vida do componente, e o remount completo do
-  // Leaflet só acontece quando o ServiceMap inteiro é desmontado e
-  // montado de novo (ex: sair e voltar à página do mapa) — exactamente
-  // o cenário do BUG 2, sem recriar a instância enquanto o componente
-  // permanece montado.
-  const mapKeyRef = useRef(`map-${mode}-${Math.random().toString(36).slice(2)}`);
+  // mapKeyRef já foi criado mais acima, junto aos restantes hooks
+  // incondicionais do componente — ver comentário nesse ponto sobre a
+  // violação das regras dos hooks que isto corrigiu.
   const mapKey = mapKeyRef.current;
 
   return (

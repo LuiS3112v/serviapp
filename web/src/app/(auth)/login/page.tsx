@@ -207,7 +207,17 @@ function LoginPageContent() {
               <button
                 className="auth-btn"
                 type="button"
-                onPointerUp={(e) => { e.preventDefault(); if (!loading) handleLogin(); }}
+                onPointerUp={(e) => {
+                  e.preventDefault();
+                  // Remove o foco do próprio botão antes de navegar. Sem
+                  // isto, o estado de foco/activo do toque pode persistir
+                  // visualmente no elemento equivalente da página
+                  // seguinte (ex: "Como funciona" na Home), que ocupa
+                  // coordenadas parecidas — aparecendo como se tivesse
+                  // sido clicado sem o utilizador ter tocado nele.
+                  e.currentTarget.blur();
+                  if (!loading) handleLogin();
+                }}
                 disabled={loading}
               >
                 {loading ? "A entrar..." : "Entrar"}
