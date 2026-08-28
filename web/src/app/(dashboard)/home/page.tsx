@@ -161,7 +161,21 @@ export default function HomePage() {
           display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:14px;
           background:#fff;border:1px solid ${LINE};cursor:pointer;text-align:left;transition:all .18s;
         }
-        .h-action:hover{border-color:${BRAND};box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+        /* CORRIGIDO — :hover envolvido em @media(hover:hover). Em
+           dispositivos touch (telemóvel, PWA), um tap dispara o estado
+           :hover mas nunca dispara o "mouse saiu" que o desliga — o
+           estilo fica "colado" ao botão até outro toque acontecer
+           noutro sítio do ecrã. Isto explicava o sintoma "o botão
+           Como funciona aparece pintado/selecionado ao entrar na Home
+           depois do login" — não era navegação nem clique fantasma,
+           era este :hover preso desde antes (ex: se o dedo passou perto
+           dessa área durante o scroll/tap do ecrã anterior). A media
+           query (hover:hover) só aplica o estilo em dispositivos com
+           cursor real (rato de PC), que sabem emitir "mouse saiu" —
+           touch falha essa verificação e nunca fica preso. */
+        @media(hover:hover){
+          .h-action:hover{border-color:${BRAND};box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+        }
         .h-action-ico{width:38px;height:38px;border-radius:11px;background:${BRAND_SOFT};display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .h-action-label{font-size:13.5px;font-weight:600;color:${INK}}
         .h-action-desc{font-size:11.5px;color:${MUTED};margin-top:1px}
@@ -175,7 +189,9 @@ export default function HomePage() {
           background:#fff;border:1px solid ${LINE};cursor:pointer;font-family:inherit;padding:9px 14px;
           border-radius:10px;transition:all .18s;flex-shrink:0;
         }
-        .sec-link:hover{border-color:${BRAND};color:${BRAND}}
+        @media(hover:hover){
+          .sec-link:hover{border-color:${BRAND};color:${BRAND}}
+        }
 
         /* ═══════════ OS TEUS PEDIDOS ═══════════ */
         .h-empty-orders{
@@ -191,17 +207,19 @@ export default function HomePage() {
           background:#FFFFFF;border:1px solid ${LINE};cursor:pointer;text-align:left;
           transition:all 0.2s cubic-bezier(.16,1,.3,1);
         }
-        .cat-card:hover{
-          border-color:${BRAND};
-          box-shadow:0 6px 18px rgba(15,23,42,0.06);
+        @media(hover:hover){
+          .cat-card:hover{
+            border-color:${BRAND};
+            box-shadow:0 6px 18px rgba(15,23,42,0.06);
+          }
+          .cat-card:hover .cat-card-ico{background:${BRAND_SOFT}}
+          .cat-card:hover .cat-card-ico svg{color:${BRAND}}
         }
         .cat-card-ico{
           width:40px;height:40px;border-radius:11px;background:#F4F4F2;
           display:flex;align-items:center;justify-content:center;margin-bottom:14px;
           transition:background .2s;
         }
-        .cat-card:hover .cat-card-ico{background:${BRAND_SOFT}}
-        .cat-card:hover .cat-card-ico svg{color:${BRAND}}
         .cat-card-label{font-size:14px;font-weight:600;color:${INK};margin-bottom:3px}
         .cat-card-desc{font-size:11.5px;color:${MUTED};line-height:1.4}
 

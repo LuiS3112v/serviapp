@@ -7,6 +7,18 @@
   overflow: hidden;
   border: 1px solid #1a2535;
   background-color: #131b27;
+  /* CORRIGIDO — sem isto, gestos de pinch-zoom e double-tap dentro do
+     mapa podem ser interpretados pelo browser (especialmente Safari
+     iOS) como zoom da PÁGINA INTEIRA, não só do mapa. Isso explicava
+     o sintoma "ao dar zoom no mapa até ao máximo, a Home fica
+     comprida/esticada depois" — não era a Home que tinha um bug, era
+     o zoom nativo do browser a ficar aplicado à página toda, e esse
+     zoom persiste até o utilizador fazer reset manual (ou até esta
+     correção). touch-action: none entrega os gestos de toque
+     inteiramente ao Leaflet, sem o browser tentar interpretá-los como
+     zoom/scroll nativos por cima.
+  */
+  touch-action: none;
 }
 
 .leafletRoot {

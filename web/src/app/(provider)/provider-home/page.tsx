@@ -165,13 +165,19 @@ export default function ProviderHomePage() {
           background:${INK};color:#fff;font-size:13.5px;font-weight:600;cursor:pointer;
           font-family:inherit;white-space:nowrap;transition:all 0.18s ease;
         }
-        .btn-ph-primary:hover{background:#1E293B}
         .btn-ph-ghost{
           display:inline-flex;align-items:center;gap:6px;padding:12px 18px;border-radius:11px;
           background:#fff;border:1px solid ${LINE};color:${INK};font-size:13.5px;font-weight:600;
           cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.18s ease;
         }
-        .btn-ph-ghost:hover{border-color:#CBD5E1}
+        /* CORRIGIDO — mesmo fix do sticky hover aplicado na home do
+           cliente: em touch, :hover fica "preso" porque não há evento
+           de "saída do cursor" para o desligar. @media(hover:hover)
+           restringe o estilo a dispositivos com cursor real. */
+        @media(hover:hover){
+          .btn-ph-primary:hover{background:#1E293B}
+          .btn-ph-ghost:hover{border-color:#CBD5E1}
+        }
 
         .ph-photo{position:relative;border-radius:18px;overflow:hidden;height:180px;background:#EDEFF2}
         .ph-photo img{width:100%;height:100%;object-fit:cover;display:block}
@@ -197,7 +203,9 @@ export default function ProviderHomePage() {
           cursor:pointer;border:none;font-family:inherit;white-space:nowrap;margin-left:auto;flex-shrink:0;
           transition:all .18s;
         }
-        .btn-kyc:hover{background:#D98E1A}
+        @media(hover:hover){
+          .btn-kyc:hover{background:#D98E1A}
+        }
 
         /* ═══════════ SECTION HEADERS ═══════════ */
         .sec-hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;gap:16px}
@@ -208,7 +216,9 @@ export default function ProviderHomePage() {
           background:#fff;border:1px solid ${LINE};cursor:pointer;font-family:inherit;padding:9px 14px;
           border-radius:10px;transition:all .18s;flex-shrink:0;
         }
-        .sec-link:hover{border-color:${AMBER};color:${AMBER}}
+        @media(hover:hover){
+          .sec-link:hover{border-color:${AMBER};color:${AMBER}}
+        }
 
         .ph-empty{
           display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:24px;
