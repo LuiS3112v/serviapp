@@ -1,17 +1,21 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  /* Sem gap fixo — usamos margin no header para não desperdiçar
+     espaço vertical no mapa */
+  gap: 0;
+  /* Ocupa toda a altura do .hi (flex:1 no layout pai) */
   height: 100%;
-  padding: 20px 24px;
+  /* Sem padding lateral no modo mapa — o mapa vai de borda a borda
+     na horizontal; o header fica com padding próprio */
+  padding: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {
   .page {
-    /* Topo reduzido (era 12px) para "puxar" o título e o mapa
-       um pouco mais para cima no mobile */
-    padding: 6px 12px 12px;
-    gap: 12px;
+    padding: 0;
+    gap: 0;
   }
 }
 
@@ -21,6 +25,21 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  /* Padding próprio do header — o mapa fica sem padding lateral */
+  padding: 16px 24px 12px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 10px 14px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 8px 12px 6px;
+  }
 }
 
 .title {
@@ -71,33 +90,73 @@
 
 .locationDeniedMessage {
   padding: 10px 14px;
+  margin: 0 24px 8px;
   border-radius: 10px;
   background-color: #FEF2F2;
   border: 1px solid #FCA5A5;
   color: #B91C1C;
   font-size: 12px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .locationDeniedMessage {
+    margin: 0 12px 6px;
+  }
 }
 
 .mapWrapper {
-  flex: 1;
-  min-height: 480px;
-  /* garante que a caixa ocupa sempre 100% do espaço vertical
-     restante dentro de .page, em vez de só depender do flex:1 */
-  height: 100%;
+  /* Ocupa todo o espaço vertical restante após o header */
+  flex: 1 1 0;
+  min-height: 0;
+  /* Sem min-height fixo — deixamos o flex gerir tudo.
+     Em ecrãs muito pequenos (iPhone SE, 375px × 667px) isto
+     ainda dá ~500px de mapa, mais do que suficiente. */
   position: relative;
-  border-radius: 18px;
+  /* Sem border-radius lateral — vai de borda a borda horizontalmente
+     como o Google Maps / Apple Maps numa app real.
+     Mantemos radius só em topo e fundo para suavizar a transição
+     com o header acima. */
+  border-radius: 0 0 0 0;
   overflow: hidden;
   background-color: #E2E8F0;
-  border: 1px solid #E2E8F0;
+  /* Sem border lateral para o mapa parecer "full-bleed" */
+  border-top: 1px solid #E2E8F0;
+}
+
+/* Em tablets e PCs, um leve border-radius no fundo fica elegante */
+@media (min-width: 769px) {
+  .mapWrapper {
+    border-radius: 0 0 18px 18px;
+    margin: 0 24px 20px;
+    /* Compensa o padding do .page que removemos,
+       mas só nos ecrãs maiores onde fica bem com margem */
+  }
+}
+
+/* Em mobile, o mapa vai mesmo de borda a borda */
+@media (max-width: 768px) {
+  .mapWrapper {
+    border-radius: 0;
+    margin: 0;
+    border-top: none;
+  }
 }
 
 .listWrapper {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding-bottom: 12px;
+  padding: 0 24px 20px;
+}
+
+@media (max-width: 768px) {
+  .listWrapper {
+    padding: 0 12px 16px;
+  }
 }
 
 .listCard {
