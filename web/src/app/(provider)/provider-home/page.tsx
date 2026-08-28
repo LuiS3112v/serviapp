@@ -178,6 +178,12 @@ export default function ProviderHomePage() {
           .btn-ph-primary:hover{background:#1E293B}
           .btn-ph-ghost:hover{border-color:#CBD5E1}
         }
+        /* Feedback de toque imediato — ver comentário equivalente em
+           web/src/app/(dashboard)/home/page.tsx sobre por que :active
+           é seguro em touch (ao contrário de :hover, não fica "colado"
+           depois de soltar o dedo). */
+        .btn-ph-primary:active{transform:scale(0.96)}
+        .btn-ph-ghost:active{transform:scale(0.96)}
 
         .ph-photo{position:relative;border-radius:18px;overflow:hidden;height:180px;background:#EDEFF2}
         .ph-photo img{width:100%;height:100%;object-fit:cover;display:block}
@@ -206,6 +212,7 @@ export default function ProviderHomePage() {
         @media(hover:hover){
           .btn-kyc:hover{background:#D98E1A}
         }
+        .btn-kyc:active{transform:scale(0.95)}
 
         /* ═══════════ SECTION HEADERS ═══════════ */
         .sec-hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;gap:16px}
@@ -219,6 +226,7 @@ export default function ProviderHomePage() {
         @media(hover:hover){
           .sec-link:hover{border-color:${AMBER};color:${AMBER}}
         }
+        .sec-link:active{transform:scale(0.96)}
 
         .ph-empty{
           display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:24px;

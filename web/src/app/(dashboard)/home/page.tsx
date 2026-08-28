@@ -5,9 +5,12 @@ import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
 import {
   MapPin, Briefcase, HelpCircle, ArrowRight, Loader2, Shield, Wrench,
-  Sparkles, Wind, Zap, Monitor, Leaf,
-  Package, Scissors, Car, Paintbrush, HardHat, Lock,
 } from "lucide-react";
+import {
+  IconLimpeza, IconClimatizacao, IconCanalizacao, IconEletricidade,
+  IconTIRedes, IconJardinagem, IconMudancas, IconBeleza,
+  IconAutomovel, IconPintura, IconConstrucao, IconSeguranca,
+} from "@/lib/mestroo-icons";
 import { servicesApi } from "@/lib/services.api";
 import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
 import { getSession } from "@/lib/auth.api";
@@ -59,24 +62,21 @@ const INK = TOKENS.color.ink;
 const MUTED = TOKENS.color.muted;
 const LINE = TOKENS.color.line;
 
-// Fotografia editorial do hero — distinta da usada em provider-home
-// (HERO_PROV), para os dois lados não repetirem a mesma imagem.
 const HERO_CLIENT = "https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=1200&auto=format&fit=crop";
 
-// Categorias — mesmos 12 itens, mesma rota de clique de antes.
 const CATS = [
-  { Icon: Sparkles,   label: "Limpeza",       desc: "Casas, escritórios e mais" },
-  { Icon: Wind,       label: "Climatização",  desc: "Instalação e manutenção" },
-  { Icon: Wrench,     label: "Canalização",   desc: "Reparações e instalações" },
-  { Icon: Zap,        label: "Eletricidade",  desc: "Instalações e reparações" },
-  { Icon: Monitor,    label: "TI & Redes",    desc: "Suporte e redes informáticas" },
-  { Icon: Leaf,       label: "Jardinagem",    desc: "Manutenção de jardins" },
-  { Icon: Package,    label: "Mudanças",      desc: "Transporte e mudanças" },
-  { Icon: Scissors,   label: "Beleza",        desc: "Cabeleireiro e estética" },
-  { Icon: Car,        label: "Automóvel",     desc: "Reparação e manutenção" },
-  { Icon: Paintbrush, label: "Pintura",       desc: "Interior e exterior" },
-  { Icon: HardHat,    label: "Construção",    desc: "Obras e remodelações" },
-  { Icon: Lock,       label: "Segurança",     desc: "Sistemas e monitorização" },
+  { Icon: IconLimpeza,      label: "Limpeza",      desc: "Casas, escritórios e mais" },
+  { Icon: IconClimatizacao, label: "Climatização", desc: "Instalação e manutenção" },
+  { Icon: IconCanalizacao,  label: "Canalização",  desc: "Reparações e instalações" },
+  { Icon: IconEletricidade, label: "Eletricidade", desc: "Instalações e reparações" },
+  { Icon: IconTIRedes,      label: "TI & Redes",   desc: "Suporte e redes informáticas" },
+  { Icon: IconJardinagem,   label: "Jardinagem",   desc: "Manutenção de jardins" },
+  { Icon: IconMudancas,     label: "Mudanças",     desc: "Transporte e mudanças" },
+  { Icon: IconBeleza,       label: "Beleza",       desc: "Cabeleireiro e estética" },
+  { Icon: IconAutomovel,    label: "Automóvel",    desc: "Reparação e manutenção" },
+  { Icon: IconPintura,      label: "Pintura",      desc: "Interior e exterior" },
+  { Icon: IconConstrucao,   label: "Construção",   desc: "Obras e remodelações" },
+  { Icon: IconSeguranca,    label: "Segurança",    desc: "Sistemas e monitorização" },
 ];
 
 export default function HomePage() {
@@ -116,7 +116,7 @@ export default function HomePage() {
   return (
     <>
       <style>{`
-        .hw{display:flex;min-height:100vh;background:#FFFFFF}
+        .hw{display:flex;min-height:100vh;min-height:100dvh;background:#FFFFFF}
         .hm{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
         .hi{padding:32px;display:flex;flex-direction:column;gap:44px;max-width:1220px}
 
@@ -161,21 +161,10 @@ export default function HomePage() {
           display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:14px;
           background:#fff;border:1px solid ${LINE};cursor:pointer;text-align:left;transition:all .18s;
         }
-        /* CORRIGIDO — :hover envolvido em @media(hover:hover). Em
-           dispositivos touch (telemóvel, PWA), um tap dispara o estado
-           :hover mas nunca dispara o "mouse saiu" que o desliga — o
-           estilo fica "colado" ao botão até outro toque acontecer
-           noutro sítio do ecrã. Isto explicava o sintoma "o botão
-           Como funciona aparece pintado/selecionado ao entrar na Home
-           depois do login" — não era navegação nem clique fantasma,
-           era este :hover preso desde antes (ex: se o dedo passou perto
-           dessa área durante o scroll/tap do ecrã anterior). A media
-           query (hover:hover) só aplica o estilo em dispositivos com
-           cursor real (rato de PC), que sabem emitir "mouse saiu" —
-           touch falha essa verificação e nunca fica preso. */
         @media(hover:hover){
           .h-action:hover{border-color:${BRAND};box-shadow:0 6px 18px rgba(15,23,42,0.06)}
         }
+        .h-action:active{transform:scale(0.97)}
         .h-action-ico{width:38px;height:38px;border-radius:11px;background:${BRAND_SOFT};display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .h-action-label{font-size:13.5px;font-weight:600;color:${INK}}
         .h-action-desc{font-size:11.5px;color:${MUTED};margin-top:1px}
@@ -192,6 +181,7 @@ export default function HomePage() {
         @media(hover:hover){
           .sec-link:hover{border-color:${BRAND};color:${BRAND}}
         }
+        .sec-link:active{transform:scale(0.96)}
 
         /* ═══════════ OS TEUS PEDIDOS ═══════════ */
         .h-empty-orders{
@@ -213,24 +203,19 @@ export default function HomePage() {
             box-shadow:0 6px 18px rgba(15,23,42,0.06);
           }
           .cat-card:hover .cat-card-ico{background:${BRAND_SOFT}}
-          .cat-card:hover .cat-card-ico svg{color:${BRAND}}
+          .cat-card:hover .cat-card-ico svg{stroke:${BRAND}}
         }
+        .cat-card:active{transform:scale(0.96)}
         .cat-card-ico{
           width:40px;height:40px;border-radius:11px;background:#F4F4F2;
           display:flex;align-items:center;justify-content:center;margin-bottom:14px;
           transition:background .2s;
         }
+        .cat-card-ico svg{transition:stroke .2s}
         .cat-card-label{font-size:14px;font-weight:600;color:${INK};margin-bottom:3px}
         .cat-card-desc{font-size:11.5px;color:${MUTED};line-height:1.4}
 
         /* ═══════════ RESPONSIVE ═══════════ */
-        /* A BottomNav (ver BottomNav.tsx) só existe nesta página
-           (/home) abaixo de 1024px — o mesmo breakpoint usado aqui.
-           O espaço para ela deixou de ser reservado globalmente no
-           body (globals.css) porque isso criava um gap vazio em TODAS
-           as outras páginas, que nunca têm a barra. Agora soma-se
-           directamente ao padding-bottom que esta página já tinha,
-           só aqui, só neste breakpoint. */
         @media(max-width:1200px){
           .cat-grid{grid-template-columns:repeat(3,1fr)}
         }
