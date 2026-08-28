@@ -140,7 +140,15 @@ export default function MapPage() {
   const [providersError, setProvidersError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<(ProviderLocation | ProviderWithDistance) | null>(null);
 
-  const [pendingMapCenter, setPendingMapCenter] = useState<MapCoordinates | null>(null);
+  // BUG 3 FIX — pendingMapCenter era um useState, o que o colocava nas
+  // dependências do useCallback de loadDiscoveryProviders. Cada movimento
+  // do mapa mudava pendingMapCenter → recriava loadDiscoveryProviders →
+  // o useEffect do polling reiniciava o interval → atraso de ~10-15s nos
+  // filtros. Como pendingMapCenter só é lido dentro de loadDiscoveryProviders
+  // (não precisa de causar re-render por si só), passa a ser uma ref:
+  // o seu valor está sempre disponível no closure sem causar recriações
+  // desnecessárias do callback nem resets do polling.
+  const pendingMapCenterRef = useRef<MapCoordinates | null>(null);
   const [showSearchThisArea, setShowSearchThisArea] = useState(false);
 
   const [conversingProviderId, setConversingProviderId] = useState<string | null>(null);
@@ -347,7 +355,7 @@ export default function MapPage() {
     try {
       let data: (ProviderLocation | ProviderWithDistance)[];
 
-      const searchOrigin = pendingMapCenter ?? clientCoordinates;
+      const searchOrigin = pendingMapCenterRef.current ?? clientCoordinates;
 
       if (searchOrigin) {
         data = await fetchNearbyProviders({
@@ -390,7 +398,11 @@ export default function MapPage() {
         setLoadingProviders(false);
       }
     }
-  }, [activeService, category, status, availableOnly, radiusKm, clientCoordinates, pendingMapCenter]);
+  // pendingMapCenterRef removido das dependências intencionalmente:
+  // é uma ref (valor sempre fresco via .current), não precisa de estar
+  // aqui — e estar causava o BUG 3 (recriação do callback a cada
+  // movimento de mapa, reiniciando o polling e atrasando os filtros).
+  }, [activeService, category, status, availableOnly, radiusKm, clientCoordinates]);
 
   // Só recarrega prestadores por causa de uma mudança de
   // clientCoordinates se essa mudança representar movimento real
@@ -441,12 +453,18 @@ export default function MapPage() {
   }, []);
 
   const handleMapMoved = useCallback((center: MapCoordinates) => {
-    setPendingMapCenter(center);
+    pendingMapCenterRef.current = center;
     setShowSearchThisArea(true);
   }, []);
 
   const handleSearchThisArea = useCallback(() => {
+    // Após pesquisar esta área, a próxima pesquisa automática (por filtro
+    // ou GPS) deve usar a posição do cliente, não o centro do mapa.
+    // A ref já tem o valor correcto para este pedido; limpá-la agora
+    // impede que pesquisas automáticas futuras fiquem "presas" nesta
+    // área manualmente escolhida.
     loadDiscoveryProviders();
+    pendingMapCenterRef.current = null;
   }, [loadDiscoveryProviders]);
 
   const handleConverse = useCallback(async (providerId: string) => {

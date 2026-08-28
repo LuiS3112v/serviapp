@@ -623,9 +623,21 @@ export function ServiceMap({
     />
   ));
 
+  // BUG 2 FIX — O Leaflet mantém o seu próprio estado interno de zoom
+  // mesmo depois de um logout/remount. No Next.js App Router, o
+  // componente pode ser preservado em cache entre navegações (soft
+  // navigation), herdando o zoom da sessão anterior. Forçar um `key`
+  // único por montagem destrói e recria a instância do Leaflet de
+  // raiz, garantindo que o zoom e a posição começam sempre no valor
+  // inicial definido em mapProviderConfig — sem herdar estado visual
+  // de sessões anteriores.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const mapKey = useMemo(() => `map-${mode}-${Date.now()}`, [mode]);
+
   return (
     <div className={styles['map-container']} ref={containerRef}>
       <MapContainer
+        key={mapKey}
         center={[initialCenter.latitude, initialCenter.longitude]}
         zoom={mapProviderConfig.defaultZoom}
         minZoom={mapProviderConfig.minZoom}

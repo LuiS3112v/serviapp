@@ -2,14 +2,17 @@ import { MapCoordinates } from '../map/map-provider.types';
 import { RouteResult, RoutingProvider } from './routing-provider.types';
 import { buildHaversineEstimate } from './haversine-fallback';
 
-// Instância pública de demonstração do OSRM. Adequada para validar o
-// produto e testar a experiência completa, mas sem garantia de
-// disponibilidade nem limite de uso definido para produção real. Antes
-// de um lançamento com utilizadores reais, substituir esta URL por uma
-// instância própria do OSRM ou outro fornecedor de rotas, mantendo a
-// mesma assinatura de RoutingProvider — nenhum componente de mapa
-// precisa de ser alterado nessa troca.
-const OSRM_PUBLIC_ENDPOINT = 'https://router.project-osrm.org/route/v1/driving';
+// Rotas via Stadia Maps (motor Valhalla), com format=osrm para devolver
+// a mesma estrutura (routes[0].geometry.coordinates) que já usávamos
+// com o OSRM público — só o endpoint, autenticação e método (POST)
+// mudam. Substitui o router.project-osrm.org: essa era a instância
+// pública de demonstração do OSRM, sem SLA nem garantia de
+// disponibilidade em produção, e as suas falhas frequentes caíam no
+// fallback Haversine (linha reta), o que explicava rotas "quadradas"
+// no mapa em vez de seguirem ruas reais. O Stadia usa a mesma conta e
+// API key já configuradas para os tiles do mapa (ver
+// map-provider.config.ts), com plano gratuito permanente sem cartão.
+const STADIA_ROUTE_ENDPOINT = 'https://api.stadiamaps.com/route/v1';
 const REQUEST_TIMEOUT_MS = 6000;
 
 interface OsrmResponse {
@@ -41,10 +44,11 @@ function isValidCoordinate(coordinates: MapCoordinates): boolean {
 
 // Log de diagnóstico apenas em desenvolvimento — evita poluir a
 // consola em produção, mas dá visibilidade suficiente durante o
-// desenvolvimento para distinguir a causa real de uma falha do OSRM.
+// desenvolvimento para distinguir a causa real de uma falha do
+// routing.
 function devWarn(message: string): void {
   if (process.env.NODE_ENV !== 'production') {
-    console.warn(`[OsrmRoutingProvider] ${message}`);
+    console.warn(`[StadiaRoutingProvider] ${message}`);
   }
 }
 
@@ -66,6 +70,8 @@ export class OsrmRoutingProvider implements RoutingProvider {
       throw new DOMException('Routing request superseded before start', 'AbortError');
     }
 
+    const apiKey = process.env.NEXT_PUBLIC_STADIA_API_KEY;
+
     const controller = new AbortController();
     let abortReason: 'timeout' | 'superseded' | null = null;
 
@@ -82,10 +88,21 @@ export class OsrmRoutingProvider implements RoutingProvider {
     externalSignal?.addEventListener('abort', onExternalAbort, { once: true });
 
     try {
-      const coordinatesParam = `${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}`;
-      const url = `${OSRM_PUBLIC_ENDPOINT}/${coordinatesParam}?overview=full&geometries=geojson`;
+      const url = `${STADIA_ROUTE_ENDPOINT}?api_key=${apiKey}`;
 
-      const response = await fetch(url, { signal: controller.signal });
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          locations: [
+            { lat: origin.latitude, lon: origin.longitude, type: 'break' },
+            { lat: destination.latitude, lon: destination.longitude, type: 'break' },
+          ],
+          costing: 'auto',
+          format: 'osrm',
+        }),
+      });
 
       if (!response.ok) {
         devWarn(`HTTP error ${response.status}`);
@@ -114,7 +131,7 @@ export class OsrmRoutingProvider implements RoutingProvider {
       if ((error as { name?: string })?.name === 'AbortError') {
         if (abortReason === 'superseded') {
           // Cancelado deliberadamente pelo chamador porque surgiu uma
-          // posição mais recente — não é uma falha do OSRM, por isso
+          // posição mais recente — não é uma falha do routing, por isso
           // não há fallback nem log. O chamador descarta este
           // resultado.
           throw error;

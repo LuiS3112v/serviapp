@@ -204,7 +204,12 @@ function LoginPageContent() {
                 <button className="auth-forgot" type="button">Esqueci a senha</button>
               </div>
 
-              <button className="auth-btn" onClick={handleLogin} disabled={loading}>
+              <button
+                className="auth-btn"
+                type="button"
+                onPointerUp={(e) => { e.preventDefault(); if (!loading) handleLogin(); }}
+                disabled={loading}
+              >
                 {loading ? "A entrar..." : "Entrar"}
               </button>
 
