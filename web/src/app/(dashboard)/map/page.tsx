@@ -340,8 +340,55 @@ export default function MapPage() {
   // do pedido mais recente pode atualizar `providers` — uma resposta
   // antiga que chegue depois é sempre ignorada (AbortError), nunca
   // sobrescreve um resultado mais novo.
+  // FIX PROBLEMA 2 — filtros lentos (10-15s)
+  //
+  // CAUSA RAIZ: loadDiscoveryProviders era um useCallback com
+  // [activeService, category, status, availableOnly, radiusKm,
+  // clientCoordinates] nas dependências. Quando o utilizador clicava
+  // num filtro (ex: "Limpeza"), o ciclo era:
+  //
+  //   1. setCategory("Limpeza") → React agenda re-render
+  //   2. useEffect([category,...]) dispara → chama loadDiscoveryProviders
+  //      MAS esta ainda é a versão ANTIGA do callback (category="Todos")
+  //      → a ref desatualizada dentro do callback faz o fetch errado
+  //   3. Re-render completa → useCallback recria loadDiscoveryProviders
+  //      com category="Limpeza"
+  //   4. useEffect([activeService, loadDiscoveryProviders]) detecta que
+  //      loadDiscoveryProviders mudou → DESTRÓI o interval de 25s e cria
+  //      um NOVO → próximo tick só acontece daqui a 25s
+  //
+  // Resultado: fetch com filtro errado + 25s de espera antes do correto.
+  //
+  // CORREÇÃO: os valores de filtro passam a ser lidos de refs (sempre
+  // frescos dentro do callback). O useCallback tem dependências mínimas
+  // [activeService], eliminando a recriação ao trocar filtros. O polling
+  // nunca é reiniciado por um clique de categoria/status/raio.
+  // Um useEffect separado com as dependências de filtro chama
+  // loadDiscoveryProviders diretamente para reagir imediatamente.
+
+  // Refs sempre sincronizadas com o valor atual dos filtros — lidas
+  // dentro do callback sem causar recriação nem reinício do polling.
+  const categoryRef = useRef(category);
+  const statusRef = useRef(status);
+  const availableOnlyRef = useRef(availableOnly);
+  const radiusKmRef = useRef(radiusKm);
+  const clientCoordinatesRef = useRef(clientCoordinates);
+
+  categoryRef.current = category;
+  statusRef.current = status;
+  availableOnlyRef.current = availableOnly;
+  radiusKmRef.current = radiusKm;
+  clientCoordinatesRef.current = clientCoordinates;
+
   const loadDiscoveryProviders = useCallback(async () => {
     if (activeService) return;
+
+    // Lê os valores actuais das refs (sempre frescos)
+    const currentCategory = categoryRef.current;
+    const currentStatus = statusRef.current;
+    const currentAvailableOnly = availableOnlyRef.current;
+    const currentRadiusKm = radiusKmRef.current;
+    const currentClientCoordinates = clientCoordinatesRef.current;
 
     if (discoveryRequestControllerRef.current) {
       discoveryRequestControllerRef.current.abort();
@@ -355,42 +402,34 @@ export default function MapPage() {
     try {
       let data: (ProviderLocation | ProviderWithDistance)[];
 
-      const searchOrigin = pendingMapCenterRef.current ?? clientCoordinates;
+      const searchOrigin = pendingMapCenterRef.current ?? currentClientCoordinates;
 
       if (searchOrigin) {
         data = await fetchNearbyProviders({
           latitude: searchOrigin.latitude,
           longitude: searchOrigin.longitude,
-          radiusKm,
-          category: category !== 'Todos' ? category : undefined,
-          status: status !== 'all' ? status : undefined,
-          availableOnly,
+          radiusKm: currentRadiusKm,
+          category: currentCategory !== 'Todos' ? currentCategory : undefined,
+          status: currentStatus !== 'all' ? currentStatus : undefined,
+          availableOnly: currentAvailableOnly,
         }, controller.signal);
         lastDiscoverySearchOriginRef.current = searchOrigin;
       } else {
-        let raw = await fetchProviders(category !== 'Todos' ? category : undefined, controller.signal);
-        if (status === 'online') raw = raw.filter((p) => p.isOnline);
-        if (status === 'offline') raw = raw.filter((p) => !p.isOnline);
-        if (availableOnly) raw = raw.filter((p) => p.isOnline);
+        let raw = await fetchProviders(currentCategory !== 'Todos' ? currentCategory : undefined, controller.signal);
+        if (currentStatus === 'online') raw = raw.filter((p) => p.isOnline);
+        if (currentStatus === 'offline') raw = raw.filter((p) => !p.isOnline);
+        if (currentAvailableOnly) raw = raw.filter((p) => p.isOnline);
         data = raw.filter((p) => p.latitude != null && p.longitude != null);
         lastDiscoverySearchOriginRef.current = null;
       }
 
-      // Se este pedido foi entretanto abortado (um mais recente já
-      // começou), a chamada acima já teria rejeitado com AbortError e
-      // caído no catch — mas esta verificação extra cobre o caso raro
-      // de a resposta chegar no exato instante da troca de controller.
       if (controller.signal.aborted) return;
       if (!isMountedRef.current) return;
 
       setProviders(data);
       setShowSearchThisArea(false);
     } catch (error: any) {
-      if (error?.name === 'AbortError') {
-        // Pedido cancelado porque um mais recente já começou — não é
-        // um erro real, não deve aparecer ao utilizador.
-        return;
-      }
+      if (error?.name === 'AbortError') return;
       if (!isMountedRef.current) return;
       setProvidersError(error.message ?? 'Erro ao carregar prestadores.');
     } finally {
@@ -398,19 +437,24 @@ export default function MapPage() {
         setLoadingProviders(false);
       }
     }
-  // pendingMapCenterRef removido das dependências intencionalmente:
-  // é uma ref (valor sempre fresco via .current), não precisa de estar
-  // aqui — e estar causava o BUG 3 (recriação do callback a cada
-  // movimento de mapa, reiniciando o polling e atrasando os filtros).
-  }, [activeService, category, status, availableOnly, radiusKm, clientCoordinates]);
+  // Dependências mínimas: só o que força nova instância do callback.
+  // Os filtros são lidos via refs — não precisam de estar aqui.
+  }, [activeService]);
 
-  // Só recarrega prestadores por causa de uma mudança de
-  // clientCoordinates se essa mudança representar movimento real
-  // (> DISCOVERY_MOVEMENT_THRESHOLD_KM desde a última pesquisa feita).
-  // category/status/availableOnly/radiusKm continuam a disparar recarga
-  // sempre — cada mudança de filtro/categoria é uma intenção explícita
-  // do utilizador e deve refletir imediatamente no mapa.
+  // Trigger IMEDIATO quando os filtros mudam — reage no mesmo render
+  // cycle, sem esperar pelo próximo tick do polling (25s).
+  // Não tem guarda de movimento: uma mudança de filtro é sempre
+  // intencional e deve disparar fetch imediatamente.
   useEffect(() => {
+    if (activeService) return;
+    loadDiscoveryProviders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, status, availableOnly, radiusKm]);
+
+  // Trigger separado para mudança de localização do cliente —
+  // com guarda de movimento para evitar reloads por ruído GPS.
+  useEffect(() => {
+    if (activeService) return;
     if (!clientCoordinates) {
       loadDiscoveryProviders();
       return;
@@ -424,8 +468,11 @@ export default function MapPage() {
       loadDiscoveryProviders();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, status, availableOnly, radiusKm, clientCoordinates]);
+  }, [clientCoordinates]);
 
+  // Polling de 25s — agora estável: loadDiscoveryProviders não muda
+  // quando os filtros mudam, logo o interval nunca é reiniciado por
+  // um clique de categoria/status/raio.
   useEffect(() => {
     if (activeService) {
       if (discoveryPollRef.current) clearInterval(discoveryPollRef.current);

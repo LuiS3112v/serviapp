@@ -19,6 +19,11 @@
      zoom/scroll nativos por cima.
   */
   touch-action: none;
+  /* Evita que o browser iOS entre em modo de seleção de texto
+     durante gestos de zoom/drag no mapa, o que pode interferir
+     com o visual viewport (Problema 3). */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .leafletRoot {

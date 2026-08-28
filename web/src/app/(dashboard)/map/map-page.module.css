@@ -1,23 +1,20 @@
+/* ═══════════════════════════════════════════════════════════════
+   MAP PAGE — layout container
+   Alinhado com a foto de referência: card com margens laterais,
+   bordas arredondadas, altura generosa em todos os dispositivos.
+   ═══════════════════════════════════════════════════════════════ */
+
 .page {
   display: flex;
   flex-direction: column;
-  /* Sem gap fixo — usamos margin no header para não desperdiçar
-     espaço vertical no mapa */
   gap: 0;
-  /* Ocupa toda a altura do .hi (flex:1 no layout pai) */
+  /* Ocupa toda a altura disponível no .hi do dashboard layout */
   height: 100%;
-  /* Sem padding lateral no modo mapa — o mapa vai de borda a borda
-     na horizontal; o header fica com padding próprio */
   padding: 0;
   overflow: hidden;
 }
 
-@media (max-width: 768px) {
-  .page {
-    padding: 0;
-    gap: 0;
-  }
-}
+/* ── Header ──────────────────────────────────────────────────── */
 
 .header {
   display: flex;
@@ -25,29 +22,34 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  /* Padding próprio do header — o mapa fica sem padding lateral */
-  padding: 16px 24px 12px;
+  padding: 20px 28px 14px;
   flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .header {
+    padding: 16px 20px 12px;
+  }
 }
 
 @media (max-width: 768px) {
   .header {
-    padding: 10px 14px 8px;
+    padding: 12px 16px 10px;
   }
 }
 
 @media (max-width: 480px) {
   .header {
-    padding: 8px 12px 6px;
+    padding: 10px 14px 8px;
   }
 }
+
+/* ── Títulos ─────────────────────────────────────────────────── */
 
 .title {
   font-size: 20px;
   font-weight: 700;
   color: #1F2A28;
-  /* reset da margin default do <h1>, que também contribuía para
-     o espaço em branco por cima do texto */
   margin: 0;
 }
 
@@ -60,6 +62,8 @@
   color: #6B7770;
   margin-top: 2px;
 }
+
+/* ── Toggle Mapa / Lista ─────────────────────────────────────── */
 
 .viewToggle {
   display: flex;
@@ -88,9 +92,11 @@
   box-shadow: 0 1px 3px rgba(14, 122, 95, 0.28);
 }
 
+/* ── Mensagem de localização negada ──────────────────────────── */
+
 .locationDeniedMessage {
   padding: 10px 14px;
-  margin: 0 24px 8px;
+  margin: 0 28px 10px;
   border-radius: 10px;
   background-color: #FEF2F2;
   border: 1px solid #FCA5A5;
@@ -101,47 +107,79 @@
 
 @media (max-width: 768px) {
   .locationDeniedMessage {
-    margin: 0 12px 6px;
+    margin: 0 16px 8px;
   }
 }
+
+/* ── Container do mapa ───────────────────────────────────────────
+   Referência visual (foto enviada):
+     • card com margens laterais confortáveis
+     • bordas arredondadas modernas
+     • altura generosa — preenche quase todo o espaço restante
+
+   Estratégia de altura:
+     • flex: 1 1 0 + min-height: 0  → cresce para preencher tudo
+     • Em vez de min-height fixo, usamos min-height em dvh como
+       safety-net para ecrãs muito pequenos
+     • Margens laterais e inferior dão o aspecto de "card suspenso"
+       pedido na foto de referência
+   ──────────────────────────────────────────────────────────────── */
 
 .mapWrapper {
-  /* Ocupa todo o espaço vertical restante após o header */
   flex: 1 1 0;
   min-height: 0;
-  /* Sem min-height fixo — deixamos o flex gerir tudo.
-     Em ecrãs muito pequenos (iPhone SE, 375px × 667px) isto
-     ainda dá ~500px de mapa, mais do que suficiente. */
+  /* Safety-net: nunca fica abaixo de 55dvh mesmo em ecrãs pequenos */
+  min-height: min(55dvh, 400px);
   position: relative;
-  /* Sem border-radius lateral — vai de borda a borda horizontalmente
-     como o Google Maps / Apple Maps numa app real.
-     Mantemos radius só em topo e fundo para suavizar a transição
-     com o header acima. */
-  border-radius: 0 0 0 0;
+
+  /* Margens que criam o aspecto de card (foto de referência) */
+  margin: 0 28px 24px;
+
+  /* Bordas arredondadas modernas — igual ao card da foto */
+  border-radius: 20px;
   overflow: hidden;
+
   background-color: #E2E8F0;
-  /* Sem border lateral para o mapa parecer "full-bleed" */
-  border-top: 1px solid #E2E8F0;
+  border: 1px solid #E2E8F0;
+
+  /* Sombra subtil para dar profundidade ao card */
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.10);
 }
 
-/* Em tablets e PCs, um leve border-radius no fundo fica elegante */
-@media (min-width: 769px) {
+/* Tablet grande / laptop */
+@media (max-width: 1280px) {
   .mapWrapper {
-    border-radius: 0 0 18px 18px;
-    margin: 0 24px 20px;
-    /* Compensa o padding do .page que removemos,
-       mas só nos ecrãs maiores onde fica bem com margem */
+    margin: 0 20px 20px;
   }
 }
 
-/* Em mobile, o mapa vai mesmo de borda a borda */
+/* Tablet */
+@media (max-width: 1024px) {
+  .mapWrapper {
+    margin: 0 16px 18px;
+    border-radius: 18px;
+  }
+}
+
+/* Mobile grande (≥ 480px) */
 @media (max-width: 768px) {
   .mapWrapper {
-    border-radius: 0;
-    margin: 0;
-    border-top: none;
+    margin: 0 12px 16px;
+    border-radius: 16px;
+    min-height: min(58dvh, 420px);
   }
 }
+
+/* Mobile pequeno (< 480px) */
+@media (max-width: 480px) {
+  .mapWrapper {
+    margin: 0 10px 14px;
+    border-radius: 14px;
+    min-height: min(60dvh, 400px);
+  }
+}
+
+/* ── Lista de prestadores (modo Lista) ───────────────────────── */
 
 .listWrapper {
   flex: 1 1 0;
@@ -150,14 +188,16 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 0 24px 20px;
+  padding: 0 28px 24px;
 }
 
 @media (max-width: 768px) {
   .listWrapper {
-    padding: 0 12px 16px;
+    padding: 0 16px 20px;
   }
 }
+
+/* ── Cards da lista ──────────────────────────────────────────── */
 
 .listCard {
   display: flex;
@@ -224,6 +264,8 @@
   flex-shrink: 0;
 }
 
+/* ── Estado vazio ────────────────────────────────────────────── */
+
 .emptyState {
   display: flex;
   flex-direction: column;
@@ -241,9 +283,7 @@
   color: #6B7770;
 }
 
-/* ── Elementos flutuantes sobre o mapa — busca, categorias, filtro e
-   ativar localização já ficavam em branco, o que combina bem com o
-   novo fundo claro. Mantidos como estavam. ── */
+/* ── Elementos flutuantes sobre o mapa ───────────────────────── */
 
 .floatingSearchBar {
   position: absolute;

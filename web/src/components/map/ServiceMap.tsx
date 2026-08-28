@@ -250,6 +250,63 @@ export function ServiceMap({
     return () => { isMounted = false; };
   }, []);
 
+  // PROBLEMA 3 — Zoom do Leaflet deforma a homepage após logout em mobile.
+  //
+  // CAUSA RAIZ: o Leaflet 1.9.x usa CSS transforms no .leaflet-map-pane
+  // para animação de zoom. No Safari iOS/PWA, estes transforms podem
+  // deixar o visual viewport num estado de zoom intermédio quando o
+  // componente desmonta — mesmo com user-scalable=no no <meta viewport>.
+  // Isto manifesta-se como a homepage a aparecer "esticada/deformada"
+  // depois do logout.
+  //
+  // Adicionalmente, o Leaflet adiciona classes ao document.body
+  // ('leaflet-drag') e pode deixar estilos temporários no container
+  // durante operações de drag/zoom que não são limpos automaticamente
+  // se o componente desmontar a meio de um gesto.
+  //
+  // CORREÇÃO: ao desmontar, destruir explicitamente o mapa Leaflet
+  // (map.remove() — cleanup completo interno do Leaflet), depois
+  // fazer reset do visual viewport via window.scrollTo(0, 0).
+  // O scrollTo força o browser a revalidar a escala do viewport
+  // sem modificar nenhuma propriedade global de CSS ou HTML.
+  //
+  // IMPORTANTE: mapRef.current é atribuído pelo react-leaflet DEPOIS
+  // do primeiro render. Este useEffect usa uma ref local (leafletMapRef)
+  // que captura a instância no momento do mount e a usa no cleanup —
+  // assim o cleanup corre com a instância correta mesmo que mapRef.current
+  // já tenha sido limpo pelo react-leaflet antes do nosso cleanup.
+  const leafletMapRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      // Captura a instância actual antes de qualquer cleanup do React.
+      const leafletInstance = leafletMapRef.current ?? mapRef.current;
+
+      if (leafletInstance) {
+        try {
+          // map.remove() faz o cleanup completo do Leaflet:
+          // remove todos os layers, listeners, handlers de gestos,
+          // e restaura os estilos que o Leaflet possa ter aplicado.
+          leafletInstance.remove();
+        } catch {
+          // Silencioso — se o mapa já foi removido por outro motivo,
+          // não é um erro crítico.
+        }
+      }
+
+      // Reset do visual viewport no Safari iOS/PWA.
+      // window.scrollTo(0, 0) é uma operação segura que não modifica
+      // CSS global — apenas reposiciona o scroll, o que força o browser
+      // a reconciliar o visual viewport com o layout viewport.
+      // Em browsers que não têm o problema, não tem efeito negativo.
+      try {
+        window.scrollTo(0, 0);
+      } catch {
+        // Silencioso.
+      }
+    };
+  }, []);
+
   // O Leaflet mede o container no instante da montagem; se o layout
   // (sidebar/navbar/flex) ainda não tiver assentado no tamanho final
   // nesse momento, o mapa fica preso a um tamanho pequeno e os tiles
@@ -669,6 +726,8 @@ export function ServiceMap({
         ref={mapRef}
         whenReady={() => {
           if (mapRef.current) {
+            // Captura a instância para o cleanup do Problema 3
+            leafletMapRef.current = mapRef.current;
             mapRef.current.on('moveend', handleMoveEnd);
             setTimeout(() => mapRef.current?.invalidateSize(), 100);
           }
