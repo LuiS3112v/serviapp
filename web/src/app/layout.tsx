@@ -3,7 +3,7 @@ import { Manrope } from "next/font/google";
 import { PWA_CONFIG } from "@/lib/pwa-config";
 import { SWRegister } from "./sw-register";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
-import { ViewportGuard } from "@/components/pwa/ViewportGuard";
+import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -68,10 +68,20 @@ export default function RootLayout({
   return (
     <html lang="pt" className={manrope.variable}>
       <body>
+        {/* Barra de progresso no topo — aparece imediatamente ao clicar
+            qualquer link/botão de navegação, antes da nova página
+            carregar. Elimina a sensação de "botão morto" durante os
+            200-400ms que o Next.js leva a resolver a rota e carregar
+            o componente. Cor igual à cor de marca da Mestroo. */}
+        <NextTopLoader
+          color="#1D9E75"
+          height={2}
+          showSpinner={false}
+          shadow="0 0 6px #1D9E75"
+        />
         {children}
         <SWRegister />
         <InstallPrompt />
-        <ViewportGuard />
       </body>
     </html>
   );

@@ -23,6 +23,7 @@
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
     "next-auth": "^4.24.14",
+    "nextjs-toploader": "^3.9.17",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
