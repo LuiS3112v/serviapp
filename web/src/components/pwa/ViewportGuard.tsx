@@ -75,16 +75,36 @@ export function ViewportGuard() {
 
   useEffect(() => {
     const isOnMap = pathname === "/map";
+    const leftMap = wasOnMapRef.current && !isOnMap;
+
+    // wasOnMapRef é sempre actualizado, independentemente do que
+    // acontece a seguir — bug anterior: quando entrava no bloco de
+    // reset (com return do cleanup), esta linha só corria depois do
+    // early return, nunca sendo alcançada — o ref ficava preso em
+    // "true" para sempre e o guard deixava de disparar em qualquer
+    // saída seguinte do mapa. Actualizar primeiro elimina isso.
+    wasOnMapRef.current = isOnMap;
+
+    if (!leftMap) return;
 
     // Só actua na transição DE /map PARA outra rota — é exactamente
-    // o momento em que o bug pode manifestar-se. Não faz nada em
-    // navegações que não envolvem a página do mapa, para não gastar
-    // trabalho desnecessário no resto da app.
-    if (wasOnMapRef.current && !isOnMap) {
-      resetVisualViewport();
-    }
+    // o momento em que o bug pode manifestar-se.
+    resetVisualViewport();
 
-    wasOnMapRef.current = isOnMap;
+    // Tentativas adicionais escalonadas: em iOS Safari, se o
+    // unmount aconteceu a meio de um gesto de pinch ainda a ser
+    // processado nativamente pelo WebKit, o reset imediato pode
+    // correr antes do WebKit aplicar a escala residual — nesse
+    // caso a correção "perde a corrida". Repetir o reset mais
+    // duas vezes, em janelas curtas, apanha esse caso sem impacto
+    // visível (a operação é barata e idempotente).
+    const t1 = setTimeout(resetVisualViewport, 60);
+    const t2 = setTimeout(resetVisualViewport, 300);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [pathname]);
 
   return null;

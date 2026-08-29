@@ -3,20 +3,40 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Wrapper mais externo ────────────────────────────────────── */
+/*
+   FIX — SCROLL DUPLICADO (causa dos cliques que "às vezes não
+   acontecem" e do scroll estranho):
+
+   Antes, tanto o .hi (definido em page.tsx, container pai vindo do
+   layout do dashboard) como este .page tinham overflow-y:auto ao
+   mesmo tempo. Dois containers scrolláveis aninhados fazem o browser
+   ficar indeciso sobre qual deles deve responder ao gesto de
+   scroll/touch — o resultado é exactamente o sintoma relatado:
+   toques que não registam, scroll que "engasga", cliques que
+   demoram a responder porque o evento fica preso a resolver qual
+   elemento deve tratar o gesto.
+
+   CORREÇÃO: .hi voltou a overflow:hidden (não scrolla) — só ESTE
+   .page é que faz scroll. Um único scroller, previsível, sem
+   ambiguidade de qual elemento captura o gesto de touch/scroll.
+   -webkit-overflow-scrolling:touch adicionado para scroll suave e
+   nativo em iOS Safari/PWA (sem isto, o scroll em iOS pode ficar
+   com "engasgos" perceptíveis, sobretudo com conteúdo alto como
+   agora temos).
+*/
 
 .page {
   display: flex;
   flex-direction: column;
-  /* Não usamos height:100% + overflow:hidden porque queremos
-     que o conteúdo possa fazer scroll vertical naturalmente.
-     O .hi já é flex:1 e display:flex;flex-direction:column. */
   min-height: 0;
   flex: 1;
-  /* overflow-y: auto permite o scroll do .mapWrapper que ultrapassa
-     a viewport — o mapa cresce para além do ecrã e o utilizador
-     pode fazer scroll para ver a parte inferior. */
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* overscroll-behavior evita que o scroll do .page "vaze" para a
+     página do browser por trás dele (bounce/pull-to-refresh
+     indesejado em iOS/Chrome mobile ao chegar ao fim do conteúdo). */
+  overscroll-behavior: contain;
   padding: 0;
 }
 
@@ -163,11 +183,12 @@
    ──────────────────────────────────────────────────────────────── */
 
 .mapWrapper {
-  /* Desktop / monitor grande — mantido como estava (tecto em 780px,
-     mesmo valor que já existia), agora com piso e fluidez via clamp.
-     68dvh cobre confortavelmente laptops (1366×768) sem exagerar
-     em monitores grandes, onde o tecto de 780px entra em jogo. */
-  height: clamp(620px, 68dvh, 780px);
+  /* Desktop / monitor grande — altura aumentada substancialmente.
+     92dvh ocupa quase toda a altura útil da viewport, com tecto em
+     980px para não ficar absurdo em monitores muito altos e piso em
+     740px para nunca ficar pequeno mesmo em janelas de browser mais
+     baixas (ex: browser não maximizado). */
+  height: clamp(740px, 92dvh, 980px);
   position: relative;
 
   /* Margens laterais — card suspenso, EXACTAMENTE como estava */
@@ -188,34 +209,29 @@
   flex-shrink: 0;
 }
 
-/* Laptop / tablet grande (ex: 1024×1366 em portrait, 1280px largura) */
+/* Laptop / tablet grande */
 @media (max-width: 1280px) {
   .mapWrapper {
-    height: clamp(600px, 66dvh, 720px);
+    height: clamp(700px, 90dvh, 900px);
     margin: 0 20px 24px;
   }
 }
 
-/* Tablet — cobre tablet pequeno (768×1024) e tablet grande (820×1180,
-   1024×1366). O piso mais alto (560px) reflecte que tablets têm
-   sempre bastante altura disponível — o mapa nunca deve parecer
-   apertado nesta classe de dispositivo. 70dvh dá-lhe destaque real
-   face ao resto do conteúdo da página, sem ocupar tudo. */
+/* Tablet — pequeno (768×1024) e grande (820×1180, 1024×1366) */
 @media (max-width: 1024px) {
   .mapWrapper {
-    height: clamp(560px, 70dvh, 680px);
+    height: clamp(660px, 92dvh, 860px);
     margin: 0 16px 20px;
     border-radius: 18px;
   }
 }
 
-/* Smartphone grande (393×852, 412×915, 430×932) — o mapa fica alto
-   o suficiente para parecer o mapa principal da app (75dvh), com
-   scroll disponível para ver o resto quando o dispositivo for mais
-   curto que o valor preferido permite. */
+/* Smartphone grande (393×852, 412×915, 430×932) — mapa muito alto,
+   ocupando quase toda a viewport visível; scroll disponível para
+   ver a parte restante quando o dispositivo for mais curto. */
 @media (max-width: 768px) {
   .mapWrapper {
-    height: clamp(500px, 75dvh, 640px);
+    height: clamp(620px, 94dvh, 820px);
     margin: 0 12px 18px;
     border-radius: 16px;
   }
@@ -224,29 +240,24 @@
 /* Smartphone médio */
 @media (max-width: 640px) {
   .mapWrapper {
-    height: clamp(460px, 74dvh, 600px);
+    height: clamp(580px, 94dvh, 780px);
     margin: 0 10px 16px;
   }
 }
 
-/* Smartphone pequeno (375×667, 390×844) — dvh ligeiramente maior
-   porque nestes ecrãs a altura total já é limitada; precisamos de
-   uma fatia maior da viewport para o mapa continuar a parecer uma
-   área de mapa real e não uma faixa estreita. */
+/* Smartphone pequeno (375×667, 390×844) */
 @media (max-width: 480px) {
   .mapWrapper {
-    height: clamp(430px, 76dvh, 560px);
+    height: clamp(540px, 95dvh, 740px);
     margin: 0 10px 14px;
     border-radius: 14px;
   }
 }
 
-/* Smartphone muito pequeno (320×568, iPhone SE 375px largura) —
-   piso mais baixo para nunca ultrapassar o espaço disponível neste
-   ecrã, mas ainda assim generoso relativamente ao ecrã pequeno. */
+/* Smartphone muito pequeno (320×568, iPhone SE 375px largura) */
 @media (max-width: 390px) {
   .mapWrapper {
-    height: clamp(400px, 72dvh, 520px);
+    height: clamp(500px, 93dvh, 680px);
     margin: 0 8px 12px;
   }
 }
