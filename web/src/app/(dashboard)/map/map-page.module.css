@@ -118,26 +118,62 @@
 }
 
 /* ── Container do mapa ───────────────────────────────────────────
-   ESTRATÉGIA DE ALTURA:
-   • Não usamos flex:1 + min-height:0 porque queremos que o mapa
-     seja MAIS ALTO que a viewport e o utilizador possa fazer
-     scroll para ver a parte de baixo (pedido actual).
-   • Usamos uma altura fixa generosa por breakpoint.
-   • O fundo do .map-container no ServiceMap.module.css é a cor
-     do mapa real — não existe área cinza porque o Leaflet preenche
-     100% do container. O background: transparent aqui garante que
-     se o Leaflet demorar a carregar não aparece cinza.
+   ESTRATÉGIA DE ALTURA (clamp + dvh):
+
+   PROBLEMA COM VALORES FIXOS EM PX:
+   Um valor fixo como "height: 600px" não sabe nada sobre o ecrã
+   real do dispositivo. Um iPhone SE (667px de altura total) e um
+   tablet grande (1180px+) caíam no mesmo breakpoint "max-width:768px"
+   e recebiam a mesma altura de mapa — no SE isso ocupava quase toda
+   a tela (óptimo), mas num tablet na mesma faixa de largura ficava
+   desproporcionalmente pequeno em relação à altura disponível.
+   Breakpoints por LARGURA não capturam a ALTURA do dispositivo, que
+   é o que realmente importa para decidir a altura de um mapa.
+
+   ESTRATÉGIA ESCOLHIDA — clamp(min, preferred, max) com dvh:
+   dvh (dynamic viewport height) reflecte a altura real e utilizável
+   do ecrã, já a descontar a barra de endereço do browser mobile que
+   aparece/desaparece — ao contrário de vh, que no mobile é impreciso
+   durante o scroll. O valor "preferred" é expresso em dvh, por isso
+   escala automaticamente com a altura real de CADA dispositivo em
+   vez de saltar entre valores fixos em breakpoints de largura.
+
+     height: clamp(<mínimo>, <preferido em dvh>, <máximo>)
+
+   • MÍNIMO — nunca deixa o mapa pequeno demais mesmo num ecrã muito
+     curto (ex: em landscape mode).
+   • PREFERIDO EM DVH — a percentagem foi calibrada por classe de
+     dispositivo (ver breakpoints abaixo) para o mapa ocupar uma
+     fatia generosa e proporcional da altura real do ecrã.
+   • MÁXIMO — em monitores grandes (1920×1080+) evita um mapa
+     desproporcionalmente gigante; o desktop mantém-se como estava
+     (780px), só passa a ser expresso como tecto do clamp.
+
+   Isto elimina os saltos abruptos entre breakpoints — a altura
+   flui suavemente com o tamanho real do ecrã, dentro de cada
+   classe de dispositivo — e faz tablets (mais altos que telemóveis
+   na mesma largura) receberem naturalmente mais altura de mapa.
+
+   O fundo do .map-container no ServiceMap.module.css é transparente
+   e o Leaflet preenche 100% width/100% height do .mapWrapper — não
+   há nenhuma área cinzenta possível: overflow:hidden aqui garante
+   que o Leaflet nunca “vaza” para fora das bordas arredondadas, e
+   como não há padding nem gap internos, o Leaflet cobre sempre a
+   totalidade do container, sem sobra de espaço.
    ──────────────────────────────────────────────────────────────── */
 
 .mapWrapper {
-  /* Desktop / monitor grande: mapa muito alto, scroll para ver mais */
-  height: 780px;
+  /* Desktop / monitor grande — mantido como estava (tecto em 780px,
+     mesmo valor que já existia), agora com piso e fluidez via clamp.
+     68dvh cobre confortavelmente laptops (1366×768) sem exagerar
+     em monitores grandes, onde o tecto de 780px entra em jogo. */
+  height: clamp(620px, 68dvh, 780px);
   position: relative;
 
-  /* Margens laterais — card suspenso como na foto de referência */
+  /* Margens laterais — card suspenso, EXACTAMENTE como estava */
   margin: 0 28px 28px;
 
-  /* Bordas arredondadas modernas */
+  /* Bordas arredondadas modernas — EXACTAMENTE como estava */
   border-radius: 20px;
   overflow: hidden;
 
@@ -148,57 +184,69 @@
   /* Sombra subtil */
   box-shadow: 0 4px 24px rgba(15, 23, 42, 0.10);
 
-  /* Nunca encolhe abaixo da altura definida */
+  /* Nunca encolhe abaixo da altura calculada pelo clamp */
   flex-shrink: 0;
 }
 
-/* Laptop / tablet grande */
+/* Laptop / tablet grande (ex: 1024×1366 em portrait, 1280px largura) */
 @media (max-width: 1280px) {
   .mapWrapper {
-    height: 720px;
+    height: clamp(600px, 66dvh, 720px);
     margin: 0 20px 24px;
   }
 }
 
-/* Tablet */
+/* Tablet — cobre tablet pequeno (768×1024) e tablet grande (820×1180,
+   1024×1366). O piso mais alto (560px) reflecte que tablets têm
+   sempre bastante altura disponível — o mapa nunca deve parecer
+   apertado nesta classe de dispositivo. 70dvh dá-lhe destaque real
+   face ao resto do conteúdo da página, sem ocupar tudo. */
 @media (max-width: 1024px) {
   .mapWrapper {
-    height: 640px;
+    height: clamp(560px, 70dvh, 680px);
     margin: 0 16px 20px;
     border-radius: 18px;
   }
 }
 
-/* Mobile grande (≥ 480px) */
+/* Smartphone grande (393×852, 412×915, 430×932) — o mapa fica alto
+   o suficiente para parecer o mapa principal da app (75dvh), com
+   scroll disponível para ver o resto quando o dispositivo for mais
+   curto que o valor preferido permite. */
 @media (max-width: 768px) {
   .mapWrapper {
-    height: 600px;
+    height: clamp(500px, 75dvh, 640px);
     margin: 0 12px 18px;
     border-radius: 16px;
   }
 }
 
-/* Mobile médio */
+/* Smartphone médio */
 @media (max-width: 640px) {
   .mapWrapper {
-    height: 560px;
+    height: clamp(460px, 74dvh, 600px);
     margin: 0 10px 16px;
   }
 }
 
-/* Mobile pequeno (< 480px) */
+/* Smartphone pequeno (375×667, 390×844) — dvh ligeiramente maior
+   porque nestes ecrãs a altura total já é limitada; precisamos de
+   uma fatia maior da viewport para o mapa continuar a parecer uma
+   área de mapa real e não uma faixa estreita. */
 @media (max-width: 480px) {
   .mapWrapper {
-    height: 520px;
+    height: clamp(430px, 76dvh, 560px);
     margin: 0 10px 14px;
     border-radius: 14px;
   }
 }
 
-/* Mobile muito pequeno (iPhone SE, 375px) */
+/* Smartphone muito pequeno (320×568, iPhone SE 375px largura) —
+   piso mais baixo para nunca ultrapassar o espaço disponível neste
+   ecrã, mas ainda assim generoso relativamente ao ecrã pequeno. */
 @media (max-width: 390px) {
   .mapWrapper {
-    height: 480px;
+    height: clamp(400px, 72dvh, 520px);
     margin: 0 8px 12px;
   }
 }

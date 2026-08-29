@@ -317,12 +317,20 @@ export function ServiceMap({
       // fazer um reset completo do visual viewport — equivalente
       // ao utilizador recarregar a página, mas sem reload.
       //
-      // Processo:
-      //   1. Encontrar a meta viewport existente
-      //   2. Remover temporariamente (o Safari interpreta isto
-      //      como "sem restrições de viewport" e recalcula)
-      //   3. Recriar com os valores correctos
-      //   4. O visual viewport reseta para escala 1
+      // IMPORTANTE — SÍNCRONO, sem requestAnimationFrame:
+      // a versão anterior adiava a recriação para o próximo frame,
+      // o que deixava uma janela de corrida em Safari mobile com
+      // navegação client-side (router.push): a página seguinte
+      // podia já estar pintada no ecrã, com a escala errada, antes
+      // do requestAnimationFrame chegar a correr. Ao remover e
+      // recriar a tag de forma síncrona, dentro do mesmo tick do
+      // cleanup, a correção acontece antes do browser pintar a
+      // página seguinte.
+      //
+      // Esta é a primeira de duas camadas de proteção — a segunda
+      // (ViewportGuard, montado na raiz da app) repete este mesmo
+      // reset sempre que a rota deixa /map, cobrindo qualquer caso
+      // em que este cleanup corra tarde demais.
       //
       // Nenhum CSS global é tocado. Funciona em Safari iOS,
       // Chrome Mobile e PWA. Em desktop não tem efeito negativo.
@@ -335,18 +343,13 @@ export function ServiceMap({
           existing.remove();
         }
 
-        // requestAnimationFrame garante que o Safari processa a
-        // remoção antes de recriar — sem ele, alguns browsers
-        // ignoram a mudança por otimização.
-        requestAnimationFrame(() => {
-          const meta = document.createElement('meta');
-          meta.name = 'viewport';
-          meta.content = viewportContent;
-          document.head.appendChild(meta);
-        });
+        const meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = viewportContent;
+        document.head.appendChild(meta);
       } catch {
-        // Silencioso — se falhar, o comportamento volta ao estado
-        // anterior (o bug persiste mas nada é quebrado).
+        // Silencioso — se falhar, a segunda camada de proteção
+        // (ViewportGuard) ainda cobre este caso.
       }
     };
   }, []);

@@ -3,6 +3,7 @@ import { Manrope } from "next/font/google";
 import { PWA_CONFIG } from "@/lib/pwa-config";
 import { SWRegister } from "./sw-register";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { ViewportGuard } from "@/components/pwa/ViewportGuard";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -70,6 +71,7 @@ export default function RootLayout({
         {children}
         <SWRegister />
         <InstallPrompt />
+        <ViewportGuard />
       </body>
     </html>
   );
