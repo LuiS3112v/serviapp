@@ -183,12 +183,11 @@
    ──────────────────────────────────────────────────────────────── */
 
 .mapWrapper {
-  /* Desktop / monitor grande — altura aumentada substancialmente.
-     92dvh ocupa quase toda a altura útil da viewport, com tecto em
-     980px para não ficar absurdo em monitores muito altos e piso em
-     740px para nunca ficar pequeno mesmo em janelas de browser mais
-     baixas (ex: browser não maximizado). */
-  height: clamp(740px, 92dvh, 980px);
+  /* DESKTOP — altura reduzida (pedido: só no PC estava demasiado
+     alto, exigindo scroll excessivo). Passa a caber confortavelmente
+     na viewport típica sem sobra. Mobile/tablet/PWA não são afectados
+     — só este bloco e o breakpoint 1280px abaixo mudaram. */
+  height: clamp(600px, 78dvh, 760px);
   position: relative;
 
   /* Margens laterais — card suspenso, EXACTAMENTE como estava */
@@ -212,7 +211,7 @@
 /* Laptop / tablet grande */
 @media (max-width: 1280px) {
   .mapWrapper {
-    height: clamp(700px, 90dvh, 900px);
+    height: clamp(560px, 76dvh, 700px);
     margin: 0 20px 24px;
   }
 }
