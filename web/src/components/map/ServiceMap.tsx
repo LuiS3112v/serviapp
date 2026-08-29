@@ -279,30 +279,74 @@ export function ServiceMap({
 
   useEffect(() => {
     return () => {
-      // Captura a instância actual antes de qualquer cleanup do React.
+      // ── CLEANUP DO LEAFLET ────────────────────────────────────
+      // map.remove() faz o cleanup completo do Leaflet:
+      //  • remove todos os layers, markers e popups
+      //  • remove todos os event listeners internos (incluindo os
+      //    listeners de 'touchmove'/'touchend' que o TouchZoom
+      //    adiciona ao document durante um gesto de pinch)
+      //  • restaura document.documentElement.style.userSelect que
+      //    o Drag handler guarda e pode não restaurar se desmontar
+      //    a meio do drag
+      //  • cancela animações e timeouts pendentes
       const leafletInstance = leafletMapRef.current ?? mapRef.current;
-
       if (leafletInstance) {
         try {
-          // map.remove() faz o cleanup completo do Leaflet:
-          // remove todos os layers, listeners, handlers de gestos,
-          // e restaura os estilos que o Leaflet possa ter aplicado.
           leafletInstance.remove();
         } catch {
-          // Silencioso — se o mapa já foi removido por outro motivo,
-          // não é um erro crítico.
+          // Silencioso — se já foi removido não é erro crítico.
         }
       }
 
-      // Reset do visual viewport no Safari iOS/PWA.
-      // window.scrollTo(0, 0) é uma operação segura que não modifica
-      // CSS global — apenas reposiciona o scroll, o que força o browser
-      // a reconciliar o visual viewport com o layout viewport.
-      // Em browsers que não têm o problema, não tem efeito negativo.
+      // ── RESET DO VISUAL VIEWPORT — SAFARI iOS / PWA ──────────
+      //
+      // CAUSA RAIZ DO BUG (homepage deformada após logout):
+      //
+      // O Safari iOS tem um bug documentado: mesmo com
+      // user-scalable=no e maximum-scale=1 na meta viewport,
+      // operações de pinch-zoom dentro de uma área com
+      // touch-action:none podem deixar o visual viewport num
+      // estado de zoom residual. Este estado persiste através
+      // de navegações SPA (client-side routing do Next.js),
+      // e a homepage aparece "esticada" ou "comprimida" porque
+      // o browser continua a aplicar a escala do mapa a toda
+      // a página.
+      //
+      // SOLUÇÃO: recriar dinamicamente a <meta name="viewport">
+      // tag. Isto é o único mecanismo que força o Safari a
+      // fazer um reset completo do visual viewport — equivalente
+      // ao utilizador recarregar a página, mas sem reload.
+      //
+      // Processo:
+      //   1. Encontrar a meta viewport existente
+      //   2. Remover temporariamente (o Safari interpreta isto
+      //      como "sem restrições de viewport" e recalcula)
+      //   3. Recriar com os valores correctos
+      //   4. O visual viewport reseta para escala 1
+      //
+      // Nenhum CSS global é tocado. Funciona em Safari iOS,
+      // Chrome Mobile e PWA. Em desktop não tem efeito negativo.
       try {
-        window.scrollTo(0, 0);
+        const existing = document.querySelector('meta[name="viewport"]');
+        const viewportContent = existing?.getAttribute('content')
+          ?? 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
+
+        if (existing) {
+          existing.remove();
+        }
+
+        // requestAnimationFrame garante que o Safari processa a
+        // remoção antes de recriar — sem ele, alguns browsers
+        // ignoram a mudança por otimização.
+        requestAnimationFrame(() => {
+          const meta = document.createElement('meta');
+          meta.name = 'viewport';
+          meta.content = viewportContent;
+          document.head.appendChild(meta);
+        });
       } catch {
-        // Silencioso.
+        // Silencioso — se falhar, o comportamento volta ao estado
+        // anterior (o bug persiste mas nada é quebrado).
       }
     };
   }, []);

@@ -11,6 +11,48 @@ import {
   ProviderWithDistance,
 } from './geolocation.types';
 
+// Mapeamento de aliases de categoria.
+// Resolve o problema de concordância entre o nome da categoria no
+// frontend (ex: "Eletricidade") e o valor guardado na base de dados
+// pelo provider durante o registo (ex: "Eletricista", "electricista",
+// "Electricidade", etc.).
+//
+// Quando o frontend manda category="Eletricidade", o backend procura
+// providers com category IN ["Eletricidade", "Eletricista",
+// "Electricidade", "Electricista"] — em vez de uma comparação exacta
+// que falha se o valor na DB não for exactamente igual ao nome do filtro.
+//
+// Para adicionar aliases: basta adicionar à lista do nome canónico.
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  'Limpeza':       ['Limpeza', 'Limpador', 'Limpadores', 'Serviço de Limpeza'],
+  'Climatização':  ['Climatização', 'Climatizacao', 'Ar Condicionado', 'AVAC', 'Climatizador'],
+  'Canalização':   ['Canalização', 'Canalizacao', 'Canalizador', 'Canalizadores', 'Explomagem', 'Encanador'],
+  'Eletricidade':  ['Eletricidade', 'Electricidade', 'Eletricista', 'Electricista', 'Eletricistas', 'Electricistas'],
+  'TI & Redes':    ['TI & Redes', 'TI e Redes', 'TI', 'Redes', 'Informática', 'Informatica', 'Técnico TI', 'Suporte TI'],
+  'Jardinagem':    ['Jardinagem', 'Jardineiro', 'Jardineiros'],
+  'Mudanças':      ['Mudanças', 'Mudancas', 'Transportes', 'Transporte'],
+  'Beleza':        ['Beleza', 'Cabeleireiro', 'Cabeleireira', 'Manicure', 'Estética', 'Estetica'],
+  'Automóvel':     ['Automóvel', 'Automovel', 'Mecânica', 'Mecanica', 'Mecânico', 'Mecanico', 'Auto'],
+  'Pintura':       ['Pintura', 'Pintor', 'Pintores'],
+  'Construção':    ['Construção', 'Construcao', 'Construtor', 'Construtores', 'Obras', 'Remodelação'],
+  'Segurança':     ['Segurança', 'Seguranca', 'Vigilância', 'Vigilancia', 'Segurança Privada'],
+};
+
+/**
+ * Resolve o nome canónico de uma categoria para a lista de aliases
+ * que devem ser pesquisados na base de dados.
+ * Retorna [category] (lista de um elemento) se não houver aliases
+ * definidos — compatível com providers cujo category já coincide
+ * exactamente com o filtro.
+ */
+function resolveCategoryAliases(category: string): string[] {
+  if (!category || category === 'Todos') return [];
+  const aliases = CATEGORY_ALIASES[category];
+  if (aliases && aliases.length > 0) return aliases;
+  // Sem aliases configurados: usa o valor tal como veio do frontend
+  return [category];
+}
+
 @Injectable()
 export class GeolocationService {
   constructor(
@@ -113,7 +155,8 @@ export class GeolocationService {
       .andWhere('user.longitude IS NOT NULL');
 
     if (category && category !== 'Todos') {
-      qb.andWhere('user.category = :category', { category });
+      const categoryValues = resolveCategoryAliases(category);
+      qb.andWhere('user.category IN (:...categoryValues)', { categoryValues });
     }
 
     if (status === 'online') {
@@ -160,7 +203,8 @@ export class GeolocationService {
       .andWhere('user.longitude IS NOT NULL');
 
     if (category && category !== 'Todos') {
-      qb.andWhere('user.category = :category', { category });
+      const categoryValues = resolveCategoryAliases(category);
+      qb.andWhere('user.category IN (:...categoryValues)', { categoryValues });
     }
 
     const users = await qb.orderBy('user.lastSeenAt', 'DESC').getMany();
