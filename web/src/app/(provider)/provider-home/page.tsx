@@ -101,6 +101,13 @@ export default function ProviderHomePage() {
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
+  // CORRIGIDO — mesmo bug da home do cliente: useCallback + cancelled
+  // flag causava closure stale ao voltar do mapa, deixando o componente
+  // preso com loadingAvailable:true e os onClick dos botões a não
+  // responder. Substituído por useEffect com AbortController, criado
+  // dentro do effect para nunca ser partilhado entre montagens.
+  // fetchAvailable é extraída fora do useEffect para poder ser passada
+  // como onActionComplete ao ProviderServiceActionCard.
   const fetchAvailable = useCallback(async () => {
     setLoadingAvailable(true);
     try {
@@ -118,12 +125,7 @@ export default function ProviderHomePage() {
   }, [currentUserId]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      await fetchAvailable();
-      if (cancelled) return;
-    })();
-    return () => { cancelled = true; };
+    fetchAvailable();
   }, [fetchAvailable]);
 
   const heroStats = [

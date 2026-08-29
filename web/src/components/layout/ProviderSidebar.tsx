@@ -141,19 +141,33 @@ export default function ProviderSidebar() {
           position: fixed; left: 0; top: 0;
           height: 100vh; height: 100dvh; width: 240px;
           background: #F8FAFC; border-right: 1px solid #E2E8F0;
-          display: flex; flex-direction: column; z-index: 40; overflow: hidden;
+          display: flex; flex-direction: column; z-index: 700; overflow: hidden;
         }
 
         /* ── Mobile toggle button ─────────────────────────────────────── */
         .psb-mb {
-          display: none; position: fixed; top: 14px; left: 14px; z-index: 50;
-          width: 40px; height: 40px; border-radius: 12px;
-          background: #FFFFFF; border: 1px solid #E2E8F0;
-          align-items: center; justify-content: center; cursor: pointer;
-          color: #475569; box-shadow: 0 2px 8px rgba(15,23,42,0.08);
-          transition: all 0.15s;
+          display: none;
+          position: fixed;
+          /* CORRIGIDO — mesmo fix do Sidebar do cliente: top:14px
+             desalinhava ao fazer scroll em Safari/Chrome mobile porque
+             a barra de endereço muda a altura visível e o toggle ficava
+             a flutuar. Agora ocupa toda a altura do Navbar (top:0,
+             height:64px) e centra o ícone via flexbox — sempre alinhado
+             independentemente de reflows do browser. */
+          top: 0; left: 0;
+          height: 64px; width: 64px;
+          z-index: 700;
+          align-items: center; justify-content: center;
+          cursor: pointer;
+          color: #475569;
+          background: transparent;
+          border: none;
+          transition: color 0.15s;
         }
-        .psb-mb:hover { border-color: #0F172A; color: #0F172A; }
+        @media(hover:hover){
+          .psb-mb:hover { color: #0F172A; }
+        }
+        .psb-mb:active { transform: scale(0.92); }
 
         /* ── Overlay ──────────────────────────────────────────────────── */
         .psb-ov {

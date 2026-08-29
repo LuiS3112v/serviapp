@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
@@ -92,26 +92,40 @@ export default function HomePage() {
     if (session?.fullName) setFirstName(session.fullName.split(" ")[0]);
   }, []);
 
-  const fetchMyServices = useCallback(async () => {
-    setLoadingItems(true);
-    try {
-      const services = await servicesApi.getMyServices();
-      setMyItems(buildUnifiedList(services, []).slice(0, 3));
-    } catch {
-      setMyItems([]);
-    } finally {
-      setLoadingItems(false);
-    }
-  }, []);
-
+  // CORRIGIDO — o padrão anterior (useCallback + flag cancelled) tinha
+  // uma race condition: ao voltar do mapa para a Home, o Next.js App
+  // Router remonta o componente. O useCallback preservava a referência
+  // da função entre montagens (deps: []), e o cancelled=true do cleanup
+  // anterior ficava capturado no closure — quando a nova montagem
+  // corria fetchMyServices, o "if (cancelled) return" disparava
+  // imediatamente porque o closure ainda apontava para o cancelled=true
+  // do ciclo anterior. O componente ficava preso com loadingItems:true,
+  // o que bloqueava re-renders e fazia os onClick dos botões parecerem
+  // não funcionar (o componente não respondia a eventos).
+  //
+  // Correcção: useEffect simples sem useCallback, com AbortController
+  // para cancelar o fetch de rede (não só o processamento do resultado).
+  // O AbortController é criado dentro do effect — nunca partilhado entre
+  // montagens — por isso não há risco de closure stale.
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    setLoadingItems(true);
+
     (async () => {
-      await fetchMyServices();
-      if (cancelled) return;
+      try {
+        const services = await servicesApi.getMyServices();
+        if (controller.signal.aborted) return;
+        setMyItems(buildUnifiedList(services, []).slice(0, 3));
+      } catch {
+        if (controller.signal.aborted) return;
+        setMyItems([]);
+      } finally {
+        if (!controller.signal.aborted) setLoadingItems(false);
+      }
     })();
-    return () => { cancelled = true; };
-  }, [fetchMyServices]);
+
+    return () => controller.abort();
+  }, []);
 
   return (
     <>

@@ -531,6 +531,11 @@ export default function ClientServiceDetailPage() {
   const [showPhotoZoom, setShowPhotoZoom] = useState(false);
 
   const load = useCallback(async () => {
+    // Timeout de segurança: se o backend demorar mais de 10s a
+    // responder (ex: Render a acordar do sleep), força setLoading(false)
+    // de qualquer forma — o utilizador vê a página (possivelmente sem
+    // dados) em vez de ficar bloqueado com o spinner sem poder navegar.
+    const timeout = setTimeout(() => setLoading(false), 10_000);
     try {
       const [s, t] = await Promise.all([
         servicesDetailApi.get(id),
@@ -563,7 +568,7 @@ export default function ClientServiceDetailPage() {
         }
       }
     } catch (e: any) { alert(e.message); }
-    finally { setLoading(false); }
+    finally { clearTimeout(timeout); setLoading(false); }
   }, [id]);
 
   useEffect(() => { load(); }, [load]);

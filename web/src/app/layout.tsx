@@ -5,6 +5,7 @@ import { SWRegister } from "./sw-register";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import NextTopLoader from "nextjs-toploader";
 import { KeepAlive } from "@/components/KeepAlive";
+import { ViewportGuard } from "@/components/pwa/ViewportGuard";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -81,6 +82,7 @@ export default function RootLayout({
           shadow="0 0 6px #1D9E75"
         />
         <KeepAlive />
+        <ViewportGuard />
         {children}
         <SWRegister />
         <InstallPrompt />

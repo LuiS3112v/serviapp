@@ -125,6 +125,7 @@ export default function ProviderServiceDetailPage() {
   );
 
   const load = useCallback(async () => {
+    const timeout = setTimeout(() => setLoading(false), 10_000);
     try {
       const [s, t] = await Promise.all([
         servicesDetailApi.get(id),
@@ -141,7 +142,7 @@ export default function ProviderServiceDetailPage() {
         setPayment(existingPayment);
       }
     } catch (e: any) { alert(e.message); }
-    finally { setLoading(false); }
+    finally { clearTimeout(timeout); setLoading(false); }
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
