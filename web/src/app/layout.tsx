@@ -4,6 +4,7 @@ import { PWA_CONFIG } from "@/lib/pwa-config";
 import { SWRegister } from "./sw-register";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import NextTopLoader from "nextjs-toploader";
+import { KeepAlive } from "@/components/KeepAlive";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -79,6 +80,7 @@ export default function RootLayout({
           showSpinner={false}
           shadow="0 0 6px #1D9E75"
         />
+        <KeepAlive />
         {children}
         <SWRegister />
         <InstallPrompt />
