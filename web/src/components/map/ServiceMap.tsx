@@ -300,56 +300,36 @@ export function ServiceMap({
 
       // ── RESET DO VISUAL VIEWPORT — SAFARI iOS / PWA ──────────
       //
-      // CAUSA RAIZ DO BUG (homepage deformada após logout):
+      // CAUSA RAIZ DO BUG (freeze + botões sem resposta após sair do mapa):
       //
-      // O Safari iOS tem um bug documentado: mesmo com
-      // user-scalable=no e maximum-scale=1 na meta viewport,
-      // operações de pinch-zoom dentro de uma área com
-      // touch-action:none podem deixar o visual viewport num
-      // estado de zoom residual. Este estado persiste através
-      // de navegações SPA (client-side routing do Next.js),
-      // e a homepage aparece "esticada" ou "comprimida" porque
-      // o browser continua a aplicar a escala do mapa a toda
-      // a página.
+      // A versão anterior fazia existing.remove() + createElement +
+      // appendChild. O Next.js App Router controla o <head> como uma
+      // árvore React — o <meta name="viewport"> foi criado pelo React
+      // via export const viewport no layout.tsx. Ao remover esse nó
+      // manualmente, o React perdia a referência interna (fiber). Na
+      // próxima navegação, durante commitDeletionEffects, o React tentava
+      // parent.removeChild(child) sobre um nó que já não existia no DOM,
+      // lançando:
+      //   TypeError: Cannot read properties of null (reading 'removeChild')
+      // Este erro interrompia a fase de commit a meio — novos componentes
+      // parcialmente montados, handlers da nova página não registados —
+      // produzindo o freeze e os botões sem resposta reportados.
       //
-      // SOLUÇÃO: recriar dinamicamente a <meta name="viewport">
-      // tag. Isto é o único mecanismo que força o Safari a
-      // fazer um reset completo do visual viewport — equivalente
-      // ao utilizador recarregar a página, mas sem reload.
-      //
-      // IMPORTANTE — SÍNCRONO, sem requestAnimationFrame:
-      // a versão anterior adiava a recriação para o próximo frame,
-      // o que deixava uma janela de corrida em Safari mobile com
-      // navegação client-side (router.push): a página seguinte
-      // podia já estar pintada no ecrã, com a escala errada, antes
-      // do requestAnimationFrame chegar a correr. Ao remover e
-      // recriar a tag de forma síncrona, dentro do mesmo tick do
-      // cleanup, a correção acontece antes do browser pintar a
-      // página seguinte.
-      //
-      // Esta é a primeira de duas camadas de proteção — a segunda
-      // (ViewportGuard, montado na raiz da app) repete este mesmo
-      // reset sempre que a rota deixa /map, cobrindo qualquer caso
-      // em que este cleanup corra tarde demais.
-      //
-      // Nenhum CSS global é tocado. Funciona em Safari iOS,
-      // Chrome Mobile e PWA. Em desktop não tem efeito negativo.
+      // SOLUÇÃO: modificar o atributo content IN-PLACE via setAttribute.
+      // O nó DOM permanece exactamente o mesmo; o React continua com uma
+      // referência válida; o Safari recebe o reset de viewport que precisa.
+      // Sem remoção, sem criação, sem conflito com o React.
       try {
         const existing = document.querySelector('meta[name="viewport"]');
-        const viewportContent = existing?.getAttribute('content')
-          ?? 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
-
         if (existing) {
-          existing.remove();
+          existing.setAttribute(
+            'content',
+            'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'
+          );
         }
-
-        const meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = viewportContent;
-        document.head.appendChild(meta);
+        window.scrollTo(0, 0);
       } catch {
-        // Silencioso — se falhar, a segunda camada de proteção
-        // (ViewportGuard) ainda cobre este caso.
+        // Silencioso.
       }
     };
   }, []);
