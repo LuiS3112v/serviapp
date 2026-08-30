@@ -567,7 +567,7 @@ export default function MapPage() {
   return (
     <div
       className={styles.page}
-      style={{ marginBottom: 'calc(-60px - env(safe-area-inset-bottom, 0px))' }}
+      style={{ marginBottom: 'calc(-30px - env(safe-area-inset-bottom, 0px))' }}
     >
       <div className={styles.header}>
         <div>

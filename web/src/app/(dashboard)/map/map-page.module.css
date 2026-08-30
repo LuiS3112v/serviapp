@@ -223,7 +223,7 @@
 /* Smartphone grande (393×852, 412×915, 430×932) */
 @media (max-width: 768px) {
   .mapWrapper {
-    height: clamp(720px, 102dvh, 920px);
+    height: clamp(680px, 88dvh, 860px);
     margin: 0 12px 18px;
     border-radius: 16px;
   }
@@ -232,7 +232,7 @@
 /* Smartphone médio */
 @media (max-width: 640px) {
   .mapWrapper {
-    height: clamp(680px, 100dvh, 860px);
+    height: clamp(640px, 86dvh, 820px);
     margin: 0 10px 16px;
   }
 }
@@ -240,16 +240,16 @@
 /* Smartphone pequeno (375×667, 390×844) */
 @media (max-width: 480px) {
   .mapWrapper {
-    height: clamp(640px, 100dvh, 820px);
+    height: clamp(600px, 85dvh, 780px);
     margin: 0 10px 14px;
     border-radius: 14px;
   }
 }
 
-/* Smartphone muito pequeno (320×568, iPhone SE 375px largura) */
+/* Smartphone muito pequeno */
 @media (max-width: 390px) {
   .mapWrapper {
-    height: clamp(600px, 98dvh, 760px);
+    height: clamp(560px, 84dvh, 720px);
     margin: 0 8px 12px;
   }
 }
