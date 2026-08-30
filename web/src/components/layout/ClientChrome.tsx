@@ -47,7 +47,7 @@ export default function ClientChrome({
       <Sidebar />
       <div className="cl-main">
         <Navbar />
-        <main style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
+        <main style={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
           {children}
         </main>
       </div>

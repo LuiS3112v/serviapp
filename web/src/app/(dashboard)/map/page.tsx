@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Filter, MapPin, Loader2, AlertCircle } from 'lucide-react';
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { ServiceMap } from '@/components/map/ServiceMap';
 import {
   fetchNearbyProviders,
@@ -48,31 +46,31 @@ const ACTIVE_SERVICE_LOCATION_REFRESH_MS = 30000;
 // decidir quando recalcular a rota do prestador.
 const DISCOVERY_MOVEMENT_THRESHOLD_KM = 0.05;
 
-// Esta página tem 3 pontos de retorno diferentes (loading / serviço
-// activo / descoberta), por isso as classes .hw/.hm/.hi — que definem
-// a estrutura sidebar+navbar+conteúdo — ficam aqui como uma string
-// partilhada, em vez de repetidas 3 vezes. Sem isto, a página não tinha
-// NENHUMA fonte destas regras (só a home/page.tsx as define), por isso
-// o conteúdo (incluindo o mapa) renderizava a partir de x:0, por baixo
-// do sidebar fixo, em vez de começar depois dele.
+// FIX — "2 navbars" / "2 sidebars" / freeze ao entrar em /map:
 //
-// CORRIGIDO: removido o "padding-top:56px" que existia aqui dentro do
-// media query mobile. Essa regra compensava (a mais) o botão flutuante
-// do sidebar (sb-toggle), mas no mobile a <Navbar/> já renderiza em
-// fluxo normal, com altura própria, logo antes de .hi — o padding extra
-// só duplicava esse espaço e criava o vazio entre a navbar e o título.
-// Sem esta linha, título/subtítulo/mapa sobem para a posição correcta,
-// sem qualquer margin negativa.
-const pageLayoutStyles = `
-  .hw, .hw *, .hw *::before, .hw *::after{box-sizing:border-box}
-  .hw{display:flex;height:100vh;height:100dvh;overflow:hidden;background:#F8FAFC}
-  .hm{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
-  .hi{flex:1;display:flex;flex-direction:column;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-
-  @media(max-width:1024px){
-    .hm{margin-left:0}
-  }
-`;
+// O layout do dashboard ((dashboard)/layout.tsx) já envolve TODAS as
+// páginas do grupo com <ClientChrome>, que monta Sidebar+Navbar uma
+// única vez, persistente entre navegações (o Next.js App Router
+// preserva esse componente ao trocar de rota dentro do mesmo grupo).
+// As outras páginas (home, services, etc.) já não montam Sidebar/
+// Navbar próprios — só devolvem o seu conteúdo, que o ClientChrome
+// envolve.
+//
+// Esta página tinha ficado por migrar: continuava a importar e a
+// montar <Sidebar/> e <Navbar/> manualmente nos seus 3 pontos de
+// retorno (loading / serviço activo / descoberta), duplicando
+// exactamente o que o ClientChrome já monta por fora. Resultado:
+// 2 Sidebars montados ao mesmo tempo (cada um com o seu próprio
+// listener do evento "sidebar:toggle" — daí abrir/fechar "2 vezes"),
+// 2 Navbars (cada um com o seu próprio polling de contadores de chat/
+// notificações), e o trabalho a dobrar (2x Leaflet a preparar-se,
+// 2x fetch de contadores a cada 30s) a pressionar a main thread —
+// a causa real do freeze ao entrar no mapa.
+//
+// CORRIGIDO: Sidebar/Navbar e as classes .hw/.hm/.hi (que recriavam
+// a estrutura que o ClientChrome já fornece via .cl-layout/.cl-main)
+// foram removidos daqui. Esta página agora só devolve o seu próprio
+// conteúdo — exactamente como home/services/etc já fazem.
 
 type ViewMode = 'map' | 'list';
 type LocationState = 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported';
@@ -538,64 +536,42 @@ export default function MapPage() {
 
   if (checkingActiveService) {
     return (
-      <div className="hw">
-        <style>{pageLayoutStyles}</style>
-        <Sidebar />
-        <div className="hm">
-          <Navbar />
-          <main className="hi" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 size={28} style={{ color: '#0E7A5F', animation: 'spin 0.9s linear infinite' }} />
-          </main>
-        </div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <Loader2 size={28} style={{ color: '#0E7A5F', animation: 'spin 0.9s linear infinite' }} />
       </div>
     );
   }
 
   if (activeService) {
     return (
-      <div className="hw">
-        <style>{pageLayoutStyles}</style>
-        <Sidebar />
-        <div className="hm">
-          <Navbar />
-          <main className="hi">
-            <div className={styles.page}>
-              <div className={styles.header}>
-                <div>
-                  <h1 className={styles.title}>Acompanhamento do serviço</h1>
-                  <p className={styles.subtitle}>
-                    {getActiveServicePhaseLabel(activeService.status)} · {activeService.title}
-                  </p>
-                </div>
-              </div>
-              <div className={styles.mapWrapper}>
-                <ServiceMap
-                  mode="active-service"
-                  clientCoordinates={clientCoordinates}
-                  activeService={activeService}
-                />
-              </div>
-            </div>
-          </main>
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <div>
+            <h1 className={styles.title}>Acompanhamento do serviço</h1>
+            <p className={styles.subtitle}>
+              {getActiveServicePhaseLabel(activeService.status)} · {activeService.title}
+            </p>
+          </div>
+        </div>
+        <div className={styles.mapWrapper}>
+          <ServiceMap
+            mode="active-service"
+            clientCoordinates={clientCoordinates}
+            activeService={activeService}
+          />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="hw">
-      <style>{pageLayoutStyles}</style>
-      <Sidebar />
-      <div className="hm">
-        <Navbar />
-        <main className="hi">
-          <div className={styles.page}>
-            <div className={styles.header}>
-              <div>
-                <h1 className={styles.title}>Encontrar <span className={styles.titleAccent}>prestadores</span></h1>
-                <p className={styles.subtitle}>Descobre profissionais disponíveis perto de ti</p>
-              </div>
-              <div className={styles.viewToggle}>
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Encontrar <span className={styles.titleAccent}>prestadores</span></h1>
+          <p className={styles.subtitle}>Descobre profissionais disponíveis perto de ti</p>
+        </div>
+        <div className={styles.viewToggle}>
                 <button
                   className={`${styles.viewToggleButton} ${viewMode === 'map' ? styles.viewToggleButtonActive : ''}`}
                   onClick={() => setViewMode('map')}
@@ -788,9 +764,6 @@ export default function MapPage() {
                 )}
               </div>
             )}
-          </div>
-        </main>
-      </div>
     </div>
   );
 }
