@@ -565,7 +565,10 @@ export default function MapPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div
+      className={styles.page}
+      style={{ marginBottom: 'calc(-60px - env(safe-area-inset-bottom, 0px))' }}
+    >
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Encontrar <span className={styles.titleAccent}>prestadores</span></h1>

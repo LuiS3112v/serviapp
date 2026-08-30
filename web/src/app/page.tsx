@@ -164,7 +164,7 @@ export default function HomePage() {
         .lp-header.scrolled{box-shadow:0 2px 16px rgba(15,23,42,0.06)}
         .lp-header-inner{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
         .lp-logo{display:flex;align-items:center;gap:10px;cursor:pointer}
-        .lp-logo-mark{width:38px;height:38px;border-radius:11px;background:${BRAND};display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .lp-logo-mark{width:38px;height:38px;border-radius:11px;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .lp-logo-text{font-size:19px;font-weight:500;color:#0f172a;letter-spacing:-0.02em;font-family:'DM Sans',sans-serif}
         .lp-nav{display:flex;align-items:center;gap:32px}
         .lp-nav a,.lp-nav a:visited{font-size:14.5px;font-weight:600;color:#475569;text-decoration:none;transition:color .15s;font-family:'DM Sans',sans-serif}
@@ -329,7 +329,7 @@ export default function HomePage() {
               }
             >
               <div className="lp-logo-mark">
-                <Zap size={19} color="#fff" />
+                <img src="/logo-64.png" alt="Mestroo" style={{width:28,height:28,objectFit:"contain"}} />
               </div>
 
               <span className="lp-logo-text">
@@ -1519,10 +1519,7 @@ export default function HomePage() {
                 >
 
                   <div className="lp-logo-mark">
-                    <Zap
-                      size={17}
-                      color="#fff"
-                    />
+                    <img src="/logo-64.png" alt="Mestroo" style={{width:26,height:26,objectFit:"contain"}} />
                   </div>
 
                   <span

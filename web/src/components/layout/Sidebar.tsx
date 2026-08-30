@@ -44,8 +44,8 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     <>
       <div style={{ padding:"24px 20px 20px", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ width:36, height:36, borderRadius:11, background:"#0F172A", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(15,23,42,0.24)" }}>
-            <Zap size={20} color="white"/>
+          <div style={{ width:36, height:36, borderRadius:11, background:"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <img src="/logo-64.png" alt="Mestroo" style={{width:36,height:36,objectFit:"contain"}}/>
           </div>
           <span style={{ fontSize:20, fontWeight:700, color:"#0F172A" }}>
             Mestroo
