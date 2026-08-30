@@ -104,23 +104,16 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
 
-  // FIX — botão hambúrguer "sobe e desce" durante o scroll:
-  //
-  // .sb-toggle era position:fixed, renderizado directamente em .hw
-  // (fora de qualquer scroller). Em teoria fixed deveria ficar sempre
-  // na mesma posição do ecrã — mas alguns motores mobile/Safari criam
-  // um novo "containing block" para elementos fixed quando existe um
-  // ancestral próximo com overflow-y:auto/scroll (como o .hi que a
-  // página do mapa usa) ou com transform. O resultado observado era
-  // o botão a mover-se com o conteúdo em vez de ficar fixo na tela.
-  //
-  // CORREÇÃO: o botão passa a viver DENTRO do <Navbar/> (component
-  // separado), que já é position:sticky;top:0 — colado ao topo da
-  // área de conteúdo, sempre visível, sem ambiguidade de containing
-  // block. Sidebar continua dono do estado "open" do drawer; o
-  // Navbar só precisa de pedir para abrir. Um CustomEvent global no
-  // window evita ter de criar um Context novo só para isto — o
-  // Sidebar escuta, o Navbar dispara.
+  // Botão hambúrguer: vive DENTRO do <Navbar/> (inline, ao lado da
+  // pesquisa) nas páginas que o montam — via evento global
+  // "sidebar:toggle" que este componente escuta. Páginas sem Navbar
+  // (ex: /chat/[id]) têm o seu próprio botão inline no cabeçalho,
+  // que dispara o mesmo evento — ver esse ficheiro para detalhes.
+  // Nenhum botão fixed/flutuante é usado aqui: um botão position:fixed
+  // solto na página, independente do fluxo normal do layout, foi a
+  // causa de dois bugs anteriores (mover-se com o scroll; e, quando
+  // aumentado para ocupar toda a faixa do topo, ficar visualmente
+  // desalinhado da barra de pesquisa em vez de ficar ao lado dela).
   useEffect(() => {
     const handleToggle = () => setOpen((current) => !current);
     window.addEventListener("sidebar:toggle", handleToggle);
@@ -131,7 +124,6 @@ export default function Sidebar() {
     <>
       <style>{`
         .sb-desktop{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#F8FAFC;border-right:1px solid #E2E8F0;display:flex;flex-direction:column;z-index:40}
-        .sb-toggle:hover{border-color:#0F172A;color:#0F172A}
         .sb-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:2000;display:none}
         .sb-drawer{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#F8FAFC;border-right:1px solid #E2E8F0;display:flex;flex-direction:column;z-index:2001;transform:translateX(-100%);transition:transform 0.25s ease;box-shadow:8px 0 28px rgba(15,23,42,0.10)}
         .sb-drawer.open{transform:translateX(0)}

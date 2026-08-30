@@ -449,12 +449,17 @@ export default function ProviderNavbar() {
         @keyframes pnav-spin { to { transform: rotate(360deg); } }
         .pnav-spin { animation: pnav-spin 0.7s linear infinite; }
 
-        /* ── Botão hambúrguer (mesmo fix do Sidebar do cliente) ─────────── */
+        /* ── Botão hambúrguer inline (só mobile/tablet) ──────────────────
+           Substitui o antigo botão position:fixed no canto — este vive
+           dentro do fluxo normal do <nav>, ao lado da barra de pesquisa,
+           tal como no Navbar do cliente. Nunca aparece em desktop
+           (>1024px), onde a sidebar já é sempre visível. */
         .pnav-menu-btn {
-          display: none; align-items: center; justify-content: center;
-          width: 40px; height: 40px; border-radius: 12px;
+          display: none;
+          align-items: center; justify-content: center;
+          width: 38px; height: 38px; border-radius: 11px;
           background: #FFFFFF; border: 1px solid #E2E8F0; color: #475569;
-          cursor: pointer; flex-shrink: 0; transition: all 0.15s; margin-right: 4px;
+          cursor: pointer; flex-shrink: 0; transition: all 0.15s;
         }
         .pnav-menu-btn:hover { border-color: #0F172A; color: #0F172A; }
         @media (max-width: 1024px) {
@@ -462,22 +467,26 @@ export default function ProviderNavbar() {
         }
 
         @media (max-width: 1024px) {
-          .pnav { padding: 0 16px; }
+          .pnav { padding: 0 16px; gap: 8px; }
+          /* Barra de pesquisa ligeiramente mais compacta em mobile/
+             tablet para abrir espaço ao botão de menu ao lado dela,
+             sem precisar de o empurrar para uma segunda linha. */
+          .pnav-sw { max-width: 300px; }
         }
         @media (max-width: 860px) {
-          .pnav-sw { max-width: 340px; }
+          .pnav-sw { max-width: 240px; }
           .pnav-loc-label { font-size: 11px; }
           .pnav-loc-btn  { padding: 7px 10px; }
         }
         @media (max-width: 768px) {
-          .pnav-sw { max-width: 260px; }
+          .pnav-sw { max-width: 190px; }
           .pnav-loc-label { font-size: 10px; }
           .pnav-loc-btn  { padding: 6px 8px; gap: 4px; }
           .pnav-right    { gap: 6px; }
         }
         @media (max-width: 640px) {
-          .pnav { padding: 0 12px; gap: 8px; }
-          .pnav-sw { max-width: none; }
+          .pnav { padding: 0 12px; gap: 6px; }
+          .pnav-sw { max-width: none; flex: 1; }
           .pnav-loc-label { display: none; }
           .pnav-loc-btn { padding: 8px; border-radius: 12px; gap: 0; }
           .pnav-right { gap: 6px; }
@@ -488,7 +497,8 @@ export default function ProviderNavbar() {
             align-content: center; padding: 8px 12px;
             gap: 6px; row-gap: 8px;
           }
-          .pnav-sw { order: 1; flex: 0 0 100%; width: 100%; max-width: 100%; }
+          .pnav-menu-btn { order: 0; }
+          .pnav-sw { order: 1; flex: 1 1 auto; min-width: 0; max-width: none; }
           .pnav-right { order: 2; width: 100%; justify-content: flex-end; }
           .pnav-ii, .pnav-bell, .pnav-avatar { width: 36px; height: 36px; }
         }
@@ -506,7 +516,7 @@ export default function ProviderNavbar() {
           onClick={() => window.dispatchEvent(new CustomEvent("sidebar:toggle"))}
           aria-label="Abrir menu"
         >
-          <Menu size={20}/>
+          <Menu size={18}/>
         </button>
 
         {/* ── Search bar ─────────────────────────────────────────────────── */}

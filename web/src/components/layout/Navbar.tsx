@@ -75,9 +75,10 @@ export default function Navbar() {
         @media(max-width:1024px){
           .navbar{padding:0 16px}
           .navbar-location{display:none}
+          .navbar-search{max-width:300px}
         }
         @media(max-width:860px){
-          .navbar-search{max-width:340px}
+          .navbar-search{max-width:240px}
           .navbar-right{gap:8px;margin-left:12px}
         }
         @media(max-width:640px){

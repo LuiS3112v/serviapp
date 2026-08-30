@@ -2,7 +2,7 @@
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
-import { ArrowLeft, Send, Shield, AlertTriangle, Loader2, MessageCircle } from "lucide-react";
+import { ArrowLeft, Send, Shield, AlertTriangle, Loader2, MessageCircle, Menu } from "lucide-react";
 import { chatApi, ChatMessage, ChatRoom } from "@/lib/chat.api";
 import { getToken } from "@/lib/auth.api";
 import { connectSocket } from "@/lib/socket";
@@ -188,7 +188,7 @@ function ChatInner() {
           overflow-y:hidden;
         }
         .chatd-header{
-          flex-shrink:0;display:flex;align-items:center;gap:14px;
+          flex-shrink:0;display:flex;align-items:center;gap:10px;
           padding:0 24px;height:65px;
           background:#ffffff;border-bottom:1px solid #eef1f5;
           min-width:0;
@@ -250,7 +250,8 @@ function ChatInner() {
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @media(max-width:1024px){
           .chatd-main{margin-left:0}
-          .chatd-header{padding-left:72px}
+          .chatd-header{padding:0 14px;gap:8px}
+          .chatd-menu-btn{display:flex!important}
         }
         @media(max-width:640px){
           .chatd-msgs{padding:12px 14px}
@@ -265,6 +266,14 @@ function ChatInner() {
         <div className="chatd-main">
 
           <div className="chatd-header">
+            <button
+              className="chatd-menu-btn"
+              onClick={() => window.dispatchEvent(new CustomEvent("sidebar:toggle"))}
+              aria-label="Abrir menu"
+              style={{ background:"none",border:"1px solid #E2E8F0",borderRadius:10,cursor:"pointer",color:"#64748b",display:"none",alignItems:"center",justifyContent:"center",width:34,height:34,flexShrink:0 }}
+            >
+              <Menu size={17}/>
+            </button>
             <button
               onClick={() => router.back()}
               style={{ background:"none",border:"none",cursor:"pointer",color:"#64748b",display:"flex",padding:4 }}

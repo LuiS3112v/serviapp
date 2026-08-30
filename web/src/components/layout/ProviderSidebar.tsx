@@ -133,17 +133,17 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 export default function ProviderSidebar() {
   const [open, setOpen] = useState(false);
 
-  // Mesmo fix aplicado ao Sidebar do cliente: o botão hambúrguer deixa
-  // de ser position:fixed solto na página (que podia "andar" com o
-  // scroll em Safari mobile) e passa a viver dentro do ProviderNavbar
-  // (sticky). Sidebar continua dono do estado; o Navbar só dispara
-  // o evento global para pedir abertura/fecho.
+  // Botão hambúrguer: vive DENTRO do <ProviderNavbar/> (inline, ao
+  // lado da pesquisa), via evento global "sidebar:toggle" — mesmo
+  // padrão do Sidebar do cliente. Um botão position:fixed solto no
+  // canto (independente do fluxo do layout) ficava desalinhado da
+  // barra de pesquisa em vez de ficar ao lado dela.
   useEffect(() => {
     const handleToggle = () => setOpen((current) => !current);
     window.addEventListener("sidebar:toggle", handleToggle);
     return () => window.removeEventListener("sidebar:toggle", handleToggle);
   }, []);
- 
+
   return (
     <>
       <style>{`

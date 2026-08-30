@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import ProviderSidebar from "@/components/layout/ProviderSidebar";
-import { ArrowLeft, Send, Shield, AlertTriangle, Loader2, MessageCircle } from "lucide-react";
+import { ArrowLeft, Send, Shield, AlertTriangle, Loader2, MessageCircle, Menu } from "lucide-react";
 import { chatApi, ChatMessage, ChatRoom } from "@/lib/chat.api";
 import { getToken } from "@/lib/auth.api";
 import { connectSocket } from "@/lib/socket";
@@ -198,7 +198,7 @@ export default function ProviderChatDetailPage() {
           overflow-y:hidden;
         }
         .pcd-header {
-          flex-shrink: 0; display: flex; align-items: center; gap: 14px;
+          flex-shrink: 0; display: flex; align-items: center; gap: 10px;
           padding: 0 24px; height: 65px;
           background: #ffffff; border-bottom: 1px solid #eef1f5;
           min-width: 0;
@@ -276,7 +276,8 @@ export default function ProviderChatDetailPage() {
 
         @media(max-width:1024px){
           .pcd-main{margin-left:0}
-          .pcd-header{padding-left:72px}
+          .pcd-header{padding:0 14px;gap:8px}
+          .pcd-menu-btn{display:flex!important}
         }
         @media (max-width: 640px) {
           .pcd-msgs        { padding: 12px 14px; }
@@ -292,6 +293,14 @@ export default function ProviderChatDetailPage() {
 
           {/* ── Header ── */}
           <div className="pcd-header">
+            <button
+              className="pcd-menu-btn"
+              onClick={() => window.dispatchEvent(new CustomEvent("sidebar:toggle"))}
+              aria-label="Abrir menu"
+              style={{ background:"none", border:"1px solid #E2E8F0", borderRadius:10, cursor:"pointer", color:"#64748b", display:"none", alignItems:"center", justifyContent:"center", width:34, height:34, flexShrink:0 }}
+            >
+              <Menu size={17}/>
+            </button>
             <button
               onClick={() => router.back()}
               style={{ background:"none", border:"none", cursor:"pointer", color:"#64748b", display:"flex", padding:4 }}
