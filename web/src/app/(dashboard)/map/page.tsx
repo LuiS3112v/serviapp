@@ -65,7 +65,7 @@ const DISCOVERY_MOVEMENT_THRESHOLD_KM = 0.05;
 // sem qualquer margin negativa.
 const pageLayoutStyles = `
   .hw, .hw *, .hw *::before, .hw *::after{box-sizing:border-box}
-  .hw{display:flex;min-height:100vh;min-height:100dvh;background:#F8FAFC}
+  .hw{display:flex;height:100vh;height:100dvh;overflow:hidden;background:#F8FAFC}
   .hm{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
   .hi{flex:1;display:flex;flex-direction:column;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 

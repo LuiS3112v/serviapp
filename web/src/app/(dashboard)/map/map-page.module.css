@@ -239,7 +239,7 @@
    ver a parte restante quando o dispositivo for mais curto. */
 @media (max-width: 768px) {
   .mapWrapper {
-    height: clamp(620px, 94dvh, 820px);
+    height: clamp(660px, 98dvh, 880px);
     margin: 0 12px 18px;
     border-radius: 16px;
   }
@@ -248,7 +248,7 @@
 /* Smartphone médio */
 @media (max-width: 640px) {
   .mapWrapper {
-    height: clamp(580px, 94dvh, 780px);
+    height: clamp(620px, 97dvh, 830px);
     margin: 0 10px 16px;
   }
 }
@@ -256,7 +256,7 @@
 /* Smartphone pequeno (375×667, 390×844) */
 @media (max-width: 480px) {
   .mapWrapper {
-    height: clamp(540px, 95dvh, 740px);
+    height: clamp(580px, 98dvh, 790px);
     margin: 0 10px 14px;
     border-radius: 14px;
   }
@@ -265,7 +265,7 @@
 /* Smartphone muito pequeno (320×568, iPhone SE 375px largura) */
 @media (max-width: 390px) {
   .mapWrapper {
-    height: clamp(500px, 93dvh, 680px);
+    height: clamp(540px, 96dvh, 730px);
     margin: 0 8px 12px;
   }
 }

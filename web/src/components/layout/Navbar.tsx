@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Search, MapPin } from "lucide-react";
+import { Bell, Search, MapPin, Menu } from "lucide-react";
 import { chatApi } from "@/lib/chat.api";
 import { notificationsApi } from "@/lib/notifications.api";
 import { getSession, getToken } from "@/lib/auth.api";
@@ -34,6 +34,17 @@ export default function Navbar() {
     <>
       <style>{`
         .navbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:64px;background:#FFFFFF;border-bottom:1px solid #E2E8F0;gap:12px;flex-wrap:nowrap}
+
+        /* Botão hambúrguer — movido para dentro do Navbar (sticky),
+           em vez de position:fixed solto na página. Ver explicação
+           completa no comentário do Sidebar.tsx (handleToggle). Fica
+           escondido em desktop (>1024px, onde a sidebar já aparece
+           sempre expandida) e visível só em mobile/tablet. */
+        .navbar-menu-btn{display:none;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#FFFFFF;border:1px solid #E2E8F0;color:#475569;cursor:pointer;flex-shrink:0;transition:all 0.15s;margin-right:4px}
+        .navbar-menu-btn:hover{border-color:#0F172A;color:#0F172A}
+        @media(max-width:1024px){
+          .navbar-menu-btn{display:flex}
+        }
         .navbar-search{display:flex;align-items:center;gap:10px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:12px;padding:10px 16px;flex:1;min-width:0;max-width:480px;cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s}
         .navbar-search:hover{border-color:#94A3B8;background:#FFFFFF;box-shadow:0 0 0 3px rgba(37,99,235,0.10)}
         .navbar-search-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -62,7 +73,7 @@ export default function Navbar() {
           padrão de breakpoints já usado no ProviderNavbar.tsx.
         */
         @media(max-width:1024px){
-          .navbar{padding:0 16px 0 64px}
+          .navbar{padding:0 16px}
           .navbar-location{display:none}
         }
         @media(max-width:860px){
@@ -70,7 +81,7 @@ export default function Navbar() {
           .navbar-right{gap:8px;margin-left:12px}
         }
         @media(max-width:640px){
-          .navbar{padding:0 12px 0 60px;gap:8px}
+          .navbar{padding:0 12px;gap:8px}
           .navbar-search{max-width:none}
           .navbar-right{gap:6px;margin-left:8px}
         }
@@ -79,12 +90,19 @@ export default function Navbar() {
           .navbar-search{padding:9px 12px}
         }
         @media(max-width:360px){
-          .navbar{padding:0 10px 0 56px;gap:6px}
+          .navbar{padding:0 10px;gap:6px}
           .navbar-right{gap:4px;margin-left:6px}
           .navbar-icon-inner,.navbar-avatar{width:32px;height:32px;border-radius:10px}
         }
       `}</style>
       <nav className="navbar">
+        <button
+          className="navbar-menu-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent("sidebar:toggle"))}
+          aria-label="Abrir menu"
+        >
+          <Menu size={20}/>
+        </button>
         <div className="navbar-search" onClick={() => router.push("/search")}>
           <Search size={16} style={{color:"#64748B",flexShrink:0}}/>
           <span className="navbar-search-text" style={{fontSize:14,color:"#64748B",userSelect:"none"}}>Pesquise um serviço...</span>

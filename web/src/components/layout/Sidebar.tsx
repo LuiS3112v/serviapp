@@ -1,10 +1,10 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home, Search, MapPin, Briefcase, MessageCircle,
-  Bell, Wallet, User, Settings, LogOut, Zap, X, Menu, HelpCircle,
+  Bell, Wallet, User, Settings, LogOut, Zap, X, HelpCircle,
 } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
 import BottomNav from "@/components/layout/BottomNav";
@@ -103,77 +103,35 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-  const prevPathname = useRef(pathname);
-  const [navigating, setNavigating] = useState(false);
 
-  // CORRIGIDO — causa raiz do "freeze" e "botões não respondem" só no
-  // cliente (nunca no provider):
+  // FIX — botão hambúrguer "sobe e desce" durante o scroll:
   //
-  // O provider tem um <ProviderChrome> que mantém o Sidebar montado
-  // entre navegações (vive no layout persistente). O cliente não tinha
-  // equivalente — cada página montava o seu próprio <Sidebar> inline.
-  // Isso significa que em cada navegação, o React desmontava o Sidebar
-  // antigo e montava um novo. Durante esse ciclo de unmount/mount,
-  // o elemento com position:fixed (o drawer overlay ou o desktop
-  // sidebar) continuava visível no DOM mas num estado transitório —
-  // podia capturar eventos de toque/clique que deveriam ir para a nova
-  // página, causando o "freeze" e os botões a não responderem.
+  // .sb-toggle era position:fixed, renderizado directamente em .hw
+  // (fora de qualquer scroller). Em teoria fixed deveria ficar sempre
+  // na mesma posição do ecrã — mas alguns motores mobile/Safari criam
+  // um novo "containing block" para elementos fixed quando existe um
+  // ancestral próximo com overflow-y:auto/scroll (como o .hi que a
+  // página do mapa usa) ou com transform. O resultado observado era
+  // o botão a mover-se com o conteúdo em vez de ficar fixo na tela.
   //
-  // Correcção: ao detectar mudança de pathname (navegação concluída),
-  // aplicamos pointer-events:none por 120ms. Isso cobre o intervalo
-  // entre a desmontagem do Sidebar antigo e a montagem do novo,
-  // impedindo que qualquer resíduo de evento de toque seja capturado
-  // pelo elemento fixed durante a transição.
+  // CORREÇÃO: o botão passa a viver DENTRO do <Navbar/> (component
+  // separado), que já é position:sticky;top:0 — colado ao topo da
+  // área de conteúdo, sempre visível, sem ambiguidade de containing
+  // block. Sidebar continua dono do estado "open" do drawer; o
+  // Navbar só precisa de pedir para abrir. Um CustomEvent global no
+  // window evita ter de criar um Context novo só para isto — o
+  // Sidebar escuta, o Navbar dispara.
   useEffect(() => {
-    if (pathname !== prevPathname.current) {
-      prevPathname.current = pathname;
-      setOpen(false);
-      setNavigating(true);
-      const t = setTimeout(() => setNavigating(false), 120);
-      return () => clearTimeout(t);
-    }
-  }, [pathname]);
+    const handleToggle = () => setOpen((current) => !current);
+    window.addEventListener("sidebar:toggle", handleToggle);
+    return () => window.removeEventListener("sidebar:toggle", handleToggle);
+  }, []);
 
   return (
     <>
       <style>{`
-        .sb-desktop{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#F8FAFC;border-right:1px solid #E2E8F0;display:flex;flex-direction:column;
-          /* z-index elevado para garantir que o Sidebar desktop fica
-             acima de todos os elementos do Leaflet/mapa (z-index até
-             600 no ServiceMap.module.css). Sem isto, em mobile os
-             listeners de touch do Leaflet (registados no document com
-             captura) interceptavam toques no Sidebar quando o mapa
-             estava montado na mesma página ou logo após navegação,
-             causando o "freeze" e botões sem resposta. */
-          z-index:700}
-        .sb-toggle{
-          display:none;
-          position:fixed;
-          /* CORRIGIDO — top:14px desalinhava o toggle do Navbar quando
-             a barra de endereço do Safari/Chrome aparecia ou desaparecia
-             ao fazer scroll (o Navbar tem 64px de altura, o centro real
-             é 32px, não 14px). A correção: o toggle ocupa toda a altura
-             do Navbar (top:0, height:64px) e usa flexbox para centrar
-             o ícone verticalmente — assim acompanha sempre o Navbar
-             independentemente de qualquer reflow do browser. */
-          top:0;
-          left:0;
-          height:64px;
-          width:64px;
-          z-index:700;
-          align-items:center;
-          justify-content:center;
-          cursor:pointer;
-          color:#475569;
-          background:transparent;
-          border:none;
-          transition:color 0.15s;
-        }
-        @media(hover:hover){
-          .sb-toggle:hover{color:#0F172A}
-        }
-        .sb-toggle:active{transform:scale(0.92)}
+        .sb-desktop{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#F8FAFC;border-right:1px solid #E2E8F0;display:flex;flex-direction:column;z-index:40}
+        .sb-toggle:hover{border-color:#0F172A;color:#0F172A}
         .sb-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:2000;display:none}
         .sb-drawer{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:240px;background:#F8FAFC;border-right:1px solid #E2E8F0;display:flex;flex-direction:column;z-index:2001;transform:translateX(-100%);transition:transform 0.25s ease;box-shadow:8px 0 28px rgba(15,23,42,0.10)}
         .sb-drawer.open{transform:translateX(0)}
@@ -208,22 +166,17 @@ export default function Sidebar() {
 
         @media(max-width:1024px){
           .sb-desktop{display:none!important}
-          .sb-toggle{display:flex!important}
           .sb-close{display:flex!important}
           .sb-nav{padding:8px 0}
           .sb-footer{padding:12px 20px}
         }
       `}</style>
 
-      <aside className="sb-desktop" style={navigating ? {pointerEvents:"none"} : undefined}><SidebarContent/></aside>
-
-      <button className="sb-toggle" style={navigating ? {pointerEvents:"none"} : undefined} onClick={() => setOpen(true)}>
-        <Menu size={20}/>
-      </button>
+      <aside className="sb-desktop"><SidebarContent/></aside>
 
       {open && <div className="sb-overlay" onClick={() => setOpen(false)}/>}
 
-      <aside className={`sb-drawer${open ? " open" : ""}`} style={navigating ? {pointerEvents:"none"} : undefined}>
+      <aside className={`sb-drawer${open ? " open" : ""}`}>
         <SidebarContent onClose={() => setOpen(false)}/>
       </aside>
 
