@@ -57,7 +57,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 20px 28px 14px;
+  padding: 10px 16px 6px;
   flex-shrink: 0;
 }
 
@@ -194,7 +194,7 @@
 .mapWrapper {
   height: clamp(600px, 78dvh, 760px);
   position: relative;
-  margin: 0 28px 28px;
+  margin: 0 12px 8px;
   border-radius: 20px;
   overflow: hidden;
   background-color: transparent;
