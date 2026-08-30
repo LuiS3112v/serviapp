@@ -28,15 +28,24 @@
 .page {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  flex: 1;
-  overflow-y: auto;
+  /* FIX — área branca no fim do scroll (mobile):
+     flex:1 fazia .page esticar-se para preencher TODA a altura de
+     .hi (o container pai do layout do dashboard), mesmo quando o
+     conteúdo real (header + mapWrapper) é mais baixo que essa
+     altura. Como .page também tinha overflow-y:auto, esse espaço
+     extra do próprio flex:1 — que não pertence a nenhum elemento —
+     ficava disponível para scroll, aparecendo como uma faixa
+     branca vazia no fim ao dar scroll down.
+     Substituído por height:auto (a par de min-height:100%): .page
+     cresce exactamente até à altura do que está lá dentro. Se o
+     conteúdo for mais alto que a viewport (ex: mapWrapper muito
+     alto em ecrãs baixos), .page continua a poder ser maior que
+     .hi e o overflow-y:auto do PRÓPRIO body/scroll ainda funciona
+     — só deixa de reservar espaço vazio quando o conteúdo já cabe. */
+  min-height: 100%;
+  height: auto;
+  overflow-y: visible;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  /* overscroll-behavior evita que o scroll do .page "vaze" para a
-     página do browser por trás dele (bounce/pull-to-refresh
-     indesejado em iOS/Chrome mobile ao chegar ao fim do conteúdo). */
-  overscroll-behavior: contain;
   padding: 0;
 }
 
@@ -263,10 +272,21 @@
 
 /* ── Lista de prestadores (modo Lista) ───────────────────────── */
 
+/* FIX — área branca enorme no modo Lista (mobile).
+   .listWrapper usava flex:1 + min-height:0, o que só funciona
+   correctamente dentro de um pai com altura definida e
+   overflow:hidden. Mas .page é agora o único scroller da página
+   (overflow-y:auto, altura fluida) — um filho com flex:1 dentro
+   de um scroller sem altura fixa não tem contra o que esticar-se
+   de forma previsível, e o resultado observado foi a lista a
+   colapsar para a altura mínima do conteúdo, deixando uma enorme
+   área em branco por baixo dela até ao fim do ecrã.
+   Correção: o .listWrapper deixa de tentar preencher o espaço
+   com flex — simplesmente flui com o conteúdo (altura automática),
+   exactamente como o resto do conteúdo dentro do .page scroller.
+   Sem min-height:0 nem flex:1 não há mais colapso. */
 .listWrapper {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-y: auto;
+  overflow-y: visible;
   display: flex;
   flex-direction: column;
   gap: 10px;

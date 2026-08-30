@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Filter, MapPin, Loader2, AlertCircle } from 'lucide-react';
+import Sidebar from "@/components/layout/Sidebar";
+import Navbar from "@/components/layout/Navbar";
 import { ServiceMap } from '@/components/map/ServiceMap';
 import {
   fetchNearbyProviders,
@@ -56,7 +58,7 @@ const DISCOVERY_MOVEMENT_THRESHOLD_KM = 0.05;
 //
 // CORRIGIDO: removido o "padding-top:56px" que existia aqui dentro do
 // media query mobile. Essa regra compensava (a mais) o botão flutuante
-// do sidebar (sb-toggle), mas no mobile a já renderiza em
+// do sidebar (sb-toggle), mas no mobile a <Navbar/> já renderiza em
 // fluxo normal, com altura própria, logo antes de .hi — o padding extra
 // só duplicava esse espaço e criava o vazio entre a navbar e o título.
 // Sem esta linha, título/subtítulo/mapa sobem para a posição correcta,
@@ -64,8 +66,8 @@ const DISCOVERY_MOVEMENT_THRESHOLD_KM = 0.05;
 const pageLayoutStyles = `
   .hw, .hw *, .hw *::before, .hw *::after{box-sizing:border-box}
   .hw{display:flex;min-height:100vh;min-height:100dvh;background:#F8FAFC}
-  .hm{flex:1;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
-  .hi{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .hm{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
+  .hi{flex:1;display:flex;flex-direction:column;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 
   @media(max-width:1024px){
     .hm{margin-left:0}
@@ -536,20 +538,27 @@ export default function MapPage() {
 
   if (checkingActiveService) {
     return (
-      <>
+      <div className="hw">
         <style>{pageLayoutStyles}</style>
-        <main className="hi" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Loader2 size={28} style={{ color: '#0E7A5F', animation: 'spin 0.9s linear infinite' }} />
-        </main>
-      </>
+        <Sidebar />
+        <div className="hm">
+          <Navbar />
+          <main className="hi" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Loader2 size={28} style={{ color: '#0E7A5F', animation: 'spin 0.9s linear infinite' }} />
+          </main>
+        </div>
+      </div>
     );
   }
 
   if (activeService) {
     return (
-      <>
+      <div className="hw">
         <style>{pageLayoutStyles}</style>
-        <main className="hi">
+        <Sidebar />
+        <div className="hm">
+          <Navbar />
+          <main className="hi">
             <div className={styles.page}>
               <div className={styles.header}>
                 <div>
@@ -568,14 +577,18 @@ export default function MapPage() {
               </div>
             </div>
           </main>
-      </>
+        </div>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="hw">
       <style>{pageLayoutStyles}</style>
-      <main className="hi">
+      <Sidebar />
+      <div className="hm">
+        <Navbar />
+        <main className="hi">
           <div className={styles.page}>
             <div className={styles.header}>
               <div>
@@ -777,6 +790,7 @@ export default function MapPage() {
             )}
           </div>
         </main>
-    </>
+      </div>
+    </div>
   );
 }
