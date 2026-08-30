@@ -1,11 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home, BarChart3, MessageCircle, Bell,
   Wallet, User, Settings, LogOut, Zap,
-  Star, X, Menu, ShoppingBag, ClipboardList,
+  Star, X, ShoppingBag, ClipboardList,
 } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
 import BottomNav from "@/components/layout/BottomNav";
@@ -132,6 +132,17 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
  
 export default function ProviderSidebar() {
   const [open, setOpen] = useState(false);
+
+  // Mesmo fix aplicado ao Sidebar do cliente: o botão hambúrguer deixa
+  // de ser position:fixed solto na página (que podia "andar" com o
+  // scroll em Safari mobile) e passa a viver dentro do ProviderNavbar
+  // (sticky). Sidebar continua dono do estado; o Navbar só dispara
+  // o evento global para pedir abertura/fecho.
+  useEffect(() => {
+    const handleToggle = () => setOpen((current) => !current);
+    window.addEventListener("sidebar:toggle", handleToggle);
+    return () => window.removeEventListener("sidebar:toggle", handleToggle);
+  }, []);
  
   return (
     <>
@@ -141,33 +152,8 @@ export default function ProviderSidebar() {
           position: fixed; left: 0; top: 0;
           height: 100vh; height: 100dvh; width: 240px;
           background: #F8FAFC; border-right: 1px solid #E2E8F0;
-          display: flex; flex-direction: column; z-index: 700; overflow: hidden;
+          display: flex; flex-direction: column; z-index: 40; overflow: hidden;
         }
-
-        /* ── Mobile toggle button ─────────────────────────────────────── */
-        .psb-mb {
-          display: none;
-          position: fixed;
-          /* CORRIGIDO — mesmo fix do Sidebar do cliente: top:14px
-             desalinhava ao fazer scroll em Safari/Chrome mobile porque
-             a barra de endereço muda a altura visível e o toggle ficava
-             a flutuar. Agora ocupa toda a altura do Navbar (top:0,
-             height:64px) e centra o ícone via flexbox — sempre alinhado
-             independentemente de reflows do browser. */
-          top: 0; left: 0;
-          height: 64px; width: 64px;
-          z-index: 700;
-          align-items: center; justify-content: center;
-          cursor: pointer;
-          color: #475569;
-          background: transparent;
-          border: none;
-          transition: color 0.15s;
-        }
-        @media(hover:hover){
-          .psb-mb:hover { color: #0F172A; }
-        }
-        .psb-mb:active { transform: scale(0.92); }
 
         /* ── Overlay ──────────────────────────────────────────────────── */
         .psb-ov {
@@ -237,7 +223,6 @@ export default function ProviderSidebar() {
 
         @media (max-width: 1024px) {
           .psb-d  { display: none !important; }
-          .psb-mb { display: flex !important; }
           .psb-ov.open { display: block !important; }
           .psb-nav { padding: 6px 0; }
         }
@@ -245,11 +230,6 @@ export default function ProviderSidebar() {
 
       {/* Desktop */}
       <aside className="psb-d"><SidebarContent/></aside>
-
-      {/* Mobile toggle */}
-      <button className="psb-mb" onClick={() => setOpen(true)}>
-        <Menu size={20}/>
-      </button>
 
       {/* Overlay */}
       <div className={`psb-ov${open ? " open" : ""}`} onClick={() => setOpen(false)}/>

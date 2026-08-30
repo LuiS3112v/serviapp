@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, MapPin, Loader2, Search, X, ChevronRight, Zap } from "lucide-react";
+import { Bell, MapPin, Loader2, Search, X, ChevronRight, Zap, Menu } from "lucide-react";
 import { chatApi } from "@/lib/chat.api";
 import { notificationsApi } from "@/lib/notifications.api";
 import { activateLocation, updateLocationSharing, type ProviderLocation } from "@/lib/geolocation.api";
@@ -449,8 +449,20 @@ export default function ProviderNavbar() {
         @keyframes pnav-spin { to { transform: rotate(360deg); } }
         .pnav-spin { animation: pnav-spin 0.7s linear infinite; }
 
+        /* ── Botão hambúrguer (mesmo fix do Sidebar do cliente) ─────────── */
+        .pnav-menu-btn {
+          display: none; align-items: center; justify-content: center;
+          width: 40px; height: 40px; border-radius: 12px;
+          background: #FFFFFF; border: 1px solid #E2E8F0; color: #475569;
+          cursor: pointer; flex-shrink: 0; transition: all 0.15s; margin-right: 4px;
+        }
+        .pnav-menu-btn:hover { border-color: #0F172A; color: #0F172A; }
         @media (max-width: 1024px) {
-          .pnav { padding: 0 16px 0 64px; }
+          .pnav-menu-btn { display: flex; }
+        }
+
+        @media (max-width: 1024px) {
+          .pnav { padding: 0 16px; }
         }
         @media (max-width: 860px) {
           .pnav-sw { max-width: 340px; }
@@ -464,7 +476,7 @@ export default function ProviderNavbar() {
           .pnav-right    { gap: 6px; }
         }
         @media (max-width: 640px) {
-          .pnav { padding: 0 12px 0 60px; gap: 8px; }
+          .pnav { padding: 0 12px; gap: 8px; }
           .pnav-sw { max-width: none; }
           .pnav-loc-label { display: none; }
           .pnav-loc-btn { padding: 8px; border-radius: 12px; gap: 0; }
@@ -473,7 +485,7 @@ export default function ProviderNavbar() {
         @media (max-width: 420px) {
           .pnav {
             height: auto; min-height: 64px; flex-wrap: wrap;
-            align-content: center; padding: 8px 12px 8px 60px;
+            align-content: center; padding: 8px 12px;
             gap: 6px; row-gap: 8px;
           }
           .pnav-sw { order: 1; flex: 0 0 100%; width: 100%; max-width: 100%; }
@@ -481,7 +493,7 @@ export default function ProviderNavbar() {
           .pnav-ii, .pnav-bell, .pnav-avatar { width: 36px; height: 36px; }
         }
         @media (max-width: 320px) {
-          .pnav { padding: 8px 8px 8px 52px; }
+          .pnav { padding: 8px; }
           .pnav-right { gap: 4px; }
           .pnav-ii, .pnav-bell, .pnav-avatar { width: 32px; height: 32px; border-radius: 10px; }
           .pnav-loc-btn { padding: 6px; }
@@ -489,6 +501,13 @@ export default function ProviderNavbar() {
       `}</style>
 
       <nav className="pnav">
+        <button
+          className="pnav-menu-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent("sidebar:toggle"))}
+          aria-label="Abrir menu"
+        >
+          <Menu size={20}/>
+        </button>
 
         {/* ── Search bar ─────────────────────────────────────────────────── */}
         <div className="pnav-sw" ref={searchRef}>
