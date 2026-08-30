@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { User, Mail, Phone, MapPin, Edit, X, Loader2, CheckCircle } from "lucide-react";
 import { userApi, getCurrentUser, refreshUserInStorage } from "@/lib/user.api";
 import { servicesApi, ClientStats } from "@/lib/services.api";
@@ -59,7 +57,7 @@ export default function ClientProfilePage() {
     <>
       <style>{`
         .prof-wrap{display:flex;min-height:100vh;background:#f8fafc}
-        .prof-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
+        .prof-main{flex:1;display:flex;flex-direction:column}
         .prof-inner{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:20px;max-width:700px}
         .prof-card{background:#ffffff;border:1px solid #eef1f5;border-radius:20px;padding:24px;box-shadow:0 2px 12px rgba(15,23,42,0.04)}
         .info-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #eef1f5}
@@ -77,14 +75,12 @@ export default function ClientProfilePage() {
         .save-btn:disabled{opacity:0.6;cursor:not-allowed}
         .skeleton{background:#e2e8f0;border-radius:8px;animation:pulse 1.5s infinite}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-        @media(max-width:1024px){.prof-main{margin-left:0}}
+        @media(max-width:1024px){}
         @media(max-width:640px){.prof-inner{padding:70px 16px 20px}.stat-grid{grid-template-columns:1fr 1fr}}
       `}</style>
 
       <div className="prof-wrap">
-        <Sidebar/>
         <div className="prof-main">
-          <Navbar/>
           <div className="prof-inner">
 
             {/* Título */}

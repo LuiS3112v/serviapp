@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import {
   MapPin, Briefcase, HelpCircle, ArrowRight, Loader2, Shield, Wrench,
 } from "lucide-react";
@@ -131,7 +129,7 @@ export default function HomePage() {
     <>
       <style>{`
         .hw{display:flex;min-height:100vh;min-height:100dvh;background:#FFFFFF}
-        .hm{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
+        .hm{flex:1;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
         .hi{padding:32px;display:flex;flex-direction:column;gap:44px;max-width:1220px}
 
         @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -250,11 +248,7 @@ export default function HomePage() {
         }
       `}</style>
 
-      <div className="hw">
-        <Sidebar />
-        <div className="hm">
-          <Navbar />
-          <main className="hi">
+      <main className="hi">
 
             {/* ═══ SAUDAÇÃO + RESUMO ═══ */}
             <section className="fade-up">
@@ -367,8 +361,6 @@ export default function HomePage() {
             </section>
 
           </main>
-        </div>
-      </div>
     </>
   );
 }

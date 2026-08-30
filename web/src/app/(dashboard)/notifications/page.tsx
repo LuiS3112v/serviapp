@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import {
   Bell, CheckCircle, MessageCircle, Wallet, AlertCircle,
   Trash2, Check, Loader2, RefreshCw,
@@ -141,7 +139,7 @@ export default function NotificationsPage() {
         @keyframes sk { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
 
         .notif-wrap { display: flex; min-height: 100vh; background: #f8fafc }
-        .notif-main { flex: 1; margin-left: 240px; display: flex; flex-direction: column }
+        .notif-main { flex: 1; display: flex; flex-direction: column }
         .notif-inner { flex: 1; padding: 28px 32px; max-width: 720px; display: flex; flex-direction: column; gap: 20px }
 
         /* ── Tabs ── */
@@ -186,14 +184,12 @@ export default function NotificationsPage() {
         }
         .load-more-btn:hover { border-color: ${ACCENT}; color: ${ACCENT} }
 
-        @media (max-width: 1024px) { .notif-main { margin-left: 0 } }
+        @media (max-width: 1024px) {  }
         @media (max-width: 640px)  { .notif-inner { padding: 70px 16px 20px } }
       `}</style>
 
       <div className="notif-wrap">
-        <Sidebar/>
         <div className="notif-main">
-          <Navbar/>
           <div className="notif-inner">
 
             {/* Header */}

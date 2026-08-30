@@ -6,8 +6,6 @@ import {
   ArrowLeft, Star, CheckCircle, BadgeCheck, Calendar,
   User, Briefcase, Image as ImageIcon, Loader2, MessageCircle,
 } from "lucide-react";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { providerProfileApi } from "@/lib/provider-profile.api";
 import { chatApi } from "@/lib/chat.api";
 import { getToken } from "@/lib/auth.api";
@@ -90,7 +88,6 @@ export default function ProviderPublicProfilePage() {
 
   if (loading) return (
     <div style={{ display:"flex", minHeight:"100vh", background:"#FFFFFF" }}>
-      <Sidebar/>
       <div style={{ flex:1, marginLeft:240, display:"flex", alignItems:"center", justifyContent:"center" }}>
         <Loader2 size={28} style={{ color:"#0E7A5F", animation:"spin 1s linear infinite" }}/>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -100,7 +97,6 @@ export default function ProviderPublicProfilePage() {
 
   if (notFound || !profile) return (
     <div style={{ display:"flex", minHeight:"100vh", background:"#FFFFFF" }}>
-      <Sidebar/>
       <div style={{ flex:1, marginLeft:240, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16, padding:40 }}>
         <User size={48} style={{ color:"#cbd5e1" }}/>
         <p style={{ fontSize:18, fontWeight:700, color:"#0F172A", margin:0 }}>Prestador não encontrado</p>
@@ -122,7 +118,7 @@ export default function ProviderPublicProfilePage() {
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
         .pp-wrap{display:flex;min-height:100vh;background:#FFFFFF}
-        .pp-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
+        .pp-main{flex:1;display:flex;flex-direction:column}
         .pp-inner{flex:1;display:flex;flex-direction:column;max-width:1080px;width:100%;margin:0 auto;padding-bottom:64px}
         .pp-px{padding-left:24px;padding-right:24px}
 
@@ -252,9 +248,7 @@ export default function ProviderPublicProfilePage() {
       `}</style>
 
       <div className="pp-wrap">
-        <Sidebar/>
         <div className="pp-main">
-          <Navbar/>
           <div className="pp-inner pp-px">
 
             {/* ── Hero: banner com botão voltar flutuante ── */}

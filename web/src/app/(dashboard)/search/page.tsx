@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import {
   Search, Filter, Briefcase, FileText,
   Wifi, WifiOff, Loader2, X, RefreshCw,
@@ -231,7 +229,7 @@ function SearchInner() {
       <style>{`
         *{box-sizing:border-box}
         .sw{display:flex;min-height:100vh;background:#f8fafc}
-        .sm{flex:1;margin-left:240px;min-width:0;display:flex;flex-direction:column}
+        .sm{flex:1;min-width:0;display:flex;flex-direction:column}
         .si{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:20px;min-width:0}
         .sbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:#ffffff;border:1px solid #eef1f5;width:100%;box-shadow:0 1px 3px rgba(15,23,42,0.04);transition:border-color .15s,box-shadow .15s}
         .sbar:focus-within{border-color:#1D9E75;box-shadow:0 4px 14px rgba(29,158,117,0.10)}
@@ -278,14 +276,12 @@ function SearchInner() {
         .sk{background:#e2e8f0;border-radius:8px;animation:sk 1.5s infinite}
         @keyframes sk{0%,100%{opacity:1}50%{opacity:0.4}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-        @media(max-width:1024px){.sm{margin-left:0}.si{padding:80px 20px 24px}}
+        @media(max-width:1024px){.si{padding:80px 20px 24px}}
         @media(max-width:640px){.si{padding:72px 12px 24px;gap:14px}.pgrid{grid-template-columns:1fr}}
       `}</style>
 
       <div className="sw">
-        <Sidebar/>
         <div className="sm">
-          <Navbar/>
           <div className="si">
 
             <div>

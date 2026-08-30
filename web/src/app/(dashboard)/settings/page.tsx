@@ -1,7 +1,5 @@
 "use client";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { Shield, Globe, Sun, LogOut, ChevronRight, FileText, Lock } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
 
@@ -31,7 +29,7 @@ export default function SettingsPage() {
     <>
       <style>{`
         .set-wrap{display:flex;min-height:100vh;background:#f8fafc}
-        .set-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
+        .set-main{flex:1;display:flex;flex-direction:column}
         .set-inner{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:24px;max-width:680px}
         .set-group{background:#ffffff;border:1px solid #eef1f5;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(15,23,42,0.04)}
         .set-item{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid #eef1f5;width:100%;background:none;border-left:none;border-right:none;border-top:none;text-align:left}
@@ -39,13 +37,11 @@ export default function SettingsPage() {
         .set-item.clickable{cursor:pointer;transition:background 0.15s}
         .set-item.clickable:hover{background:#f8fafc}
         .set-item.disabled{cursor:default;opacity:0.5}
-        @media(max-width:1024px){.set-main{margin-left:0}}
+        @media(max-width:1024px){}
         @media(max-width:640px){.set-inner{padding:70px 16px 20px}}
       `}</style>
       <div className="set-wrap">
-        <Sidebar/>
         <div className="set-main">
-          <Navbar/>
           <div className="set-inner">
             <div>
               <h1 style={{fontSize:22,fontWeight:700,color:"#0f172a",marginBottom:4}}>Definições</h1>

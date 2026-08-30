@@ -1,7 +1,5 @@
 "use client";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import {
   ArrowLeft, Shield, Zap, MapPin, Star, MessageCircle, Search,
   Navigation, KeyRound, LifeBuoy, FileText,
@@ -41,7 +39,7 @@ export default function ComoFuncionaPage() {
     <>
       <style>{`
         .cf-wrap{display:flex;min-height:100vh;background:#FFFFFF}
-        .cf-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
+        .cf-main{flex:1;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
         .cf-inner{padding:32px;display:flex;flex-direction:column;gap:48px;max-width:900px}
         .cf-back{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:${INK};background:#fff;border:1px solid ${LINE};cursor:pointer;font-family:inherit;padding:10px 16px;border-radius:10px;margin-top:8px}
         .cf-title{font-size:26px;font-weight:700;color:${INK};letter-spacing:-0.02em;margin-top:16px}
@@ -62,7 +60,7 @@ export default function ComoFuncionaPage() {
 
         .cf-sec-title{font-size:18px;font-weight:700;color:${INK};margin-bottom:20px}
 
-        @media(max-width:1024px){.cf-main{margin-left:0}}
+        @media(max-width:1024px){}
         @media(max-width:768px){
           .cf-inner{padding:72px 16px 32px;gap:36px}
           .cf-steps{grid-template-columns:1fr}
@@ -71,9 +69,7 @@ export default function ComoFuncionaPage() {
       `}</style>
 
       <div className="cf-wrap">
-        <Sidebar />
         <div className="cf-main">
-          <Navbar />
           <main className="cf-inner">
             <div>
               <button className="cf-back" onClick={() => router.back()}>

@@ -41,22 +41,34 @@ import { usePathname } from "next/navigation";
 
 function resetVisualViewport() {
   try {
+    // CORRIGIDO — a versão anterior fazia existing.remove() seguido de
+    // document.createElement + appendChild. O Next.js App Router
+    // controla o <head> e regista o <meta name="viewport"> que ele
+    // próprio criou via `export const viewport` no layout.tsx. Ao
+    // remover esse nó, o React perde a referência — na próxima
+    // navegação, quando tenta fazer removeChild sobre o nó que criou
+    // (que já não existe no DOM), lança:
+    //   Cannot read properties of null (reading 'removeChild')
+    // A correcção é modificar o atributo content IN-PLACE, sem nunca
+    // remover o nó DOM. O elemento permanece o mesmo, o React continua
+    // com uma referência válida, e o reset de viewport funciona da
+    // mesma forma.
     const existing = document.querySelector('meta[name="viewport"]');
-    const viewportContent =
-      existing?.getAttribute("content") ??
-      "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
-
     if (existing) {
-      existing.remove();
+      const current = existing.getAttribute("content") ?? "";
+      // Força initial-scale=1 e maximum-scale=1 sem recriar o nó
+      const reset = current
+        .replace(/initial-scale=[^,\s]*/g, "initial-scale=1")
+        .replace(/maximum-scale=[^,\s]*/g, "maximum-scale=1")
+        .replace(/user-scalable=[^,\s]*/g, "user-scalable=no");
+      existing.setAttribute("content", reset + ", initial-scale=1");
+      // Segunda passagem para limpar o ", initial-scale=1" duplicado
+      // que pode ter ficado se já existiam esses valores
+      existing.setAttribute(
+        "content",
+        "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+      );
     }
-
-    // Recriação SÍNCRONA (sem requestAnimationFrame) — o objetivo é
-    // que a correção aconteça no mesmo tick da navegação, antes do
-    // browser pintar a página seguinte com a escala errada.
-    const meta = document.createElement("meta");
-    meta.name = "viewport";
-    meta.content = viewportContent;
-    document.head.appendChild(meta);
   } catch {
     // Silencioso — se falhar aqui, a camada 1 (ServiceMap) já terá
     // tentado o mesmo reset no momento do unmount.

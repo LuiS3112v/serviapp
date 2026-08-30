@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { MessageCircle, Search, Loader2 } from "lucide-react";
 import { chatApi, ChatRoom } from "@/lib/chat.api";
 import { getToken, getSession } from "@/lib/auth.api";
@@ -59,8 +57,7 @@ export default function ChatPage() {
           display:flex;
           flex-direction:column;
           /* Desktop: sidebar is 240px fixed */
-          margin-left:240px;
-          min-width:0;                 /* prevents flex blowout */
+                    min-width:0;                 /* prevents flex blowout */
           overflow-x:hidden;
         }
 
@@ -188,9 +185,7 @@ export default function ChatPage() {
       `}</style>
 
       <div className="chat-wrap">
-        <Sidebar/>
         <div className="chat-main">
-          <Navbar/>
           <div className="chat-inner">
 
             {/* ── Header ── */}

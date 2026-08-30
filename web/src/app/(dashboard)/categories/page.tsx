@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { ChevronRight, X, MapPin, Loader2, Check, ArrowLeft } from "lucide-react";
 import { getToken } from "@/lib/auth.api";
 import { CATEGORIES } from "@/lib/categories";
@@ -239,7 +237,7 @@ export default function CategoriesPage() {
     <>
       <style>{`
         .cw{display:flex;min-height:100vh;background:#f8fafc}
-        .cm{flex:1;margin-left:240px;display:flex;flex-direction:column}
+        .cm{flex:1;display:flex;flex-direction:column}
         .ci{flex:1;padding:28px 32px}
 
         .cgrid{
@@ -325,16 +323,14 @@ export default function CategoriesPage() {
         @keyframes spin{to{transform:rotate(360deg)}}
 
         @media(max-width:1200px){.cgrid{grid-template-columns:repeat(3,1fr)}}
-        @media(max-width:1024px){.cm{margin-left:0}.cgrid{grid-template-columns:repeat(3,1fr)}}
+        @media(max-width:1024px){.cgrid{grid-template-columns:repeat(3,1fr)}}
         @media(max-width:768px){.ci{padding:80px 16px 24px}.cgrid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:480px){.ci{padding:70px 12px 20px}.cgrid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:360px){.cgrid{grid-template-columns:1fr}}
       `}</style>
 
       <div className="cw">
-        <Sidebar />
         <div className="cm">
-          <Navbar />
           <div className="ci">
 
             <button

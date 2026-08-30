@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { AdminKyc } from "@/lib/api/admin";
@@ -83,7 +81,7 @@ export default function AdminPage() {
     <>
       <style>{`
         .adm-wrap{display:flex;min-height:100vh;background:#0d1117}
-        .adm-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
+        .adm-main{flex:1;display:flex;flex-direction:column}
         .adm-inner{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:24px}
         .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
         .stat-card{background:#131b27;border:1px solid #1a2535;border-radius:16px;padding:20px}
@@ -156,15 +154,13 @@ export default function AdminPage() {
           font-size:12.5px;color:#e2e8f0;font-weight:600;backdrop-filter:blur(4px);
         }
 
-        @media(max-width:1024px){.adm-main{margin-left:0}.stats-grid{grid-template-columns:repeat(2,1fr)}.adm-grid{grid-template-columns:1fr}}
+        @media(max-width:1024px){.adm-main{}.stats-grid{grid-template-columns:repeat(2,1fr)}.adm-grid{grid-template-columns:1fr}}
         @media(max-width:640px){.adm-inner{padding:16px}.stats-grid{grid-template-columns:1fr 1fr}.payments-cta{flex-direction:column;align-items:flex-start}.modal-doc-grid{grid-template-columns:1fr}}
         @media(max-width:640px){.lightbox-overlay{padding:16px}.lightbox-close{top:14px;right:14px}}
       `}</style>
 
       <div className="adm-wrap">
-        <Sidebar />
         <div className="adm-main">
-          <Navbar />
           <div className="adm-inner">
 
             {/* Header */}

@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { servicesApi } from "@/lib/services.api";
 import {
   Landmark, RefreshCw, Loader2, CheckCircle,
@@ -70,7 +68,7 @@ export default function ClientPaymentsHistoryPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .wl-wrap  { display: flex; min-height: 100vh; background: #F8FAFC; }
-        .wl-main  { flex: 1; margin-left: 240px; display: flex; flex-direction: column; min-width: 0; }
+        .wl-main  { flex: 1; display: flex; flex-direction: column; min-width: 0; }
         .wl-body  { flex: 1; padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; max-width: 820px; width: 100%; }
 
         .wl-hero {
@@ -95,14 +93,12 @@ export default function ClientPaymentsHistoryPage() {
 
         .wl-card  { background: #FFFFFF; border: 1px solid #ECE9DF; border-radius: 18px; padding: 20px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
         .wl-card:hover { border-color: #0E7A5F50; box-shadow: 0 10px 24px rgba(15,23,42,0.08); transform: translateY(-2px); }
-        @media(max-width:1024px) { .wl-main { margin-left: 0; } .wl-body { padding: 80px 20px 24px; } }
+        @media(max-width:1024px) {  .wl-body { padding: 80px 20px 24px; } }
         @media(max-width:640px)  { .wl-body { padding: 70px 12px 20px; gap: 14px; } .wl-hero { padding: 20px; } }
       `}</style>
 
       <div className="wl-wrap">
-        <Sidebar />
         <div className="wl-main">
-          <Navbar />
           <div className="wl-body">
 
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>

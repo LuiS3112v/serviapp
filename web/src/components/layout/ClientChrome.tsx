@@ -8,28 +8,26 @@ import Navbar from "@/components/layout/Navbar";
 // cliente.
 //
 // PORQUÊ EXISTE:
-// O layout do provider tem um <ProviderChrome> que envolve tudo numa
-// estrutura persistente — o Sidebar e o Navbar ficam montados entre
-// navegações, porque vivem num componente pai que o Next.js App Router
-// preserva durante soft navigations.
+// O layout do provider usa <ProviderChrome> para manter Sidebar e
+// Navbar num componente persistente — o Next.js App Router preserva
+// este componente entre navegações do mesmo route group, por isso o
+// Sidebar nunca é desmontado/remontado durante soft navigation.
 //
-// O layout do cliente era apenas <>{children}</> — cada página tinha o
-// seu próprio <Sidebar> e <Navbar> inline. Isso significa que em cada
-// navegação entre páginas do cliente, o React desmontava o Sidebar
-// antigo e montava um novo. Durante esse ciclo, o Sidebar (que tem
-// position:fixed e listeners de toque/teclado) ficava num estado
-// transitório onde o antigo ainda existia no DOM e o novo ainda não
-// estava montado — causando o "freeze" da tela e os botões a não
-// responderem que só acontecia no cliente e nunca no provider.
+// O layout do cliente usava <>{children}</> — cada página montava
+// <Sidebar> e <Navbar> individualmente. A cada navegação, o React
+// desmontava o Sidebar antigo e montava um novo. Durante esse ciclo,
+// o overlay do Sidebar (position:fixed;inset:0;z-index:2000) ficava
+// num estado transitório — podia capturar eventos que deveriam ir para
+// a nova página, causando o freeze e os botões sem resposta que só
+// aconteciam no cliente, nunca no provider.
 //
 // ROTAS ESPECIAIS:
-// O chat individual (/chat/<id>) já monta o seu próprio wrapper
-// full-screen sem Navbar/Sidebar — igual ao chat do provider. O
-// ClientChrome reconhece essa rota e devolve os children directamente,
-// sem montar a estrutura duplicada.
+// • /chat/[id] — tem o seu próprio wrapper full-screen (chatd-wrap)
+//   sem Navbar. Não montamos estrutura duplicada aqui.
 // ═══════════════════════════════════════════════════════════════════════
 
-function isClientChatDetailRoute(pathname: string): boolean {
+function isSpecialRoute(pathname: string): boolean {
+  // Chat detail tem wrapper e header próprios — não usar ChromeLayout
   return /^\/chat\/[^/]+$/.test(pathname);
 }
 
@@ -39,18 +37,19 @@ export default function ClientChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isChatDetail = isClientChatDetailRoute(pathname);
 
-  if (isChatDetail) {
+  if (isSpecialRoute(pathname)) {
     return <>{children}</>;
   }
 
   return (
-    <div className="hw">
+    <div className="cl-layout">
       <Sidebar />
-      <div className="hm">
+      <div className="cl-main">
         <Navbar />
-        <main style={{ flex: 1, minHeight: 0, minWidth: 0 }}>{children}</main>
+        <main style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -7,8 +7,6 @@ import {
   CheckCircle, Package, Briefcase,
   MessageCircle, X, Loader2, Building2, ArrowLeft,
 } from "lucide-react";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { companyApi } from "@/lib/company.api";
 import { servicesApi } from "@/lib/services.api";
 import { chatApi } from "@/lib/chat.api";
@@ -189,7 +187,6 @@ export default function CompanyPublicPage() {
 
   if (loading) return (
     <div style={{ display:"flex", minHeight:"100vh", background:"#FFFFFF" }}>
-      <Sidebar/>
       <div style={{ flex:1, marginLeft:240, display:"flex", alignItems:"center", justifyContent:"center" }}>
         <Loader2 size={28} style={{ color:"#0D9488", animation:"spin 1s linear infinite" }}/>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -199,7 +196,6 @@ export default function CompanyPublicPage() {
 
   if (notFound || !company) return (
     <div style={{ display:"flex", minHeight:"100vh", background:"#FFFFFF" }}>
-      <Sidebar/>
       <div style={{ flex:1, marginLeft:240, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16, padding:40 }}>
         <Briefcase size={48} style={{ color:"#cbd5e1" }}/>
         <p style={{ fontSize:18, fontWeight:700, color:"#0F172A", margin:0 }}>Empresa não encontrada</p>
@@ -223,7 +219,7 @@ export default function CompanyPublicPage() {
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
         .cpub-wrap{display:flex;min-height:100vh;background:#FFFFFF}
-        .cpub-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
+        .cpub-main{flex:1;display:flex;flex-direction:column}
         .cpub-inner{flex:1;display:flex;flex-direction:column;max-width:1120px;width:100%;margin:0 auto;padding-bottom:64px}
 
         /* ── Grade de espaçamento consistente ── */
@@ -324,9 +320,7 @@ export default function CompanyPublicPage() {
       `}</style>
 
       <div className="cpub-wrap">
-        <Sidebar/>
         <div className="cpub-main">
-          <Navbar/>
           <div className="cpub-inner cpub-px">
 
             <div className="cpub-back-row">

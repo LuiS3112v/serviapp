@@ -219,7 +219,7 @@
 /* Tablet — pequeno (768×1024) e grande (820×1180, 1024×1366) */
 @media (max-width: 1024px) {
   .mapWrapper {
-    height: clamp(660px, 92dvh, 860px);
+    height: clamp(680px, 96dvh, 900px);
     margin: 0 16px 20px;
     border-radius: 18px;
   }

@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import {
   Shield, Eye, EyeOff, Monitor, Smartphone, Tablet, Laptop,
   LogOut, ShieldCheck, ShieldOff, Copy, Check, Clock,
@@ -276,7 +274,7 @@ export default function SecurityPage() {
     <>
       <style>{`
         .sec-wrap{display:flex;min-height:100vh;background:#f8fafc}
-        .sec-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
+        .sec-main{flex:1;display:flex;flex-direction:column}
         .sec-inner{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:20px;max-width:720px}
         .sec-card{background:#ffffff;border:1px solid #eef1f5;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(15,23,42,0.04)}
         .sec-card--danger{border-color:#fecaca}
@@ -292,16 +290,14 @@ export default function SecurityPage() {
         .sec-btn-ghost{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
         .sec-session-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #f1f5f9}
         .sec-session-row:last-child{border-bottom:none}
-        @media(max-width:1024px){.sec-main{margin-left:0}}
+        @media(max-width:1024px){}
         @media(max-width:640px){.sec-inner{padding:70px 16px 20px}}
         @keyframes sec-spin{to{transform:rotate(360deg)}}
         .sec-spin{animation:sec-spin .8s linear infinite}
       `}</style>
 
       <div className="sec-wrap">
-        <Sidebar />
         <div className="sec-main">
-          <Navbar />
           <div className="sec-inner">
 
             <div>

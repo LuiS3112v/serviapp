@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { Plus, Briefcase, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 import { servicesApi } from "@/lib/services.api";
 import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
@@ -97,7 +95,7 @@ export default function ServicesPage() {
     <>
       <style>{`
         .sv-wrap{display:flex;min-height:100vh;background:#FFFFFF}
-        .sv-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
+        .sv-main{flex:1;display:flex;flex-direction:column}
         .sv-inner{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:20px}
         .tabs{display:flex;gap:4px;background:#F1F5F9;border-radius:12px;padding:4px;border:1px solid #E2E8F0;width:fit-content;flex-wrap:wrap}
         .tab{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:#64748B;transition:all 0.15s;font-family:inherit}
@@ -123,14 +121,12 @@ export default function ServicesPage() {
         .refresh-btn:not(:disabled):hover { border-color:#0E7A5F60; color:#0E7A5F; }
         .refresh-btn:disabled { opacity:0.6; cursor:not-allowed; }
 
-        @media(max-width:1024px){.sv-main{margin-left:0}}
+        @media(max-width:1024px){}
         @media(max-width:640px){.sv-inner{padding:70px 16px 20px}}
       `}</style>
 
       <div className="sv-wrap">
-        <Sidebar />
         <div className="sv-main">
-          <Navbar />
           <div className="sv-inner">
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>

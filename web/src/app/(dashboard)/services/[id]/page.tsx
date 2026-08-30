@@ -1,8 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import ProofViewerModal from "@/components/shared/ProofViewerModal";
 import { servicesDetailApi, ServicePayment, PaymentBankAccount } from "@/lib/api/services-detail.api";
 import { paymentProofApi, PaymentProof } from "@/lib/api/payment-proof.api";
@@ -628,7 +626,6 @@ export default function ClientServiceDetailPage() {
 
   if (loading) return (
     <div style={{ display:"flex", minHeight:"100vh", background:"#FFFFFF" }}>
-      <Sidebar />
       <div style={{ flex:1, marginLeft:240, display:"flex", alignItems:"center", justifyContent:"center" }}>
         <Loader2 size={28} style={{ color:"#0E7A5F", animation:"spin 1s linear infinite" }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -652,7 +649,7 @@ export default function ClientServiceDetailPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .sd-wrap { display: flex; min-height: 100vh; background: #FFFFFF; }
-        .sd-main { flex: 1; margin-left: 240px; display: flex; flex-direction: column; }
+        .sd-main { flex: 1; display: flex; flex-direction: column; }
         .sd-body { flex: 1; padding: 28px 32px; display: flex; flex-direction: column;
                    gap: 20px; max-width: 760px; width: 100%; }
         .sd-card { background: #E2E8F0; border: 1px solid #CBD5E1;
@@ -673,15 +670,13 @@ export default function ClientServiceDetailPage() {
                    justify-content: center; flex-shrink: 0; z-index: 1; }
         .provider-avatar-btn { transition: transform 0.15s ease; }
         .provider-avatar-btn:hover { transform: scale(1.04); }
-        @media(max-width:1024px) { .sd-main { margin-left: 0; } .sd-body { padding: 80px 20px 24px; } }
+        @media(max-width:1024px) {  .sd-body { padding: 80px 20px 24px; } }
         @media(max-width:640px)  { .sd-body { padding: 70px 12px 20px; gap: 14px; }
                                    .info-grid { grid-template-columns: 1fr; } }
       `}</style>
 
       <div className="sd-wrap">
-        <Sidebar />
         <div className="sd-main">
-          <Navbar />
           <div className="sd-body">
 
             <button onClick={() => router.push("/services")}

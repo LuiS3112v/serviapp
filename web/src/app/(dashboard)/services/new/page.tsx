@@ -1,8 +1,6 @@
 "use client";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
 import { ArrowLeft, MapPin, Calendar, Clock, CheckCircle, Loader2, AlertCircle } from "lucide-react";
 import { servicesApi } from "@/lib/services.api";
 import { getToken } from "@/lib/auth.api";
@@ -106,7 +104,7 @@ function NewServicePageContent() {
     <>
       <style>{`
         .ns-wrap{display:flex;min-height:100vh;background:#FFFFFF}
-        .ns-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
+        .ns-main{flex:1;display:flex;flex-direction:column}
         .ns-inner{flex:1;padding:28px 32px;max-width:640px;display:flex;flex-direction:column;gap:0}
         .ns-input{width:100%;padding:14px 16px;border-radius:12px;background:#F1F5F9;border:1px solid #CBD5E1;color:#111827;font-size:14px;outline:none;transition:border 0.2s;margin-bottom:16px;font-family:inherit}
         .ns-input:focus{border-color:#0E7A5F}
@@ -121,15 +119,13 @@ function NewServicePageContent() {
         .submit-btn:disabled{opacity:0.6;cursor:not-allowed}
         .submit-btn:hover:not(:disabled){opacity:0.9}
         .error-box{background:#FEF2F2;border:1px solid #FCA5A5;border-radius:10px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#B91C1C;margin-bottom:16px;line-height:1.5}
-        @media(max-width:1024px){.ns-main{margin-left:0}}
+        @media(max-width:1024px){}
         @media(max-width:640px){.ns-inner{padding:70px 16px 20px}.cat-grid{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
       `}</style>
 
       <div className="ns-wrap">
-        <Sidebar/>
         <div className="ns-main">
-          <Navbar/>
           <div className="ns-inner">
             <button onClick={()=>router.back()} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#475569",background:"none",border:"none",cursor:"pointer",marginBottom:24,fontFamily:"inherit",padding:0}}>
               <ArrowLeft size={15}/> Voltar
