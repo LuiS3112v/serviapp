@@ -385,19 +385,43 @@ export function ServiceMap({
   // assentar no tamanho final) sem que a janela em si dispare um
   // evento de resize. O ResizeObserver deteta diretamente mudanças no
   // elemento onde o Leaflet está montado, cobrindo esse cenário.
-  // Um só observer por instância (guardado em ref, desligado no
-  // cleanup) evita observers duplicados ou fugas de memória.
+  //
+  // FIX — freeze ao entrar no mapa (mobile/PWA):
+  // invalidateSize() pode, em si, alterar minimamente o layout interno
+  // do Leaflet (reflow de tiles/painéis), o que nalguns browsers faz
+  // o próprio ResizeObserver disparar de novo sobre o mesmo elemento —
+  // um ciclo invalidateSize → reflow → observer dispara → invalidateSize
+  // → ... Com o container agora muito mais alto (até ~98dvh) e mais
+  // tempo de assentamento em mobile, esse ciclo tinha mais chance de
+  // nunca convergir, prendendo a main thread e produzindo o freeze/
+  // duplicação visual reportados.
+  // Correção: guardamos a última largura/altura medida e só chamamos
+  // invalidateSize() quando o tamanho really mudou (diferença > 1px).
+  // Isto quebra qualquer ciclo na origem — não é só um debounce de
+  // tempo, é uma guarda de convergência real.
   useEffect(() => {
     if (!leafletReady || !containerRef.current) return;
 
     const el = containerRef.current;
     let frame: number | null = null;
+    let lastWidth = el.clientWidth;
+    let lastHeight = el.clientHeight;
 
-    const observer = new ResizeObserver(() => {
-      // requestAnimationFrame evita chamar invalidateSize() múltiplas
-      // vezes em sequência quando o ResizeObserver dispara vários
-      // callbacks muito próximos (ex: durante uma transição de
-      // layout) — só a última medição de cada frame é aplicada.
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+
+      const { width, height } = entry.contentRect;
+
+      // Guarda de convergência: ignora disparos que não representam
+      // uma mudança real de tamanho (ex: o próprio invalidateSize a
+      // causar um reflow interno de 0px de diferença).
+      if (Math.abs(width - lastWidth) < 1 && Math.abs(height - lastHeight) < 1) {
+        return;
+      }
+      lastWidth = width;
+      lastHeight = height;
+
       if (frame != null) cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         if (mapRef.current) {
