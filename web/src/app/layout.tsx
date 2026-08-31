@@ -17,36 +17,55 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://mestroo-two.vercel.app"),
-  title: { default: "Mestroo — O serviço certo, já.", template: "%s | Mestroo" },
-  description: "Plataforma que liga clientes a prestadores de serviços verificados em Luanda, Angola. Eletricista, canalizador, limpeza, jardinagem e mais.",
+  title: {
+    default: "Mestroo — O serviço certo, já.",
+    template: "%s | Mestroo",
+  },
+  description:
+    "Plataforma que liga clientes a prestadores de serviços verificados em Luanda, Angola. Eletricista, canalizador, limpeza, jardinagem e mais.",
   robots: { index: true, follow: true },
   openGraph: {
-    type: "website", locale: "pt_AO", url: "https://mestroo-two.vercel.app",
-    siteName: "Mestroo", title: "Mestroo — O serviço certo, já.",
-    description: "Plataforma que liga clientes a prestadores de serviços verificados em Luanda, Angola.",
+    type: "website",
+    locale: "pt_AO",
+    url: "https://mestroo-two.vercel.app",
+    siteName: "Mestroo",
+    title: "Mestroo — O serviço certo, já.",
+    description:
+      "Plataforma que liga clientes a prestadores de serviços verificados em Luanda, Angola.",
   },
   twitter: {
-    card: "summary_large_image", title: "Mestroo — O serviço certo, já.",
-    description: "Plataforma que liga clientes a prestadores de serviços verificados em Luanda, Angola.",
+    card: "summary_large_image",
+    title: "Mestroo — O serviço certo, já.",
+    description:
+      "Plataforma que liga clientes a prestadores de serviços verificados em Luanda, Angola.",
   },
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: PWA_CONFIG.shortName },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: PWA_CONFIG.shortName,
+  },
   icons: { apple: PWA_CONFIG.icons.appleTouchIcon },
 };
 
 export const viewport: Viewport = {
-  width: "device-width", initialScale: 1, maximumScale: 1,
-  userScalable: false, viewportFit: "cover", themeColor: PWA_CONFIG.themeColor,
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: PWA_CONFIG.themeColor,
 };
 
-// Logo Mestroo em base64 — embutida diretamente no HTML para aparecer
-// instantaneamente sem nenhum request HTTP adicional
-const LOGO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD0eNT6AADP5UlEQVR4nOzdd3wcxfkw8OeZ2StqrpItuTeMccHgRjNYJvQWEpAICRDeFJtAgJAEQiDhJEJ6SIAkJCIQSpIfQYLQmwFLNsUU996rLNmSbHVd25nn/WN3pZN8J52aVfx881EsTne3e7t7O8+0ZwAYY4wxxhhjjDHGGGOMMcYYY4wxxhhjjDHGGGOMMcYYY4wxxhhjjDHGGGOMMcYYY4wxxhhjjDHGGGOMMcYYY4wxxhhjjDHGGGOMMcYYY4wxxhhjjDHGGOMM...";
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="pt" className={manrope.variable}>
       <head>
+        {/* iOS Splash Screens */}
         <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash/iphone_828x1792.png" />
         <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/splash/iphone_1125x2436.png" />
         <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/splash/iphone_1170x2532.png" />
@@ -55,22 +74,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash/iphone_750x1334.png" />
       </head>
       <body>
-        {/* Splash inline — aparece antes do React, funciona em qualquer dispositivo */}
-        <div
-          id="app-splash"
-          style={{
-            position: "fixed", inset: 0, zIndex: 9999,
-            backgroundColor: "#ffffff", display: "flex",
-            alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <img src={LOGO_BASE64} alt="Mestroo" style={{ width: "180px", height: "180px", objectFit: "contain" }} />
-        </div>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){function h(){var e=document.getElementById('app-splash');if(!e)return;e.style.transition='opacity 0.3s ease';e.style.opacity='0';setTimeout(function(){e.remove();},300);}if(document.readyState==='complete'){setTimeout(h,300);}else{window.addEventListener('load',function(){setTimeout(h,300);});}setTimeout(h,3000);})();`,
-          }}
-        />
         <NextTopLoader color="#1D9E75" height={2} showSpinner={false} shadow="0 0 6px #1D9E75" />
         <KeepAlive />
         <ViewportGuard />
