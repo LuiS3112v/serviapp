@@ -69,12 +69,30 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt" className={manrope.variable}>
+      <head>
+        {/* iOS Splash Screens — o Safari ignora o manifest para isto.
+            Sem estas tags o iPhone mostra tela preta no loading. */}
+
+        {/* iPhone 16 Pro Max */}
+        <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/splash/iphone_1290x2796.png" />
+        {/* iPhone 16 Pro / 15 Pro / 14 Pro */}
+        <link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/splash/iphone_1179x2556.png" />
+        {/* iPhone 16 / 15 / 14 / 13 / 12 */}
+        <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/splash/iphone_1170x2532.png" />
+        {/* iPhone 11 Pro / XS / X */}
+        <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/splash/iphone_1125x2436.png" />
+        {/* iPhone 11 / XR */}
+        <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash/iphone_828x1792.png" />
+        {/* iPhone SE / 8 / 7 */}
+        <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash/iphone_750x1334.png" />
+        {/* iPad Pro 12.9" */}
+        <link rel="apple-touch-startup-image" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash/ipad_2048x2732.png" />
+        {/* iPad Pro 11" / Air */}
+        <link rel="apple-touch-startup-image" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash/ipad_1668x2388.png" />
+        {/* iPad 10.2" */}
+        <link rel="apple-touch-startup-image" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash/ipad_1620x2160.png" />
+      </head>
       <body>
-        {/* Barra de progresso no topo — aparece imediatamente ao clicar
-            qualquer link/botão de navegação, antes da nova página
-            carregar. Elimina a sensação de "botão morto" durante os
-            200-400ms que o Next.js leva a resolver a rota e carregar
-            o componente. Cor igual à cor de marca da Mestroo. */}
         <NextTopLoader
           color="#1D9E75"
           height={2}
