@@ -756,5 +756,18 @@ export const IconControloAcessos = ({ size = 24, color = "currentColor", style, 
   </svg>
 );
 
+// ─────────────────────────────────────────────
+//  PROFESSOR
+// ─────────────────────────────────────────────
+
+export const IconProfessor = ({ size = 24, color = "currentColor", style, className }: IconProps) => (
+  <svg {...svgProps(size, color)} style={style} className={className}>
+    <path d="M12 3 L2 8 L12 13 L22 8 Z" />
+    <path d="M6 10.5 v5 Q6 19 12 19 Q18 19 18 15.5 v-5" />
+    <line x1="22" y1="8" x2="22" y2="14" />
+    <circle cx="22" cy="15" r="1" fill={color} stroke="none" />
+  </svg>
+);
+
 // re-exporta ícones Lucide usados nas subcategorias
-export { Wrench, Lightbulb, Sprout, Trees, Home, Building2, Store } from "lucide-react";
+export { Wrench, Lightbulb, Sprout, Trees, Home, Building2, Store, School, Calculator, FlaskConical, Languages, ClipboardCheck, Laptop } from "lucide-react";

@@ -7,7 +7,7 @@ import {
 import {
   IconLimpeza, IconClimatizacao, IconCanalizacao, IconEletricidade,
   IconTIRedes, IconJardinagem, IconMudancas, IconBeleza,
-  IconAutomovel, IconPintura, IconConstrucao, IconSeguranca,
+  IconAutomovel, IconPintura, IconConstrucao, IconProfessor,
 } from "@/lib/mestroo-icons";
 import { servicesApi } from "@/lib/services.api";
 import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
@@ -74,7 +74,7 @@ const CATS = [
   { Icon: IconAutomovel,    label: "Automóvel",    desc: "Reparação e manutenção" },
   { Icon: IconPintura,      label: "Pintura",      desc: "Interior e exterior" },
   { Icon: IconConstrucao,   label: "Construção",   desc: "Obras e remodelações" },
-  { Icon: IconSeguranca,    label: "Segurança",    desc: "Sistemas e monitorização" },
+  { Icon: IconProfessor,    label: "Professor",    desc: "Aulas e explicações" },
 ];
 
 export default function HomePage() {

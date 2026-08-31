@@ -14,7 +14,7 @@ import { ProviderGalleryImageData, ProviderPricedServiceData } from "@/types/pro
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-const CATEGORIES = ["Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Segurança"];
+const CATEGORIES = ["Limpeza","Climatização","Canalização","Eletricista","TI & Redes","Jardinagem","Mudanças","Beleza","Automóvel","Pintura","Construção","Professor"];
 
 const fmtRating = (n: number) => n.toFixed(1);
 const fKz = (v: number) => new Intl.NumberFormat("pt-PT").format(v) + " Kz";

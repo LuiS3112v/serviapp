@@ -28,7 +28,7 @@ const COMPANY_CATEGORY_KEYWORDS: Record<string, string[]> = {
   "Beleza":       ["beleza", "estetica", "cabelei", "beauty", "spa", "saude", "cosmet"],
   "Automóvel":    ["automovel", "auto", "mecanica", "carro", "vehicle", "motor"],
   "Pintura":      ["pintura", "decorac", "paint", "tinta", "artist"],
-  "Segurança":    ["seguran", "security", "vigilan", "protec", "guard"],
+  "Professor":    ["professor", "explicaç", "aula", "tutor", "ensino", "escola", "matemat", "cienci", "lingua", "exame", "inform"],
 };
 
 interface SearchResult {

@@ -61,16 +61,11 @@ import {
   IconGesseiro,
   IconRemodelaçao,
   IconConstrucao,
-  // Segurança
-  IconSegurancaResidencial,
-  IconSegurancaEmpresarial,
-  IconSegurancaEventos,
-  IconSeguranca,
-  IconAlarmes,
-  IconControloAcessos,
+  // Professor
+  IconProfessor,
 } from './mestroo-icons';
 
-import { Lightbulb, Wrench, Droplet, Sprout, Trees, Scissors, Home, Building2, Store, Boxes, Truck } from 'lucide-react';
+import { Lightbulb, Wrench, Droplet, Sprout, Trees, Scissors, Home, Building2, Store, Boxes, Truck, School, Calculator, FlaskConical, Languages, ClipboardCheck, Laptop } from 'lucide-react';
 import type { CategoryName } from './categories';
 
 export interface SubcategoryItem {
@@ -167,12 +162,12 @@ export const SUBCATEGORIES: Record<CategoryName, SubcategoryItem[]> = {
     { name: 'Gesseiro',    icon: IconGesseiro },
     { name: 'Remodelação', icon: IconRemodelaçao },
   ],
-  'Segurança': [
-    { name: 'Segurança residencial',  icon: IconSegurancaResidencial },
-    { name: 'Segurança empresarial',  icon: IconSegurancaEmpresarial },
-    { name: 'Segurança para eventos', icon: IconSegurancaEventos },
-    { name: 'CCTV',                   icon: IconSeguranca },
-    { name: 'Alarmes',                icon: IconAlarmes },
-    { name: 'Controlo de acessos',    icon: IconControloAcessos },
+  'Professor': [
+    { name: 'Explicações Escolares',       icon: School },
+    { name: 'Matemática',                  icon: Calculator },
+    { name: 'Ciências',                    icon: FlaskConical },
+    { name: 'Línguas',                     icon: Languages },
+    { name: 'Preparação para Exames',      icon: ClipboardCheck },
+    { name: 'Informática e Tecnologia',    icon: Laptop },
   ],
 };

@@ -10,7 +10,7 @@ import {
   IconAutomovel,
   IconPintura,
   IconConstrucao,
-  IconSeguranca,
+  IconProfessor,
 } from './mestroo-icons';
 import type { LucideIcon } from 'lucide-react';
 
@@ -33,7 +33,7 @@ export const CATEGORIES: CategoryMeta[] = [
   { name: 'Automóvel',    Icon: IconAutomovel,     color: '#2563EB', desc: 'Mecânica e manutenção auto' },
   { name: 'Pintura',      Icon: IconPintura,       color: '#7C3AED', desc: 'Pintura de interiores e exteriores' },
   { name: 'Construção',   Icon: IconConstrucao,    color: '#C2410C', desc: 'Obras, remodelações e acabamentos' },
-  { name: 'Segurança',    Icon: IconSeguranca,     color: '#475569', desc: 'Vigilância e sistemas de segurança' },
+  { name: 'Professor',    Icon: IconProfessor,     color: '#475569', desc: 'Aulas particulares e explicações ao domicílio' },
 ];
 
 export const CATEGORY_NAMES = CATEGORIES.map((c) => c.name);
