@@ -70,9 +70,6 @@ export default function RootLayout({
   return (
     <html lang="pt" className={manrope.variable}>
       <head>
-        {/* iOS Splash Screens — o Safari ignora o manifest para isto.
-            Sem estas tags o iPhone mostra tela preta no loading. */}
-
         {/* iPhone 16 Pro Max */}
         <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/splash/iphone_1290x2796.png" />
         {/* iPhone 16 Pro / 15 Pro / 14 Pro */}
