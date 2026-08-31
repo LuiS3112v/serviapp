@@ -3,6 +3,7 @@ import { Manrope } from "next/font/google";
 import { PWA_CONFIG } from "@/lib/pwa-config";
 import { SWRegister } from "./sw-register";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { IosSplash } from "@/components/pwa/IosSplash";
 import NextTopLoader from "nextjs-toploader";
 import { KeepAlive } from "@/components/KeepAlive";
 import { ViewportGuard } from "@/components/pwa/ViewportGuard";
@@ -45,11 +46,24 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    // "black-translucent" deixa o conteúdo ir até ao topo (debaixo da
+    // status bar), dando um look mais imersivo — igual ao comportamento
+    // nativo de apps iOS. Se preferires barra branca normal, usa "default".
+    statusBarStyle: "black-translucent",
     title: PWA_CONFIG.shortName,
+    // startupImage é gerido dinamicamente pelo IosSplash (canvas),
+    // porque o iOS exige imagens exatas para cada resolução de ecrã.
+    // Não definir aqui evita conflitos com o link injetado via JS.
   },
   icons: {
-    apple: PWA_CONFIG.icons.appleTouchIcon,
+    apple: [
+      // apple-touch-icon — ícone que aparece no ecrã inicial do iPhone
+      { url: PWA_CONFIG.icons.appleTouchIcon, sizes: "180x180", type: "image/png" },
+    ],
+    icon: [
+      { url: PWA_CONFIG.icons.icon192, sizes: "192x192", type: "image/png" },
+      { url: PWA_CONFIG.icons.icon512, sizes: "512x512", type: "image/png" },
+    ],
   },
 };
 
@@ -70,11 +84,6 @@ export default function RootLayout({
   return (
     <html lang="pt" className={manrope.variable}>
       <body>
-        {/* Barra de progresso no topo — aparece imediatamente ao clicar
-            qualquer link/botão de navegação, antes da nova página
-            carregar. Elimina a sensação de "botão morto" durante os
-            200-400ms que o Next.js leva a resolver a rota e carregar
-            o componente. Cor igual à cor de marca da Mestroo. */}
         <NextTopLoader
           color="#1D9E75"
           height={2}
@@ -86,6 +95,13 @@ export default function RootLayout({
         {children}
         <SWRegister />
         <InstallPrompt />
+        {/*
+          Gera o splash screen para iOS dinamicamente via Canvas.
+          O iOS ignora o manifest.webmanifest para splash screens e
+          exige apple-touch-startup-image — este componente injeta
+          automaticamente a imagem certa para o ecrã atual.
+        */}
+        <IosSplash />
       </body>
     </html>
   );
