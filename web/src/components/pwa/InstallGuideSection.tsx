@@ -515,10 +515,14 @@ export function InstallGuideSection() {
         }
         .lp-install-mock-appicon{
           width:52px;height:52px;border-radius:14px;
-          background:${CONFIRM};
+          background:#ffffff;
           display:flex;align-items:center;justify-content:center;
-          color:#fff;font-size:22px;font-weight:800;
           box-shadow:0 6px 16px rgba(15,23,42,0.14);
+          overflow:hidden;
+          border:1px solid #eef1f5;
+        }
+        .lp-install-mock-appicon img{
+          width:100%;height:100%;object-fit:contain;
         }
         .lp-install-mock-applabel{
           font-size:11px;font-weight:700;color:${INK};margin:6px 0 0;
@@ -676,7 +680,7 @@ function IOSMock({ step, browser }: { step: number; browser: string }) {
     }
     return (
       <div className="lp-install-mock-page center">
-        <div className="lp-install-mock-appicon">M</div>
+        <div className="lp-install-mock-appicon"><img src="/icon-192.png" alt="Mestroo" /></div>
         <p className="lp-install-mock-applabel">Mestroo</p>
         <p className="lp-install-mock-donetext">Adicionado ao ecrã principal</p>
       </div>
@@ -724,7 +728,7 @@ function IOSMock({ step, browser }: { step: number; browser: string }) {
   }
   return (
     <div className="lp-install-mock-page center">
-      <div className="lp-install-mock-appicon">M</div>
+      <div className="lp-install-mock-appicon"><img src="/icon-192.png" alt="Mestroo" /></div>
       <p className="lp-install-mock-applabel">Mestroo</p>
       <p className="lp-install-mock-donetext">Adicionado ao ecrã principal</p>
     </div>
@@ -769,7 +773,7 @@ function AndroidMock({ step, browser }: { step: number; browser: string }) {
   }
   return (
     <div className="lp-install-mock-page center">
-      <div className="lp-install-mock-appicon">M</div>
+      <div className="lp-install-mock-appicon"><img src="/icon-192.png" alt="Mestroo" /></div>
       <p className="lp-install-mock-applabel">Mestroo</p>
       <p className="lp-install-mock-donetext">
         {browser === "firefox" ? "Atalho criado" : "Aplicação instalada"}
@@ -854,7 +858,7 @@ function DesktopMock({ step, browser }: { step: number; browser: string }) {
     <div className="lp-desktop-window">
       <div className="lp-desktop-body">
         <div className="lp-desktop-center">
-          <div className="lp-install-mock-appicon">M</div>
+          <div className="lp-install-mock-appicon"><img src="/icon-192.png" alt="Mestroo" /></div>
           <p className="lp-install-mock-applabel">Mestroo</p>
           <p className="lp-install-mock-donetext">Aplicação instalada</p>
         </div>
