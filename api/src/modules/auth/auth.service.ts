@@ -70,6 +70,13 @@ export class AuthService {
     const exists = await this.userRepo.findOne({ where: { email: dto.email } });
     if (exists) throw new ConflictException('Email já registado.');
 
+    // Validação condicional: providers obrigados a enviar categoria.
+    // Feita aqui porque class-validator não suporta validação
+    // cross-field nativamente. Clientes passam sem este campo.
+    if (dto.role === Role.PROVIDER && !dto.category?.trim()) {
+      throw new ConflictException('A categoria de serviço é obrigatória para prestadores.');
+    }
+
     const hashedPassword = await bcrypt.hash(dto.password, 12);
 
     const safeRole = REGISTERABLE_ROLES.includes(dto.role as Role)
@@ -82,12 +89,9 @@ export class AuthService {
       password: hashedPassword,
       role: safeRole,
       phone: dto.phone,
-      // NOVO — categoria escolhida no Passo 2 do registo do provider.
-      // dto.category é undefined para registos de cliente (o DTO não
-      // exige o campo), e o TypeORM/Postgres aceita undefined como
-      // "não definir esta coluna", preservando o comportamento
-      // anterior para clientes sem qualquer alteração.
-      category: dto.category,
+      // trim() garante que strings com espaços não passam; || undefined
+      // converte string vazia em undefined (TypeORM persiste como NULL).
+      category: dto.category?.trim() || undefined,
     });
 
     const saved = await this.userRepo.save(user);

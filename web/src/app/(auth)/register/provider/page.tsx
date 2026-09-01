@@ -170,6 +170,23 @@ function RegisterProviderPageContent() {
     refreshUserInStorage(updated);
   };
 
+  const handleContinueFromStep1 = () => {
+    setError("");
+    if (!form.name.trim()) {
+      setError("Insere o teu nome completo.");
+      return;
+    }
+    if (!form.email.trim()) {
+      setError("Insere o teu email.");
+      return;
+    }
+    if (form.password.length < 6) {
+      setError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    setStep(2);
+  };
+
   const handleContinueFromStep2 = () => {
     setError("");
 
@@ -201,6 +218,16 @@ function RegisterProviderPageContent() {
   // botão final "Ir para o meu painel →".
   const handleFinish = async () => {
     setError("");
+
+    // Guarda de segurança — revalida a categoria mesmo que o Passo 2
+    // já o tenha feito. Protege contra navegação inesperada, reset de
+    // estado ou qualquer outro caminho que chegue aqui sem categoria.
+    if (!selectedCat) {
+      setError("Categoria de serviço não selecionada. Volta ao passo anterior e escolhe uma.");
+      setStep(2);
+      return;
+    }
+
     setLoading(true);
     try {
       const data = await authApi.register({
@@ -373,7 +400,7 @@ function RegisterProviderPageContent() {
                   </button>
                 </div>
 
-                <button type="button" className="auth-btn" onClick={() => setStep(2)}>Continuar →</button>
+                <button type="button" className="auth-btn" onClick={handleContinueFromStep1}>Continuar →</button>
               </div>
             )}
 
