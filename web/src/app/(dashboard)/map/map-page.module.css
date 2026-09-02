@@ -223,8 +223,8 @@
 /* Smartphone grande (393×852, 412×915, 430×932) */
 @media (max-width: 768px) {
   .mapWrapper {
-    height: clamp(680px, 88dvh, 860px);
-    margin: 0 12px 18px;
+    height: clamp(680px, 92dvh, 860px);
+    margin: 0 12px 10px;
     border-radius: 16px;
   }
 }
@@ -232,16 +232,16 @@
 /* Smartphone médio */
 @media (max-width: 640px) {
   .mapWrapper {
-    height: clamp(640px, 86dvh, 820px);
-    margin: 0 10px 16px;
+    height: clamp(640px, 91dvh, 820px);
+    margin: 0 10px 8px;
   }
 }
 
 /* Smartphone pequeno (375×667, 390×844) */
 @media (max-width: 480px) {
   .mapWrapper {
-    height: clamp(600px, 85dvh, 780px);
-    margin: 0 10px 14px;
+    height: clamp(600px, 90dvh, 780px);
+    margin: 0 10px 8px;
     border-radius: 14px;
   }
 }
@@ -249,8 +249,8 @@
 /* Smartphone muito pequeno */
 @media (max-width: 390px) {
   .mapWrapper {
-    height: clamp(560px, 84dvh, 720px);
-    margin: 0 8px 12px;
+    height: clamp(560px, 89dvh, 720px);
+    margin: 0 8px 6px;
   }
 }
 
