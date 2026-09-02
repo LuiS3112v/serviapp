@@ -615,7 +615,15 @@ export function ServiceMap({
       cancelled = true;
       controller.abort();
     };
-  }, [mode, isProviderOnTheWay, clientCoordinates, providerSnapshot, locationPhase, route]);
+  // NOTA: `route` foi intencionalmente removido das dependências.
+  // Incluí-lo criava um loop potencial: calcular rota → setRoute →
+  // route muda → efeito re-executa → guarda `!movedSignificantly && route`
+  // impede nova chamada, mas o efeito re-executava desnecessariamente
+  // a cada resultado. A guarda `lastRouteOriginRef` e `movedSignificantly`
+  // já garantem que o routing só re-corre quando o provider se move
+  // mais de 200m — não precisamos de `route` como dependência.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, isProviderOnTheWay, clientCoordinates, providerSnapshot, locationPhase]);
 
   const discoveryMarkers = useMemo(
     () => buildMarkerCollection(discoveryProviders),
@@ -816,27 +824,35 @@ export function ServiceMap({
             {/* Contorno branco por baixo (casing) — garante que a rota
                 se destaca em qualquer fundo de mapa, seja OSM cheio de
                 ícones, seja CARTO ou qualquer outro tile provider.
-                É a mesma técnica usada pelo Google Maps e Waze. */}
+                É a mesma técnica usada pelo Google Maps e Waze.
+                No caso de estimativa (linha reta), o casing também fica
+                tracejado para deixar claro que não é uma rota real. */}
             <Polyline
               positions={routeLatLng}
               pathOptions={{
                 color: '#ffffff',
                 weight: 10,
-                opacity: 0.9,
-                dashArray: undefined,
+                opacity: route?.isEstimate ? 0.5 : 0.9,
+                // dashArray espelha o da linha por cima para o casing
+                // ficar alinhado — sem isto o contorno branco aparece
+                // sólido por baixo de um traçado tracejado.
+                dashArray: route?.isEstimate ? '8 10' : undefined,
                 lineCap: 'round',
                 lineJoin: 'round',
               }}
             />
-            {/* Linha da rota por cima — azul vivo (confirmado) ou
-                cinzento (estimativa) */}
+            {/* Linha da rota por cima:
+                - Azul sólido  → rota real pelas estradas (Stadia OK)
+                - Cinzento tracejado → estimativa em linha reta (fallback)
+                  O tracejado torna inequívoco que NÃO é uma rota real,
+                  complementando o badge "Estimativa" no banner. */}
             <Polyline
               positions={routeLatLng}
               pathOptions={{
                 color: route?.isEstimate ? '#6b7280' : '#2563EB',
                 weight: 6,
-                opacity: 1,
-                dashArray: undefined,
+                opacity: route?.isEstimate ? 0.75 : 1,
+                dashArray: route?.isEstimate ? '8 10' : undefined,
                 lineCap: 'round',
                 lineJoin: 'round',
               }}

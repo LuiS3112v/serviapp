@@ -13,7 +13,15 @@ import { buildHaversineEstimate } from './haversine-fallback';
 // API key já configuradas para os tiles do mapa (ver
 // map-provider.config.ts), com plano gratuito permanente sem cartão.
 const STADIA_ROUTE_ENDPOINT = 'https://api.stadiamaps.com/route/v1';
-const REQUEST_TIMEOUT_MS = 6000;
+
+// 10 segundos — aumentado de 6s para cobrir a latência típica de redes
+// móveis em Luanda (300–800ms de round-trip) mais o tempo de
+// processamento do Valhalla para rotas urbanas densas. 6s era
+// demasiado curto e causava timeouts frequentes que caíam silenciosamente
+// no fallback Haversine (linha reta). 10s é o equilíbrio entre
+// confiabilidade e não bloquear a UI durante demasiado tempo se a
+// Stadia estiver mesmo indisponível.
+const REQUEST_TIMEOUT_MS = 10_000;
 
 interface OsrmResponse {
   code: string;
@@ -44,11 +52,24 @@ function isValidCoordinate(coordinates: MapCoordinates): boolean {
 
 // Log de diagnóstico apenas em desenvolvimento — evita poluir a
 // consola em produção, mas dá visibilidade suficiente durante o
-// desenvolvimento para distinguir a causa real de uma falha do
-// routing.
-function devWarn(message: string): void {
+// desenvolvimento para distinguir a causa real de uma falha do routing.
+function devLog(message: string, data?: unknown): void {
   if (process.env.NODE_ENV !== 'production') {
-    console.warn(`[StadiaRoutingProvider] ${message}`);
+    if (data !== undefined) {
+      console.log(`[Routing] ${message}`, data);
+    } else {
+      console.log(`[Routing] ${message}`);
+    }
+  }
+}
+
+function devWarn(message: string, data?: unknown): void {
+  if (process.env.NODE_ENV !== 'production') {
+    if (data !== undefined) {
+      console.warn(`[Routing] ${message}`, data);
+    } else {
+      console.warn(`[Routing] ${message}`);
+    }
   }
 }
 
@@ -58,9 +79,14 @@ export class OsrmRoutingProvider implements RoutingProvider {
     destination: MapCoordinates,
     externalSignal?: AbortSignal,
   ): Promise<RouteResult> {
+    devLog('origin:', origin);
+    devLog('destination:', destination);
+
     if (!isValidCoordinate(origin) || !isValidCoordinate(destination)) {
-      devWarn('invalid coordinates, request not sent');
-      return buildHaversineEstimate(origin, destination);
+      devWarn('invalid coordinates — request not sent, using Haversine estimate');
+      const result = buildHaversineEstimate(origin, destination);
+      devLog('isEstimate:', result.isEstimate);
+      return result;
     }
 
     if (externalSignal?.aborted) {
@@ -71,6 +97,17 @@ export class OsrmRoutingProvider implements RoutingProvider {
     }
 
     const apiKey = process.env.NEXT_PUBLIC_STADIA_API_KEY;
+
+    // DIAGNÓSTICO CRÍTICO: se a API key não estiver definida, TODOS os
+    // pedidos ao Stadia retornam 401 e caem silenciosamente no fallback
+    // Haversine (linha reta). Este aviso torna isso imediatamente visível
+    // nos DevTools durante o desenvolvimento.
+    if (!apiKey || apiKey === 'undefined') {
+      devWarn('NEXT_PUBLIC_STADIA_API_KEY não está definida — todos os pedidos de routing irão falhar com 401 e usar estimativa Haversine (linha reta). Define a variável em web/.env.local');
+      const result = buildHaversineEstimate(origin, destination);
+      devLog('isEstimate:', result.isEstimate);
+      return result;
+    }
 
     const controller = new AbortController();
     let abortReason: 'timeout' | 'superseded' | null = null;
@@ -90,58 +127,87 @@ export class OsrmRoutingProvider implements RoutingProvider {
     try {
       const url = `${STADIA_ROUTE_ENDPOINT}?api_key=${apiKey}`;
 
+      const requestBody = {
+        locations: [
+          { lat: origin.latitude, lon: origin.longitude, type: 'break' },
+          { lat: destination.latitude, lon: destination.longitude, type: 'break' },
+        ],
+        costing: 'auto',
+        format: 'osrm',
+      };
+
+      devLog('provider: Stadia Valhalla (POST /route/v1)');
+      devLog('request body:', requestBody);
+
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({
-          locations: [
-            { lat: origin.latitude, lon: origin.longitude, type: 'break' },
-            { lat: destination.latitude, lon: destination.longitude, type: 'break' },
-          ],
-          costing: 'auto',
-          format: 'osrm',
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        devWarn(`HTTP error ${response.status}`);
-        return buildHaversineEstimate(origin, destination);
+        devWarn(`HTTP ${response.status} — usando estimativa Haversine (linha reta)`);
+        const result = buildHaversineEstimate(origin, destination);
+        devLog('isEstimate:', result.isEstimate);
+        return result;
       }
 
       const data: OsrmResponse = await response.json();
 
+      devLog('Stadia response code:', data.code);
+      devLog('routes count:', data.routes?.length ?? 0);
+
       if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
-        devWarn(`invalid response (code=${data.code ?? 'unknown'})`);
-        return buildHaversineEstimate(origin, destination);
+        devWarn(`resposta inválida da Stadia (code=${data.code ?? 'unknown'}) — usando estimativa Haversine (linha reta)`);
+        const result = buildHaversineEstimate(origin, destination);
+        devLog('isEstimate:', result.isEstimate);
+        return result;
       }
 
       const route = data.routes[0];
 
-      return {
-        coordinates: route.geometry.coordinates.map(([longitude, latitude]) => ({
-          latitude,
-          longitude,
-        })),
+      // A Stadia/Valhalla com format=osrm devolve coordenadas como
+      // [longitude, latitude] (convenção GeoJSON) — convertemos aqui
+      // para { latitude, longitude } (convenção interna do projeto).
+      // Esta conversão é o único ponto onde a ordem das coordenadas
+      // muda; em todo o resto do código usamos sempre { latitude, longitude }.
+      const coordinates = route.geometry.coordinates.map(([longitude, latitude]) => ({
+        latitude,
+        longitude,
+      }));
+
+      const result: RouteResult = {
+        coordinates,
         distanceKm: Math.round((route.distance / 1000) * 10) / 10,
         durationMinutes: Math.round(route.duration / 60),
         isEstimate: false,
       };
+
+      devLog('isEstimate:', result.isEstimate);
+      devLog('distanceKm:', result.distanceKm);
+      devLog('durationMinutes:', result.durationMinutes);
+      devLog('geometry points:', coordinates.length);
+
+      return result;
     } catch (error) {
       if ((error as { name?: string })?.name === 'AbortError') {
         if (abortReason === 'superseded') {
           // Cancelado deliberadamente pelo chamador porque surgiu uma
           // posição mais recente — não é uma falha do routing, por isso
-          // não há fallback nem log. O chamador descarta este
-          // resultado.
+          // não há fallback nem log. O chamador descarta este resultado.
           throw error;
         }
-        devWarn(`request timeout after ${REQUEST_TIMEOUT_MS}ms`);
-        return buildHaversineEstimate(origin, destination);
+        devWarn(`timeout após ${REQUEST_TIMEOUT_MS}ms — usando estimativa Haversine (linha reta)`);
+        const result = buildHaversineEstimate(origin, destination);
+        devLog('isEstimate:', result.isEstimate);
+        return result;
       }
 
-      devWarn(`request failed: ${(error as Error)?.message ?? 'unknown error'}`);
-      return buildHaversineEstimate(origin, destination);
+      devWarn(`pedido falhou: ${(error as Error)?.message ?? 'erro desconhecido'} — usando estimativa Haversine (linha reta)`);
+      const result = buildHaversineEstimate(origin, destination);
+      devLog('isEstimate:', result.isEstimate);
+      return result;
     } finally {
       clearTimeout(timeoutId);
       externalSignal?.removeEventListener('abort', onExternalAbort);
