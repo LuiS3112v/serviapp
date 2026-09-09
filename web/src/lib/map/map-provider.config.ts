@@ -1,21 +1,17 @@
 import { MapProviderConfig } from './map-provider.types';
 
-// Stadia Maps (estilo OSM Bright) — substitui o OSM standard tile
-// server, que não é pensado para produção (sem tiles retina, sem SLA)
-// e estava a causar mapa desfocado/lento. OSM Bright foi escolhido em
-// vez do Alidade Smooth por ser mais colorido e mostrar ruas/POIs com
-// mais destaque — melhor para descoberta de prestadores e rotas.
-// Stadia tem plano gratuito permanente sem cartão, com suporte a
-// tiles retina via {r}.
-// A API key vem de NEXT_PUBLIC_STADIA_API_KEY (definida em
-// web/.env.local e nas Environment Variables da Vercel) — nunca
-// hardcoded aqui.
-const stadiaApiKey = process.env.NEXT_PUBLIC_STADIA_API_KEY;
-
+// CARTO Positron — tiles gratuitos, sem API key, com CDN global estável.
+// Estilo claro/minimalista que destaca bem os marcadores de prestadores
+// e a Polyline de rota sobre o fundo.
+// Suporta tiles retina via {r} (sufixo @2x quando o browser o suporta).
+//
+// NOTA IMPORTANTE: o NEXT_PUBLIC_STADIA_API_KEY continua a ser usado
+// exclusivamente pelo motor de routing (osrm-routing-provider.ts →
+// POST /route/v1). NÃO foi alterado. Apenas a camada visual mudou.
 export const mapProviderConfig: MapProviderConfig = {
-  tileUrl: `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png?api_key=${stadiaApiKey}`,
+  tileUrl: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
   attribution:
-    '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+    '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
   defaultZoom: 13,
   discoveryZoom: 13,
   activeServiceZoom: 15,
