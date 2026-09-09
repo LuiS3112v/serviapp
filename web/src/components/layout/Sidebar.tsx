@@ -7,6 +7,7 @@ import {
   Bell, Wallet, User, Settings, LogOut, Zap, X, HelpCircle,
 } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
+import { resetViewport } from "@/lib/reset-viewport";
 import BottomNav from "@/components/layout/BottomNav";
 
 const navItems = [
@@ -37,6 +38,11 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const handleLogout = () => {
     onClose?.();
     clearAllSessions();
+    // Reset do visual viewport ANTES da navegação — cobre o caso em que
+    // o utilizador foi ao mapa, voltou para outra página e faz logout aí.
+    // O ViewportGuard só actua na saída de /map; aqui garantimos o reset
+    // independentemente da página onde o logout acontece.
+    resetViewport();
     router.push("/?logout=1");
   };
 

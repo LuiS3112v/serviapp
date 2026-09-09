@@ -8,6 +8,7 @@ import {
   Star, X, ShoppingBag, ClipboardList,
 } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
+import { resetViewport } from "@/lib/reset-viewport";
 import BottomNav from "@/components/layout/BottomNav";
  
 const NAV = [
@@ -60,6 +61,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const handleLogout = () => {
     onClose?.();
     clearAllSessions();
+    // Reset do visual viewport ANTES da navegação — mesmo raciocínio
+    // do Sidebar do cliente: cobre logout a partir de qualquer página,
+    // não apenas de /map.
+    resetViewport();
     router.push("/");
   };
  
