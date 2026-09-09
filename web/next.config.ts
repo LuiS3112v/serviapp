@@ -81,7 +81,7 @@ const securityHeaders = [
       // (avatares OAuth e Google Maps).
       `img-src 'self' data: blob: https:`,
       // connect-src: backend NestJS + WebSocket + Firebase (push)
-      `connect-src 'self' ${API_ORIGIN} ${WS_ORIGIN} https://fcm.googleapis.com https://firebaseinstallations.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com`,
+      `connect-src 'self' ${API_ORIGIN} ${WS_ORIGIN} https://fcm.googleapis.com https://firebaseinstallations.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://api.stadiamaps.com https://tiles.stadiamaps.com`,
       // media-src: vídeos e áudios (galeria)
       `media-src 'self' blob: https:`,
       // worker-src: service worker do PWA
