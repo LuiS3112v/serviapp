@@ -1,17 +1,14 @@
 import { MapProviderConfig } from './map-provider.types';
 
-// CARTO Positron — tiles gratuitos, sem API key, com CDN global estável.
-// Estilo claro/minimalista que destaca bem os marcadores de prestadores
-// e a Polyline de rota sobre o fundo.
-// Suporta tiles retina via {r} (sufixo @2x quando o browser o suporta).
-//
-// NOTA IMPORTANTE: o NEXT_PUBLIC_STADIA_API_KEY continua a ser usado
-// exclusivamente pelo motor de routing (osrm-routing-provider.ts →
-// POST /route/v1). NÃO foi alterado. Apenas a camada visual mudou.
+// A URL dos tiles é construída directamente no ServiceMap.tsx em runtime
+// para garantir que NEXT_PUBLIC_STADIA_API_KEY é inlined correctamente
+// pelo Next.js no bundle do cliente. Este config só mantém os valores
+// estáticos que não dependem de variáveis de ambiente.
 export const mapProviderConfig: MapProviderConfig = {
-  tileUrl: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  tileUrl: '', // não usado — ver ServiceMap.tsx
   attribution:
-    '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+    '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> ' +
+    '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
   defaultZoom: 13,
   discoveryZoom: 13,
   activeServiceZoom: 15,

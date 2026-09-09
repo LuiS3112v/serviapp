@@ -772,6 +772,13 @@ export function ServiceMap({
   // violação das regras dos hooks que isto corrigiu.
   const mapKey = mapKeyRef.current;
 
+  // URL dos tiles construída aqui em runtime — garante que
+  // NEXT_PUBLIC_STADIA_API_KEY é o valor inlined no bundle do cliente.
+  const stadiaKey = process.env.NEXT_PUBLIC_STADIA_API_KEY;
+  const tileUrl = (stadiaKey && stadiaKey !== 'undefined')
+    ? `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png?api_key=${stadiaKey}`
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
   return (
     <div className={styles['map-container']} ref={containerRef}>
       <MapContainer
@@ -793,7 +800,7 @@ export function ServiceMap({
         }}
       >
         <TileLayer
-          url={mapProviderConfig.tileUrl}
+          url={tileUrl}
           attribution={mapProviderConfig.attribution}
           detectRetina
         />
