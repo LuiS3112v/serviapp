@@ -54,25 +54,25 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 10px 16px 6px;
+  padding: 8px 16px 4px;
   flex-shrink: 0;
 }
 
 @media (max-width: 1024px) {
   .header {
-    padding: 14px 20px 10px;
+    padding: 10px 20px 6px;
   }
 }
 
 @media (max-width: 768px) {
   .header {
-    padding: 10px 16px 8px;
+    padding: 6px 16px 4px;
   }
 }
 
 @media (max-width: 480px) {
   .header {
-    padding: 8px 14px 6px;
+    padding: 4px 14px 3px;
   }
 }
 
@@ -156,7 +156,7 @@
   flex: 1;
   min-height: 0;
   position: relative;
-  margin: 0 12px 12px;
+  margin: 0 12px 6px;
   border-radius: 20px;
   overflow: hidden;
   background-color: transparent;
@@ -167,14 +167,14 @@
 /* Laptop grande */
 @media (max-width: 1280px) {
   .mapWrapper {
-    margin: 0 20px 20px;
+    margin: 0 20px 10px;
   }
 }
 
 /* Tablet */
 @media (max-width: 1024px) {
   .mapWrapper {
-    margin: 0 16px 16px;
+    margin: 0 16px 8px;
     border-radius: 18px;
   }
 }
@@ -182,7 +182,7 @@
 /* Smartphone */
 @media (max-width: 768px) {
   .mapWrapper {
-    margin: 0 10px 10px;
+    margin: 0 10px 6px;
     border-radius: 16px;
   }
 }
@@ -190,7 +190,7 @@
 /* Smartphone pequeno */
 @media (max-width: 480px) {
   .mapWrapper {
-    margin: 0 8px 8px;
+    margin: 0 8px 5px;
     border-radius: 14px;
   }
 }
