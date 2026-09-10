@@ -536,7 +536,7 @@ export default function MapPage() {
 
   if (checkingActiveService) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <div style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Loader2 size={28} style={{ color: '#0E7A5F', animation: 'spin 0.9s linear infinite' }} />
       </div>
     );
@@ -565,10 +565,7 @@ export default function MapPage() {
   }
 
   return (
-    <div
-      className={styles.page}
-      style={{ marginBottom: 'calc(-30px - env(safe-area-inset-bottom, 0px))' }}
-    >
+    <div className={viewMode === 'list' ? styles.pageList : styles.page}>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Encontrar <span className={styles.titleAccent}>prestadores</span></h1>

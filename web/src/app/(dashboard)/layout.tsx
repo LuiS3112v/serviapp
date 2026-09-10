@@ -36,13 +36,21 @@ export default async function DashboardLayout({
   return (
     <>
       <style>{`
-        .cl-layout{display:flex;min-height:100vh;min-height:100dvh;background:#FFFFFF}
-        .cl-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
+        .cl-layout{display:flex;height:100dvh;background:#FFFFFF;overflow:hidden}
+        .cl-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-width:0;overflow-x:hidden;min-height:0}
         @media(max-width:${MOBILE_BREAKPOINT}px){
           .cl-main{
             margin-left:0;
             padding-bottom:calc(${BOTTOM_NAV_HEIGHT}px + ${BOTTOM_NAV_SAFE_AREA});
           }
+        }
+        /* Na rota /map o <main> tem overflow:hidden e os filhos usam
+           height:100% — o padding-bottom do cl-main em mobile criaria
+           espaço branco no fundo do mapa. A classe cl-main-map no <main>
+           neutraliza-o: o <main> já cresce para o espaço disponível
+           (flex:1) sem precisar de padding extra. */
+        .cl-main:has(.cl-main-map){
+          padding-bottom: 0 !important;
         }
       `}</style>
       <ClientChrome>{children}</ClientChrome>

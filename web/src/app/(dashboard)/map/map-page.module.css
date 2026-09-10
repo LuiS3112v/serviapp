@@ -1,51 +1,48 @@
 /* ═══════════════════════════════════════════════════════════════
    MAP PAGE — layout container
+   ═══════════════════════════════════════════════════════════════
+
+   ARQUITECTURA DO LAYOUT (mobile/PWA/Chrome/desktop/tablet):
+
+   cl-layout
+   └── cl-main (overflow: hidden na rota /map — via ClientChrome)
+       ├── Navbar (flex-shrink: 0, altura fixa)
+       └── main (flex: 1, overflow: hidden)
+           └── .page (height: 100%, display: flex, flex-direction: column)
+               ├── .header (flex-shrink: 0)
+               └── .mapWrapper (flex: 1, min-height: 0)
+                   └── ServiceMap → Leaflet (width: 100%, height: 100%)
+
+   Ao contrário das outras páginas onde o <main> faz scroll (overflow-y:
+   auto), na rota /map o <main> fica com overflow: hidden e o .page
+   preenche exactamente a altura disponível. O Leaflet captura todos
+   os gestos de toque — não há scroller externo a competir.
+
+   PROBLEMAS RESOLVIDOS:
+   1. Scroll da página ao tentar interagir com o mapa → eliminado:
+      o único "scroll" possível é o do Leaflet, que é interno.
+   2. Botão de localização (bottom-right) tapado pelo footer →
+      eliminado: o mapa preenche 100% da altura disponível, sem
+      elementos por baixo que empurrem o conteúdo.
+   3. Espaço branco em baixo (modo serviço ativo e discovery) →
+      eliminado: flex: 1 + min-height: 0 faz o .mapWrapper expandir
+      para preencher todo o espaço restante após o header.
+   4. Partes cinzentas / mapa não cobre o container → eliminado:
+      overflow: hidden no .mapWrapper garante que o Leaflet fica
+      sempre dentro das bordas arredondadas sem "vazar".
+   5. Tamanho diferente entre modo discovery e active-service →
+      eliminado: ambos usam o mesmo .mapWrapper com flex: 1.
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Wrapper mais externo ────────────────────────────────────── */
-/*
-   FIX — SCROLL DUPLICADO (causa dos cliques que "às vezes não
-   acontecem" e do scroll estranho):
-
-   Antes, tanto o .hi (definido em page.tsx, container pai vindo do
-   layout do dashboard) como este .page tinham overflow-y:auto ao
-   mesmo tempo. Dois containers scrolláveis aninhados fazem o browser
-   ficar indeciso sobre qual deles deve responder ao gesto de
-   scroll/touch — o resultado é exactamente o sintoma relatado:
-   toques que não registam, scroll que "engasga", cliques que
-   demoram a responder porque o evento fica preso a resolver qual
-   elemento deve tratar o gesto.
-
-   CORREÇÃO: .hi voltou a overflow:hidden (não scrolla) — só ESTE
-   .page é que faz scroll. Um único scroller, previsível, sem
-   ambiguidade de qual elemento captura o gesto de touch/scroll.
-   -webkit-overflow-scrolling:touch adicionado para scroll suave e
-   nativo em iOS Safari/PWA (sem isto, o scroll em iOS pode ficar
-   com "engasgos" perceptíveis, sobretudo com conteúdo alto como
-   agora temos).
-*/
 
 .page {
+  /* Preenche toda a altura do <main> pai (que tem overflow:hidden
+     na rota /map via ClientChrome) sem scroll externo. */
+  height: 100%;
   display: flex;
   flex-direction: column;
-  /* FIX — área branca no fim do scroll (mobile):
-     flex:1 fazia .page esticar-se para preencher TODA a altura de
-     .hi (o container pai do layout do dashboard), mesmo quando o
-     conteúdo real (header + mapWrapper) é mais baixo que essa
-     altura. Como .page também tinha overflow-y:auto, esse espaço
-     extra do próprio flex:1 — que não pertence a nenhum elemento —
-     ficava disponível para scroll, aparecendo como uma faixa
-     branca vazia no fim ao dar scroll down.
-     Substituído por height:auto (a par de min-height:100%): .page
-     cresce exactamente até à altura do que está lá dentro. Se o
-     conteúdo for mais alto que a viewport (ex: mapWrapper muito
-     alto em ecrãs baixos), .page continua a poder ser maior que
-     .hi e o overflow-y:auto do PRÓPRIO body/scroll ainda funciona
-     — só deixa de reservar espaço vazio quando o conteúdo já cabe. */
-  min-height: 100%;
-  height: auto;
-  overflow-y: visible;
-  overflow-x: hidden;
+  overflow: hidden;
   padding: 0;
 }
 
@@ -63,19 +60,19 @@
 
 @media (max-width: 1024px) {
   .header {
-    padding: 16px 20px 12px;
+    padding: 14px 20px 10px;
   }
 }
 
 @media (max-width: 768px) {
   .header {
-    padding: 12px 16px 10px;
+    padding: 10px 16px 8px;
   }
 }
 
 @media (max-width: 480px) {
   .header {
-    padding: 10px 14px 8px;
+    padding: 8px 14px 6px;
   }
 }
 
@@ -86,6 +83,12 @@
   font-weight: 700;
   color: #1F2A28;
   margin: 0;
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 18px;
+  }
 }
 
 .titleAccent {
@@ -131,7 +134,7 @@
 
 .locationDeniedMessage {
   padding: 10px 14px;
-  margin: 0 28px 10px;
+  margin: 0 16px 6px;
   border-radius: 10px;
   background-color: #FEF2F2;
   border: 1px solid #FCA5A5;
@@ -140,108 +143,54 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 768px) {
-  .locationDeniedMessage {
-    margin: 0 16px 8px;
-  }
-}
-
 /* ── Container do mapa ───────────────────────────────────────────
-   ESTRATÉGIA DE ALTURA (clamp + dvh):
-
-   PROBLEMA COM VALORES FIXOS EM PX:
-   Um valor fixo como "height: 600px" não sabe nada sobre o ecrã
-   real do dispositivo. Um iPhone SE (667px de altura total) e um
-   tablet grande (1180px+) caíam no mesmo breakpoint "max-width:768px"
-   e recebiam a mesma altura de mapa — no SE isso ocupava quase toda
-   a tela (óptimo), mas num tablet na mesma faixa de largura ficava
-   desproporcionalmente pequeno em relação à altura disponível.
-   Breakpoints por LARGURA não capturam a ALTURA do dispositivo, que
-   é o que realmente importa para decidir a altura de um mapa.
-
-   ESTRATÉGIA ESCOLHIDA — clamp(min, preferred, max) com dvh:
-   dvh (dynamic viewport height) reflecte a altura real e utilizável
-   do ecrã, já a descontar a barra de endereço do browser mobile que
-   aparece/desaparece — ao contrário de vh, que no mobile é impreciso
-   durante o scroll. O valor "preferred" é expresso em dvh, por isso
-   escala automaticamente com a altura real de CADA dispositivo em
-   vez de saltar entre valores fixos em breakpoints de largura.
-
-     height: clamp(<mínimo>, <preferido em dvh>, <máximo>)
-
-   • MÍNIMO — nunca deixa o mapa pequeno demais mesmo num ecrã muito
-     curto (ex: em landscape mode).
-   • PREFERIDO EM DVH — a percentagem foi calibrada por classe de
-     dispositivo (ver breakpoints abaixo) para o mapa ocupar uma
-     fatia generosa e proporcional da altura real do ecrã.
-   • MÁXIMO — em monitores grandes (1920×1080+) evita um mapa
-     desproporcionalmente gigante; o desktop mantém-se como estava
-     (780px), só passa a ser expresso como tecto do clamp.
-
-   Isto elimina os saltos abruptos entre breakpoints — a altura
-   flui suavemente com o tamanho real do ecrã, dentro de cada
-   classe de dispositivo — e faz tablets (mais altos que telemóveis
-   na mesma largura) receberem naturalmente mais altura de mapa.
-
-   O fundo do .map-container no ServiceMap.module.css é transparente
-   e o Leaflet preenche 100% width/100% height do .mapWrapper — não
-   há nenhuma área cinzenta possível: overflow:hidden aqui garante
-   que o Leaflet nunca “vaza” para fora das bordas arredondadas, e
-   como não há padding nem gap internos, o Leaflet cobre sempre a
-   totalidade do container, sem sobra de espaço.
+   flex: 1 + min-height: 0 faz o mapWrapper crescer para preencher
+   TODO o espaço restante após o header. Sem min-height: 0 num flex
+   child, o browser usa o conteúdo intrínseco como altura mínima, o
+   que pode ultrapassar o espaço disponível e criar overflow.
+   overflow: hidden garante que o Leaflet fica dentro das bordas
+   arredondadas e nunca "vaza" para fora do container.
    ──────────────────────────────────────────────────────────────── */
 
 .mapWrapper {
-  height: clamp(600px, 78dvh, 760px);
+  flex: 1;
+  min-height: 0;
   position: relative;
-  margin: 0 12px 8px;
+  margin: 0 12px 12px;
   border-radius: 20px;
   overflow: hidden;
   background-color: transparent;
   border: none;
   box-shadow: none;
-  flex-shrink: 0;
 }
 
-/* Laptop / tablet grande */
+/* Laptop grande */
 @media (max-width: 1280px) {
   .mapWrapper {
-    height: clamp(560px, 76dvh, 700px);
-    margin: 0 20px 24px;
+    margin: 0 20px 20px;
   }
 }
 
-/* Tablet — pequeno (768×1024) e grande (820×1180, 1024×1366) */
+/* Tablet */
 @media (max-width: 1024px) {
   .mapWrapper {
-    height: clamp(680px, 96dvh, 900px);
-    margin: 0 16px 20px;
+    margin: 0 16px 16px;
     border-radius: 18px;
   }
 }
 
-/* Smartphone grande (393×852, 412×915, 430×932) */
+/* Smartphone */
 @media (max-width: 768px) {
   .mapWrapper {
-    height: clamp(680px, 92dvh, 860px);
-    margin: 0 12px 10px;
+    margin: 0 10px 10px;
     border-radius: 16px;
   }
 }
 
-/* Smartphone médio */
-@media (max-width: 640px) {
-  .mapWrapper {
-    height: clamp(640px, 91dvh, 820px);
-    margin: 0 10px 8px;
-  }
-}
-
-/* Smartphone pequeno (375×667, 390×844) */
+/* Smartphone pequeno */
 @media (max-width: 480px) {
   .mapWrapper {
-    height: clamp(600px, 90dvh, 780px);
-    margin: 0 10px 8px;
+    margin: 0 8px 8px;
     border-radius: 14px;
   }
 }
@@ -249,32 +198,39 @@
 /* Smartphone muito pequeno */
 @media (max-width: 390px) {
   .mapWrapper {
-    height: clamp(560px, 89dvh, 720px);
-    margin: 0 8px 6px;
+    margin: 0 6px 6px;
   }
 }
 
 /* ── Lista de prestadores (modo Lista) ───────────────────────── */
 
-/* FIX — área branca enorme no modo Lista (mobile).
-   .listWrapper usava flex:1 + min-height:0, o que só funciona
-   correctamente dentro de um pai com altura definida e
-   overflow:hidden. Mas .page é agora o único scroller da página
-   (overflow-y:auto, altura fluida) — um filho com flex:1 dentro
-   de um scroller sem altura fixa não tem contra o que esticar-se
-   de forma previsível, e o resultado observado foi a lista a
-   colapsar para a altura mínima do conteúdo, deixando uma enorme
-   área em branco por baixo dela até ao fim do ecrã.
-   Correção: o .listWrapper deixa de tentar preencher o espaço
-   com flex — simplesmente flui com o conteúdo (altura automática),
-   exactamente como o resto do conteúdo dentro do .page scroller.
-   Sem min-height:0 nem flex:1 não há mais colapso. */
+/* No modo lista, .page volta ao comportamento de scroll normal —
+   o listWrapper expande com o conteúdo e o .page faz scroll.
+   Para isso, quando o modo lista está ativo, o JS aplica a classe
+   .pageList em vez de .page (ver page.tsx). */
+.pageList {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  height: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 0;
+}
+
 .listWrapper {
   overflow-y: visible;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 0 28px 24px;
+  padding: 0 16px 24px;
+}
+
+@media (max-width: 1024px) {
+  .listWrapper {
+    padding: 0 20px 28px;
+  }
 }
 
 @media (max-width: 768px) {

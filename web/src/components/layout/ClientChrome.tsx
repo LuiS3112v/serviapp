@@ -1,7 +1,18 @@
 "use client";
+import React from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
+
+// Rotas onde o conteúdo é um mapa que deve preencher toda a área
+// disponível — o <main> não deve fazer scroll externo nessas rotas
+// porque o Leaflet já captura todos os gestos de toque internamente.
+// Um scroller externo activo ao mesmo tempo causa: (a) scroll da página
+// em vez de interagir com o mapa, (b) botão de localização tapado, e
+// (c) espaço branco por não preencher a altura toda.
+function isMapRoute(pathname: string): boolean {
+  return pathname === '/map';
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // ClientChrome — equivalente ao ProviderChrome, para o dashboard do
@@ -42,12 +53,43 @@ export default function ClientChrome({
     return <>{children}</>;
   }
 
+  const onMap = isMapRoute(pathname);
+
   return (
     <div className="cl-layout">
       <Sidebar />
       <div className="cl-main">
         <Navbar />
-        <main style={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+        <main
+          className={onMap ? 'cl-main-map' : undefined}
+          style={
+            onMap
+              ? {
+                  flex: 1,
+                  minHeight: 0,
+                  minWidth: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  // Na rota do mapa: sem overflow-y para não criar um
+                  // scroller externo que compete com o Leaflet.
+                  // O .page e o .mapWrapper dentro preenchem 100%
+                  // da altura disponível com position relativa.
+                  overflow: 'hidden',
+                  overflowX: 'hidden',
+                }
+              : {
+                  flex: 1,
+                  minHeight: 0,
+                  minWidth: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
+                  overscrollBehavior: 'contain',
+                }
+          }
+        >
           {children}
         </main>
       </div>
