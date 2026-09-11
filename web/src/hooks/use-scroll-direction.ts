@@ -1,32 +1,16 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-/**
- * Deteta a direção do scroll da página para mostrar/esconder a
- * BottomNav ao estilo Gmail:
- *   - scroll para baixo → esconde
- *   - scroll para cima  → mostra
- *   - scroll parado     → mostra
- *
- * Fonte do scroll: window.scrollY. As duas Homes onde este hook é
- * usado (/home e /provider-home) usam scroll normal da página — não
- * têm nenhum container interno com overflow-y:auto a fazer scroll
- * próprio (confirmado nos respetivos ficheiros: .hi/.ph-body são
- * blocos normais dentro do fluxo do body, sem overflow definido).
- *
- * "Fim do scroll" é detetado por um pequeno debounce (this is NOT a
- * large visual threshold — é só uma janela de tempo sem novos eventos
- * de scroll, robusta a touch/momentum scrolling em iOS/Android, que
- * disparam múltiplos eventos "scroll" espaçados durante a inércia).
- * Enquanto o momentum continuar a gerar eventos, o temporizador é
- * reiniciado a cada evento — só quando os eventos param de facto por
- * SCROLL_END_DELAY_MS é que se considera o scroll terminado.
- */
+// Tempo sem eventos de scroll para considerar "parou" —
+// 500ms é suficiente para deixar o momentum do iOS/Android terminar.
+const SCROLL_END_DELAY_MS = 500;
 
-const SCROLL_END_DELAY_MS = 150;
-// Ignora ruído de sub-pixel (alguns browsers mobile disparam eventos
-// de scroll com deltas de 1px mesmo sem movimento real do utilizador).
+// Ignora deltas de sub-pixel que browsers mobile disparam sem
+// movimento real do utilizador.
 const DIRECTION_NOISE_THRESHOLD_PX = 4;
+
+// Mostra sempre a barra quando estamos perto do topo da página.
+const TOP_THRESHOLD_PX = 60;
 
 export function useScrollDirection() {
   const [visible, setVisible] = useState(true);
@@ -35,7 +19,29 @@ export function useScrollDirection() {
   const ticking = useRef(false);
 
   useEffect(() => {
-    lastScrollY.current = window.scrollY;
+    // O scroll do cliente acontece no <main id="cl-scroll-main"> com
+    // overflowY:auto — não no window. Tentamos esse elemento primeiro;
+    // se não existir (ex: provider home que usa window) usamos window.
+    const scrollTarget: EventTarget =
+      document.getElementById("cl-scroll-main") ?? window;
+
+    const getScrollY = (): number => {
+      if (scrollTarget instanceof Window) return window.scrollY;
+      return (scrollTarget as HTMLElement).scrollTop;
+    };
+
+    const getMaxScroll = (): number => {
+      if (scrollTarget instanceof Window) {
+        return Math.max(
+          document.documentElement.scrollHeight - window.innerHeight,
+          0,
+        );
+      }
+      const el = scrollTarget as HTMLElement;
+      return Math.max(el.scrollHeight - el.clientHeight, 0);
+    };
+
+    lastScrollY.current = getScrollY();
 
     const handleScroll = () => {
       if (endTimer.current) clearTimeout(endTimer.current);
@@ -43,41 +49,31 @@ export function useScrollDirection() {
       if (!ticking.current) {
         ticking.current = true;
         requestAnimationFrame(() => {
-          // Clamp aos limites reais do documento — no rubber-band do
-          // iOS/Android, scrollY pode ultrapassar momentaneamente 0 no
-          // topo ou o máximo no fundo; sem este clamp, esse movimento
-          // "fantasma" do overscroll seria lido como uma mudança real
-          // de direção e causaria flicker exactamente no momento em
-          // que a barra deve ficar quieta (parado no limite da página).
-          const maxScroll = Math.max(
-            document.documentElement.scrollHeight - window.innerHeight,
-            0
-          );
-          const currentY = Math.min(Math.max(window.scrollY, 0), maxScroll);
+          const maxScroll = getMaxScroll();
+          const currentY = Math.min(Math.max(getScrollY(), 0), maxScroll);
           const delta = currentY - lastScrollY.current;
 
-          if (Math.abs(delta) > DIRECTION_NOISE_THRESHOLD_PX) {
-            if (delta > 0) {
-              setVisible(false); // scroll down → esconde
-            } else {
-              setVisible(true); // scroll up → mostra
-            }
-            lastScrollY.current = currentY;
+          // Perto do topo — barra sempre visível
+          if (currentY <= TOP_THRESHOLD_PX) {
+            setVisible(true);
+          } else if (Math.abs(delta) > DIRECTION_NOISE_THRESHOLD_PX) {
+            setVisible(delta <= 0); // up → mostra, down → esconde
           }
+
+          lastScrollY.current = currentY;
           ticking.current = false;
         });
       }
 
-      // Reinicia sempre que houver actividade — só corre quando os
-      // eventos de scroll realmente pararem (fim do touch/momentum).
+      // Scroll parou → mostra a barra após delay
       endTimer.current = setTimeout(() => {
-        setVisible(true); // scroll terminou → mostra
+        setVisible(true);
       }, SCROLL_END_DELAY_MS);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    scrollTarget.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      scrollTarget.removeEventListener("scroll", handleScroll);
       if (endTimer.current) clearTimeout(endTimer.current);
     };
   }, []);
