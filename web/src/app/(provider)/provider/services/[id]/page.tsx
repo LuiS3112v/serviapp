@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ProofViewerModal from "@/components/shared/ProofViewerModal";
+import DisputeEvidenceSection from "@/components/shared/DisputeEvidenceSection";
 import { servicesDetailApi } from "@/lib/api/services-detail.api";
 import { paymentProofApi, PaymentProof } from "@/lib/api/payment-proof.api";
 import { chatApi } from "@/lib/chat.api";
@@ -448,6 +449,13 @@ export default function ProviderServiceDetailPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ── Evidências da disputa ── */}
+        {service.status === "disputed" && (
+          <div className="pd-card">
+            <DisputeEvidenceSection serviceId={id} mode="mine" onUploaded={load} />
           </div>
         )}
 

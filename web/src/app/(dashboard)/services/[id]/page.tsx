@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ProofViewerModal from "@/components/shared/ProofViewerModal";
+import DisputeEvidenceSection from "@/components/shared/DisputeEvidenceSection";
 import { servicesDetailApi, ServicePayment, PaymentBankAccount } from "@/lib/api/services-detail.api";
 import { paymentProofApi, PaymentProof } from "@/lib/api/payment-proof.api";
 import { bankAccountsApi } from "@/lib/api/bank-accounts.api";
@@ -885,6 +886,13 @@ export default function ClientServiceDetailPage() {
                 onSubmit={handleSubmitReview}
                 submitting={submittingReview}
               />
+            )}
+
+            {/* ── Evidências da disputa ── */}
+            {service.status === "disputed" && (
+              <div className="sd-card">
+                <DisputeEvidenceSection serviceId={id} mode="mine" onUploaded={load} />
+              </div>
             )}
 
             {timeline.length > 0 && (

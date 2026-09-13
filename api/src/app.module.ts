@@ -25,6 +25,7 @@ import { ActiveServiceLocationModule } from './modules/active-service-location/a
 import { SecurityModule }          from './modules/security/security.module';
 import { SubcategoryServicesModule } from './modules/subcategory-services/subcategory-services.module';
 import { ProviderProfileModule }   from './modules/provider-profile/provider-profile.module';
+import { DisputeEvidenceModule }   from './modules/dispute-evidence/dispute-evidence.module';
 import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 
 // ── Entities ──────────────────────────────────────────────────────────────
@@ -60,6 +61,7 @@ import { SubcategoryServiceProposal }   from './database/entities/subcategory-se
 import { SubcategoryServiceDismissal }  from './database/entities/subcategory-service-dismissal.entity';
 import { ProviderGalleryImage }   from './database/entities/provider-gallery-image.entity';
 import { ProviderPricedService }  from './database/entities/provider-priced-service.entity';
+import { DisputeEvidence }        from './database/entities/dispute-evidence.entity';
 
 @Module({
   imports: [
@@ -85,6 +87,7 @@ import { ProviderPricedService }  from './database/entities/provider-priced-serv
           UserSession, SecurityLog,
           SubcategoryService, SubcategoryServiceProposal, SubcategoryServiceDismissal,
           ProviderGalleryImage, ProviderPricedService,
+          DisputeEvidence,
         ],
         ssl: process.env.NODE_ENV === 'production'
           ? { rejectUnauthorized: false } : false,
@@ -112,6 +115,7 @@ import { ProviderPricedService }  from './database/entities/provider-priced-serv
     SecurityModule,
     SubcategoryServicesModule,
     ProviderProfileModule,
+    DisputeEvidenceModule,
   ],
   providers: [
     {

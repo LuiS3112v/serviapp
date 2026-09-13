@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { adminPaymentsApi, AdminPaymentRow, AdminDisputedService } from "@/lib/api/admin-payments.api";
 import ProofViewerModal from "@/components/shared/ProofViewerModal";
+import DisputeEvidenceSection from "@/components/shared/DisputeEvidenceSection";
 import {
   FileText, CheckCircle, X, Loader2, Eye, RefreshCw,
   Clock, AlertTriangle, Landmark, User, Building2,
@@ -321,6 +322,11 @@ function DisputedServiceCard({
           ))}
         </div>
       )}
+
+      {/* Evidências — admin vê as duas partes */}
+      <div style={{ background:"#0d1117", borderRadius:12, padding:"14px", marginBottom:14 }}>
+        <DisputeEvidenceSection serviceId={item.serviceId} mode="admin" />
+      </div>
 
       <div style={{ display:"flex", gap:8 }}>
         <button
