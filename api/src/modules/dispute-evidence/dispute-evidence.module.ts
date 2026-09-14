@@ -1,17 +1,17 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DisputeEvidenceController } from './dispute-evidence.controller';
+import { DisputeEvidenceController, DisputeEvidenceFileController } from './dispute-evidence.controller';
 import { DisputeEvidenceService } from './dispute-evidence.service';
 import { DisputeEvidence } from '../../database/entities/dispute-evidence.entity';
 import { Service } from '../../database/entities/service.entity';
-import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
+// CloudinaryModule é @Global() — não precisa de ser importado aqui.
+// O CloudinaryService é injectado automaticamente em qualquer provider.
 @Module({
   imports: [
     TypeOrmModule.forFeature([DisputeEvidence, Service]),
-    CloudinaryModule,
   ],
-  controllers: [DisputeEvidenceController],
+  controllers: [DisputeEvidenceController, DisputeEvidenceFileController],
   providers: [DisputeEvidenceService],
   exports: [DisputeEvidenceService],
 })

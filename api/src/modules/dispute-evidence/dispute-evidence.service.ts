@@ -85,8 +85,16 @@ export class DisputeEvidenceService {
     const isPdf = ext === 'pdf';
     const publicId = `dispute_${serviceId}_${userId}_${Date.now()}`;
     const uploaded = isPdf
-      ? await this.cloudinaryService.uploadRawFile(file.buffer, 'dispute-evidences', `${publicId}.pdf`)
-      : await this.cloudinaryService.uploadBuffer(file.buffer, 'dispute-evidences', publicId);
+      ? await this.cloudinaryService.uploadRawFile(
+          file.buffer,
+          'serviapp/dispute-evidences',
+          `${publicId}.pdf`,
+        )
+      : await this.cloudinaryService.uploadPublicImage(
+          file.buffer,
+          'serviapp/dispute-evidences',
+          publicId,
+        );
 
     const evidence = this.evidenceRepo.create({
       serviceId,
@@ -158,6 +166,11 @@ export class DisputeEvidenceService {
     const isPdf = evidence.fileType === 'pdf';
     let downloadUrl = evidence.fileUrl;
 
+    // PDFs foram carregados com resource_type:'raw' — em contas Cloudinary
+    // gratuitas a entrega directa de 'raw' pode ser bloqueada. Gera uma
+    // URL assinada de curta duração para o backend descarregar server-side.
+    // Imagens (png/jpg/jpeg) foram carregadas com type:'upload' public —
+    // a URL directa funciona sempre e não precisa de assinatura.
     if (isPdf && evidence.filePublicId) {
       try {
         downloadUrl = cloudinary.utils.private_download_url(

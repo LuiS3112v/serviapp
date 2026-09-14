@@ -33,9 +33,10 @@ export interface DisputeEvidence {
   uploadedBy?: { id: string; fullName: string };
 }
 
-// URL do proxy do backend — nunca usa a URL da Cloudinary directamente.
+// URL do proxy do backend — prefixo dedicado /dispute-evidences/ para
+// evitar conflito com as rotas /services/:id/dispute/evidence/* no Nest.
 export function getEvidenceFileUrl(evidenceId: string): string {
-  return `${BASE}/services/dispute-evidence/${evidenceId}/file`;
+  return `${BASE}/dispute-evidences/${evidenceId}/file`;
 }
 
 // Busca o ficheiro autenticado e devolve um Blob URL para uso em

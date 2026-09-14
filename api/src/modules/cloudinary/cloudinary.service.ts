@@ -78,6 +78,37 @@ export class CloudinaryService {
     });
   }
 
+  // Upload de imagens (PNG/JPG) com acesso público — usado para
+  // evidências de disputa e outros ficheiros que não sejam KYC.
+  // Diferença do uploadBuffer original: type:'upload' em vez de
+  // type:'authenticated', porque estas imagens precisam de ser
+  // acessíveis pelo proxy do backend via URL directa (fetch server-side).
+  // KYC continua a usar uploadBuffer com type:'authenticated'.
+  async uploadPublicImage(
+    buffer: Buffer,
+    folder: string,
+    filename: string,
+  ): Promise<CloudinaryUploadResult> {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          public_id: filename,
+          resource_type: 'image',
+          type: 'upload',
+          access_mode: 'public',
+          allowed_formats: ['jpg', 'jpeg', 'png'],
+          max_bytes: 5 * 1024 * 1024,
+        },
+        (error, result) => {
+          if (error || !result) return reject(error);
+          resolve({ url: result.secure_url, publicId: result.public_id });
+        },
+      );
+      stream.end(buffer);
+    });
+  }
+
   async deleteFile(publicId: string): Promise<void> {
     await cloudinary.uploader.destroy(publicId);
   }
