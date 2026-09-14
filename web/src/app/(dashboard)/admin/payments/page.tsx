@@ -325,7 +325,7 @@ function DisputedServiceCard({
 
       {/* Evidências — admin vê as duas partes */}
       <div style={{ background:"#0d1117", borderRadius:12, padding:"14px", marginBottom:14 }}>
-        <DisputeEvidenceSection serviceId={item.serviceId} mode="admin" />
+        <DisputeEvidenceSection serviceId={item.serviceId} mode="admin" theme="dark" />
       </div>
 
       <div style={{ display:"flex", gap:8 }}>
