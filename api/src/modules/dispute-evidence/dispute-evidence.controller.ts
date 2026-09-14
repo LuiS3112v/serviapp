@@ -1,10 +1,11 @@
 import {
   Controller, Get, Post, Param, Body, UseGuards,
   UseInterceptors, UploadedFile, Res, StreamableFile,
-  ParseUUIDPipe,
+  ParseUUIDPipe, BadRequestException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { Response } from 'express';
 import { DisputeEvidenceService } from './dispute-evidence.service';
 import { JwtGuard } from '../../common/guards/jwt.guard';
@@ -13,7 +14,6 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Role } from '../../common/enums/role.enum';
 
-// ── Rotas acopladas ao serviço: /services/:id/dispute/evidence/* ──────────
 @Controller('services')
 @UseGuards(JwtGuard)
 export class DisputeEvidenceController {
@@ -23,6 +23,7 @@ export class DisputeEvidenceController {
   @Post(':id/dispute/evidence')
   @Throttle({ default: { limit: 20, ttl: 600000 } })
   @UseInterceptors(FileInterceptor('evidence', {
+    storage: memoryStorage(),          // FIX: buffer em memória para Cloudinary
     limits: { fileSize: 5 * 1024 * 1024 },
   }))
   upload(
@@ -31,6 +32,10 @@ export class DisputeEvidenceController {
     @UploadedFile() file: Express.Multer.File,
     @Body('description') description?: string,
   ) {
+    // FIX: validar que o ficheiro chegou antes de passar ao service
+    if (!file) {
+      throw new BadRequestException('Nenhum ficheiro recebido. Envia o ficheiro no campo "evidence".');
+    }
     return this.evidenceService.upload(serviceId, user.id, user.role, file, description);
   }
 
@@ -52,20 +57,12 @@ export class DisputeEvidenceController {
   }
 }
 
-// ── Rota de ficheiro num controller SEPARADO para evitar conflito ─────────
-// O Nest resolve rotas por ordem de registo. Se o endpoint de ficheiro
-// ficasse no mesmo controller que :id/dispute/evidence/*, o Nest tratava
-// 'dispute-evidences' como valor do parâmetro :id e nunca chegava à rota
-// certa. Prefixo dedicado 'dispute-evidences' elimina completamente essa
-// ambiguidade — nenhuma outra rota começa por esse segmento.
 @Controller('dispute-evidences')
 @UseGuards(JwtGuard)
 export class DisputeEvidenceFileController {
   constructor(private readonly evidenceService: DisputeEvidenceService) {}
 
   // GET /dispute-evidences/:evidenceId/file
-  // Proxy seguro — o browser nunca fala directamente com a Cloudinary.
-  // Dono da evidência ou admin: acesso. Outra parte: 403.
   @Get(':evidenceId/file')
   async streamFile(
     @Param('evidenceId', ParseUUIDPipe) evidenceId: string,
