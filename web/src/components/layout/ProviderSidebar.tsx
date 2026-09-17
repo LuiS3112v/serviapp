@@ -61,16 +61,18 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const handleLogout = () => {
     onClose?.();
     clearAllSessions();
-    // Reset do visual viewport ANTES da navegação — mesmo raciocínio
-    // do Sidebar do cliente: cobre logout a partir de qualquer página,
-    // não apenas de /map.
     resetViewport();
-    router.push("/");
+
+    // FIX DEFINITIVO — mesmo raciocínio do Sidebar.tsx (cliente):
+    // window.location.href em vez de router.push, para forçar reload
+    // completo e evitar que o Router Cache do Next sirva um payload
+    // de "/" obtido antes do logout (com o cookie ainda válido),
+    // que era o que causava a página aparecer sem estilos.
+    window.location.href = "/?logout=1";
   };
  
   return (
     <>
-      {/* ── Logo header ───────────────────────────────────────────────── */}
       <div style={{ padding:"24px 20px 20px", borderBottom:"1px solid #E2E8F0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <div style={{ width:36, height:36, borderRadius:10, background:"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -90,7 +92,6 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         )}
       </div>
  
-      {/* ── Nav links ─────────────────────────────────────────────────── */}
       <div className="psb-nav">
         {NAV.map(group => (
           <div key={group.section} style={{ marginBottom:4 }}>
@@ -116,7 +117,6 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         ))}
       </div>
  
-      {/* ── Footer ────────────────────────────────────────────────────── */}
       <div style={{ margin:"8px 12px 12px", padding:"12px 14px", background:"#FFFFFF", border:"1px solid #E2E8F0", borderRadius:14, boxShadow:"0 1px 3px rgba(15,23,42,0.05)", display:"flex", alignItems:"center", gap:12 }}>
         <div style={{ width:36, height:36, borderRadius:"50%", background:"#0F172A", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#fff", flexShrink:0, boxShadow:"0 2px 6px rgba(15,23,42,0.24)" }}>P</div>
         <div style={{ flex:1, minWidth:0 }}>
@@ -138,11 +138,6 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 export default function ProviderSidebar() {
   const [open, setOpen] = useState(false);
 
-  // Botão hambúrguer: vive DENTRO do <ProviderNavbar/> (inline, ao
-  // lado da pesquisa), via evento global "sidebar:toggle" — mesmo
-  // padrão do Sidebar do cliente. Um botão position:fixed solto no
-  // canto (independente do fluxo do layout) ficava desalinhado da
-  // barra de pesquisa em vez de ficar ao lado dela.
   useEffect(() => {
     const handleToggle = () => setOpen((current) => !current);
     window.addEventListener("sidebar:toggle", handleToggle);
@@ -152,7 +147,6 @@ export default function ProviderSidebar() {
   return (
     <>
       <style>{`
-        /* ── Desktop sidebar ──────────────────────────────────────────── */
         .psb-d {
           position: fixed; left: 0; top: 0;
           height: 100vh; height: 100dvh; width: 240px;
@@ -160,13 +154,11 @@ export default function ProviderSidebar() {
           display: flex; flex-direction: column; z-index: 40; overflow: hidden;
         }
 
-        /* ── Overlay ──────────────────────────────────────────────────── */
         .psb-ov {
           position: fixed; inset: 0;
           background: rgba(15,23,42,0.45); z-index: 2000; display: none;
         }
 
-        /* ── Drawer (mobile) ──────────────────────────────────────────── */
         .psb-dr {
           position: fixed; left: 0; top: 0;
           height: 100vh; height: 100dvh; width: 240px;
@@ -177,7 +169,6 @@ export default function ProviderSidebar() {
         }
         .psb-dr.open { transform: translateX(0); }
 
-        /* ── Scrollable nav area ──────────────────────────────────────── */
         .psb-nav {
           flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
           padding: 8px 0;
@@ -189,7 +180,6 @@ export default function ProviderSidebar() {
         .psb-nav::-webkit-scrollbar-thumb { background-color: rgba(148,163,184,0.35); border-radius: 99px; }
         .psb-nav::-webkit-scrollbar-thumb:hover { background-color: rgba(148,163,184,0.6); }
 
-        /* ── Nav link base ────────────────────────────────────────────── */
         .psb-link {
           position: relative; display: flex; align-items: center; gap: 12px;
           margin: 2px 10px 2px 0; padding: 11px 20px 11px 16px;
@@ -204,12 +194,10 @@ export default function ProviderSidebar() {
         .psb-link .psb-link-text { color: #475569; transition: color 0.15s ease; }
         .psb-link:hover .psb-link-text { color: #0F172A; }
 
-        /* ── Active state ─────────────────────────────────────────────── */
         .psb-link--active { background: #EEF0F3; border-left-color: #0F172A; }
         .psb-link--active .psb-link-icon { color: #0F172A; }
         .psb-link--active .psb-link-text { color: #0F172A; font-weight: 600; }
 
-        /* ── Close button (mobile drawer) ─────────────────────────────── */
         .psb-close-btn {
           background: none; border: none; cursor: pointer;
           color: #94A3B8; display: flex; padding: 4px; border-radius: 8px;
@@ -217,7 +205,6 @@ export default function ProviderSidebar() {
         }
         .psb-close-btn:hover { color: #1F2937; background: #F1F5F9; }
 
-        /* ── Logout button ────────────────────────────────────────────── */
         .psb-logout-btn {
           background: none; border: none; cursor: pointer;
           padding: 6px; display: flex; align-items: center;
@@ -233,18 +220,14 @@ export default function ProviderSidebar() {
         }
       `}</style>
 
-      {/* Desktop */}
       <aside className="psb-d"><SidebarContent/></aside>
 
-      {/* Overlay */}
       <div className={`psb-ov${open ? " open" : ""}`} onClick={() => setOpen(false)}/>
 
-      {/* Drawer */}
       <aside className={`psb-dr${open ? " open" : ""}`}>
         <SidebarContent onClose={() => setOpen(false)}/>
       </aside>
 
-      {/* Bottom navigation — mobile only (ver media query no BottomNav) */}
       <BottomNav role="provider" />
     </>
   );

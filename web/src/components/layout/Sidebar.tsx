@@ -38,12 +38,36 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const handleLogout = () => {
     onClose?.();
     clearAllSessions();
-    // Reset do visual viewport ANTES da navegação — cobre o caso em que
-    // o utilizador foi ao mapa, voltou para outra página e faz logout aí.
-    // O ViewportGuard só actua na saída de /map; aqui garantimos o reset
-    // independentemente da página onde o logout acontece.
     resetViewport();
-    router.push("/?logout=1");
+
+    // FIX DEFINITIVO: router.push (navegação client-side / SPA) foi
+    // trocado por window.location.href (hard navigation / reload
+    // completo do browser).
+    //
+    // PORQUÊ router.push não era suficiente, mesmo já com "?logout=1":
+    // router.push troca a árvore React no cliente sem recarregar o
+    // documento. O Next App Router pode reaproveitar uma resposta já
+    // em cache (Router Cache) da rota "/" obtida ANTES do logout —
+    // nessa altura o cookie serviapp_token ainda era válido — e servir
+    // esse payload antigo em vez de pedir um HTML novo ao servidor.
+    // Combinado com o facto de o clearAllSessions() apagar o cookie
+    // no cliente ao mesmo tempo que o proxy.ts (edge middleware) só
+    // decide o que fazer com base no cookie que vai DENTRO do pedido
+    // HTTP, há uma janela onde o proxy pode ver um estado inconsistente
+    // — nomeadamente em Chrome mobile e na PWA, que são mais agressivos
+    // a reutilizar cache. O resultado visível era a página "/" a
+    // aparecer sem nenhum dos estilos inline (<style> por página) —
+    // porque o payload servido não correspondia a um render completo
+    // e fresco daquela rota.
+    //
+    // window.location.href resolve isto de raiz: força o browser a
+    // descartar todo o estado React/cache do Router e pedir um
+    // documento HTML completamente novo ao servidor, já sem o cookie
+    // (que foi apagado síncronamente na linha acima, antes desta
+    // navegação arrancar). O servidor volta a correr o proxy.ts do
+    // zero, com o pedido já limpo, e devolve a landing page pública
+    // inteira, com todo o CSS.
+    window.location.href = "/?logout=1";
   };
 
   return (
@@ -110,16 +134,6 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
 
-  // Botão hambúrguer: vive DENTRO do <Navbar/> (inline, ao lado da
-  // pesquisa) nas páginas que o montam — via evento global
-  // "sidebar:toggle" que este componente escuta. Páginas sem Navbar
-  // (ex: /chat/[id]) têm o seu próprio botão inline no cabeçalho,
-  // que dispara o mesmo evento — ver esse ficheiro para detalhes.
-  // Nenhum botão fixed/flutuante é usado aqui: um botão position:fixed
-  // solto na página, independente do fluxo normal do layout, foi a
-  // causa de dois bugs anteriores (mover-se com o scroll; e, quando
-  // aumentado para ocupar toda a faixa do topo, ficar visualmente
-  // desalinhado da barra de pesquisa em vez de ficar ao lado dela).
   useEffect(() => {
     const handleToggle = () => setOpen((current) => !current);
     window.addEventListener("sidebar:toggle", handleToggle);
@@ -178,7 +192,6 @@ export default function Sidebar() {
         <SidebarContent onClose={() => setOpen(false)}/>
       </aside>
 
-      {/* Bottom navigation — mobile only (ver media query no BottomNav) */}
       <BottomNav role="client" />
     </>
   );
