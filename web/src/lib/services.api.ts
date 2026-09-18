@@ -77,11 +77,11 @@ export interface CreateServicePayload {
   budget: number;
   scheduledAt?: string;
   targetProviderId?: string;
-  // Preenchido quando o pedido nasce de "Solicitar" na página de
-  // pesquisa — liga o Service à entrada de catálogo que o originou,
-  // permitindo desactivá-la automaticamente quando o pagamento ao
-  // prestador for concluído (o serviço "desaparece" da pesquisa).
   catalogItemId?: string;
+  // GPS real do cliente no momento da criação.
+  // Opcional — se não vier, backend usa fallback sem inventar localização.
+  clientLatitude?: number;
+  clientLongitude?: number;
 }
 
 export interface ReviewPayload {
@@ -97,7 +97,7 @@ export interface AvailableFilter {
 }
 
 export const servicesApi = {
-  // ─── CLIENT ──────────────────────────────────────────────────────────────
+  // ─── CLIENT ────────────────────────────────────────────────────────────────
 
   create: (data: CreateServicePayload) =>
     api.post<Service>('/services', data),
@@ -123,14 +123,14 @@ export const servicesApi = {
   cancelClient: (id: string, reason: string) =>
     api.patch<Service>(`/services/client/${id}/cancel`, { reason }),
 
-  // ─── PROVIDER ────────────────────────────────────────────────────────────
+  // ─── PROVIDER ──────────────────────────────────────────────────────────────
 
   getAvailable: (filter?: AvailableFilter) => {
     const params = new URLSearchParams();
-    if (filter?.category) params.set('category', filter.category);
-    if (filter?.province) params.set('province', filter.province);
-    if (filter?.minBudget !== undefined) params.set('minBudget', String(filter.minBudget));
-    if (filter?.maxBudget !== undefined) params.set('maxBudget', String(filter.maxBudget));
+    if (filter?.category)                     params.set('category',  filter.category);
+    if (filter?.province)                     params.set('province',  filter.province);
+    if (filter?.minBudget !== undefined)      params.set('minBudget', String(filter.minBudget));
+    if (filter?.maxBudget !== undefined)      params.set('maxBudget', String(filter.maxBudget));
     const qs = params.toString();
     return api.get<Service[]>(`/services/available${qs ? `?${qs}` : ''}`);
   },
@@ -167,7 +167,7 @@ export const servicesApi = {
   cancelProvider: (id: string, reason: string) =>
     api.patch<Service>(`/services/provider/${id}/cancel`, { reason }),
 
-  // ─── SHARED ──────────────────────────────────────────────────────────────
+  // ─── SHARED ────────────────────────────────────────────────────────────────
 
   getOne: (id: string) =>
     api.get<Service>(`/services/${id}`),

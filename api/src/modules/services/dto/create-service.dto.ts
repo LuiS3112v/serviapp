@@ -38,9 +38,21 @@ export class CreateServiceDto {
   @IsOptional()
   targetProviderId?: string;
 
-  // Preenchido quando o pedido nasce de um "Solicitar" na página de
-  // pesquisa — liga o Service à entrada de catálogo que o originou.
   @IsString()
   @IsOptional()
   catalogItemId?: string;
+
+  // Localização GPS real do cliente no momento da criação.
+  // Opcional — se não vier (sem permissão / sem GPS), o sistema usa
+  // fallback sem inventar localização.
+  // NÃO é gravado na tabela services — só usado para distribuição.
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  clientLatitude?: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  clientLongitude?: number;
 }

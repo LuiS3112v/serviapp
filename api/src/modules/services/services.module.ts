@@ -9,17 +9,16 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { BankAccountsModule } from '../bank-accounts/bank-accounts.module';
 import { PlatformSettingsModule } from '../platform-settings/platform-settings.module';
+import { GeoDistributionModule } from '../geo-distribution/geo-distribution.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Service, ServiceTimeline, Payment]),
     NotificationsModule,
     WalletModule,
-    // Novos — ServicesService.initiatePayment usa BankAccountsService
-    // para devolver a conta da ServiApp, e PlatformSettingsService para
-    // calcular a comissão configurável.
     BankAccountsModule,
     PlatformSettingsModule,
+    GeoDistributionModule,
   ],
   controllers: [ServicesController],
   providers: [ServicesService],

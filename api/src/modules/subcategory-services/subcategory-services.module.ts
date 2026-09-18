@@ -12,7 +12,7 @@ import { ProviderCatalog } from '../../database/entities/provider-catalog.entity
 import { User } from '../../database/entities/user.entity';
 
 import { NotificationsModule } from '../notifications/notifications.module';
-
+import { GeoDistributionModule } from '../geo-distribution/geo-distribution.module';
 
 @Module({
   imports: [
@@ -24,20 +24,11 @@ import { NotificationsModule } from '../notifications/notifications.module';
       ProviderCatalog,
       User,
     ]),
-
     NotificationsModule,
+    GeoDistributionModule,
   ],
-
-  controllers: [
-    SubcategoryServicesController,
-  ],
-
-  providers: [
-    SubcategoryServicesService,
-  ],
-
-  exports: [
-    SubcategoryServicesService,
-  ],
+  controllers: [SubcategoryServicesController],
+  providers: [SubcategoryServicesService],
+  exports: [SubcategoryServicesService],
 })
 export class SubcategoryServicesModule {}

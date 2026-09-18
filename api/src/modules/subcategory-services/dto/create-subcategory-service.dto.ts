@@ -1,9 +1,6 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
 
-// Nada além disto — o prompt exige explicitamente que o pedido inicial
-// não tenha descrição, orçamento, ou fotografias. category e
-// subcategory vêm de listas fechadas no frontend, address é o único
-// campo de texto livre.
 export class CreateSubcategoryServiceDto {
   @IsString()
   @IsNotEmpty()
@@ -16,4 +13,17 @@ export class CreateSubcategoryServiceDto {
   @IsString()
   @IsNotEmpty()
   address: string;
+
+  // Localização GPS real do cliente no momento da criação.
+  // Opcional — se não vier, distribuição fallback sem localização falsa.
+  // NÃO gravado na BD — só usado para calcular proximidade.
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  clientLatitude?: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  clientLongitude?: number;
 }

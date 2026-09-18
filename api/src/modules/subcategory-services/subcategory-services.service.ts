@@ -16,7 +16,7 @@ import { ServiceStatus } from '../../common/enums/service-status.enum';
 
 import { CreateSubcategoryServiceDto } from './dto/create-subcategory-service.dto';
 import { NotificationsService } from '../notifications/notifications.service';
-
+import { GeoDistributionService } from '../geo-distribution/geo-distribution.service';
 
 @Injectable()
 export class SubcategoryServicesService {
@@ -43,56 +43,40 @@ export class SubcategoryServicesService {
     private dataSource: DataSource,
 
     private notificationsService: NotificationsService,
+
+    private geoDistributionService: GeoDistributionService,
   ) {}
-
-
-  // ── Cliente cria Serviço Rápido ──────────────────────────────────────
 
   async create(
     clientId: string,
     dto: CreateSubcategoryServiceDto,
   ): Promise<SubcategoryService> {
 
+    // Extrai coordenadas GPS do DTO — não fazem parte da entidade.
+    const { clientLatitude, clientLongitude, ...entityData } = dto;
+
     const entry = this.subServiceRepo.create({
-      ...dto,
+      ...entityData,
       clientId,
       status: SubcategoryServiceStatus.BROADCASTING,
     });
 
-    return this.subServiceRepo.save(entry);
+    const saved = await this.subServiceRepo.save(entry);
+
+    // Distribuição por proximidade — fire-and-forget.
+    // O serviço rápido já está gravado na BD antes desta chamada.
+    // Falha na distribuição não reverte a criação.
+    this.geoDistributionService.distribute({
+      originLatitude:  clientLatitude  ?? null,
+      originLongitude: clientLongitude ?? null,
+      category:     saved.category,
+      serviceId:    saved.id,
+      serviceTitle: `${saved.subcategory} (${saved.category})`,
+      serviceType:  'quick',
+    }).catch(() => {});
+
+    return saved;
   }
-
-
-  // ── Mercado do Prestador ─────────────────────────────────────────────
-  //
-  // CORRIGIDO — causa raiz do bug "Serviço Rápido criado pelo Cliente
-  // não chega ao Provider", com duas correções distintas:
-  //
-  // 1) CATEGORIA: a versão anterior só considerava as categorias
-  //    presentes no catálogo do prestador (ProviderCatalog, tabela
-  //    'provider_catalog'). Se o prestador nunca criou nenhuma entrada
-  //    de catálogo — perfeitamente possível, o catálogo é uma
-  //    funcionalidade separada preenchida manualmente — `categories`
-  //    ficava vazio e o método devolvia `[]` imediatamente, ANTES
-  //    sequer de consultar a tabela de Serviços Rápidos. A categoria
-  //    "oficial" de especialidade de um prestador é `User.category` —
-  //    o campo preenchido no registo (ver register/provider/page.tsx,
-  //    Passo 2) e mantido pelo próprio prestador via PATCH /users/me.
-  //    Esta é a fonte de verdade mínima e sempre presente — o catálogo
-  //    é um refinamento opcional por cima dela, não um requisito.
-  //
-  // 2) VERIFICAÇÃO: a versão anterior não filtrava por isVerified nem
-  //    profileVisible — um prestador com KYC ainda pendente ou
-  //    rejeitado conseguia ver e receber Serviços Rápidos, ao
-  //    contrário do resto do sistema (ver GeolocationService.
-  //    findNearbyProviders / findOnlineProviders, que já exigem
-  //    isVerified=true e profileVisible=true para um prestador aparecer
-  //    no mapa/pesquisa). Esta correção alinha o Serviço Rápido com a
-  //    mesma regra de negócio.
-  //
-  // Os console.log de debug temporário foram removidos — imprimiam o
-  // conteúdo completo dos pedidos, incluindo dados do cliente, no log
-  // do servidor a cada chamada, e não devem seguir para produção.
 
   async findAvailableForProvider(
     providerId: string,
@@ -107,149 +91,68 @@ export class SubcategoryServicesService {
       return [];
     }
 
-    const providerCatalog =
-      await this.providerCatalogRepo.find({
-        where: {
-          providerId,
-          isActive: true,
-        },
-      });
+    const providerCatalog = await this.providerCatalogRepo.find({
+      where: { providerId, isActive: true },
+    });
 
-    const catalogCategories =
-      providerCatalog.map(
-        item => item.category,
-      );
+    const catalogCategories = providerCatalog.map(item => item.category);
 
-    // Junta a categoria de perfil do prestador (fonte sempre presente,
-    // vinda do registo/edição de perfil) às categorias do catálogo
-    // (opcional). Set remove duplicados sem alterar a ordem de
-    // relevância.
     const categories = Array.from(
-      new Set(
-        [
-          ...(provider.category ? [provider.category] : []),
-          ...catalogCategories,
-        ],
-      ),
+      new Set([
+        ...(provider.category ? [provider.category] : []),
+        ...catalogCategories,
+      ]),
     );
 
     if (!categories.length) {
       return [];
     }
 
-    const dismissedIds =
-      await this.dismissalRepo.find({
-        where: {
-          providerId,
-        },
-        select: {
-          subcategoryServiceId: true,
-        },
-      });
+    const dismissedIds = await this.dismissalRepo.find({
+      where: { providerId },
+      select: { subcategoryServiceId: true },
+    });
 
-    const dismissedSet =
-      new Set(
-        dismissedIds.map(
-          item => item.subcategoryServiceId,
-        ),
-      );
+    const dismissedSet = new Set(dismissedIds.map(item => item.subcategoryServiceId));
 
     const query = this.subServiceRepo
       .createQueryBuilder('s')
       .leftJoinAndSelect('s.client', 'client')
       .leftJoinAndSelect('s.proposals', 'proposals')
-      .where(
-        's.status IN (:...statuses)',
-        {
-          statuses: [
-            SubcategoryServiceStatus.BROADCASTING,
-            SubcategoryServiceStatus.CLIENT_REVIEWING,
-          ],
-        },
-      )
-      .andWhere(
-        's.category IN (:...categories)',
-        { categories },
-      )
+      .where('s.status IN (:...statuses)', {
+        statuses: [
+          SubcategoryServiceStatus.BROADCASTING,
+          SubcategoryServiceStatus.CLIENT_REVIEWING,
+        ],
+      })
+      .andWhere('s.category IN (:...categories)', { categories })
       .orderBy('s.createdAt', 'DESC');
 
     const services = await query.getMany();
 
-    return services.filter(
-      service => !dismissedSet.has(service.id),
-    );
+    return services.filter(service => !dismissedSet.has(service.id));
   }
 
-  // ── Serviços do cliente ──────────────────────────────────────────────
-
-  async findByClient(
-    clientId: string,
-  ): Promise<SubcategoryService[]> {
-
+  async findByClient(clientId: string): Promise<SubcategoryService[]> {
     return this.subServiceRepo.find({
       where: { clientId },
-      relations: {
-        proposals: {
-          provider: true,
-        },
-      },
+      relations: { proposals: { provider: true } },
       order: { createdAt: 'DESC' },
     });
   }
 
-
-  async findById(
-    id: string,
-  ): Promise<SubcategoryService> {
-
-    const entry =
-      await this.subServiceRepo.findOne({
-        where: { id },
-        relations: {
-          client: true,
-          proposals: {
-            provider: true,
-          },
-        },
-      });
+  async findById(id: string): Promise<SubcategoryService> {
+    const entry = await this.subServiceRepo.findOne({
+      where: { id },
+      relations: { client: true, proposals: { provider: true } },
+    });
 
     if (!entry) {
-      throw new NotFoundException(
-        'Pedido rápido não encontrado.',
-      );
+      throw new NotFoundException('Pedido rápido não encontrado.');
     }
 
     return entry;
   }
-
-
-  // ── Prestador propõe valor ───────────────────────────────────────────
-  //
-  // REESCRITO. Antes: proposalRepo.save() gravava com sucesso e, a
-  // seguir, subServiceRepo.save(entry) — sobre uma entidade carregada
-  // com relations (client, proposals) — corria fora de qualquer
-  // transação. Se essa segunda escrita falhasse por qualquer razão, a
-  // exceção não tinha catch, subia até ao filtro global do NestJS, e o
-  // cliente recebia "Internal server error" apesar de a proposta já
-  // estar gravada — daí a segunda tentativa "funcionar sempre".
-  //
-  // Agora:
-  //  1. As duas escritas (proposta + transição de estado) partilham
-  //     uma única transação — ou ambas ficam gravadas, ou nenhuma fica.
-  //  2. A linha do SubcategoryService é bloqueada com pessimistic_write
-  //     durante a transação, o que torna duas propostas concorrentes
-  //     para o mesmo par (subcategoryServiceId, providerId) impossíveis
-  //     de colidir — a segunda espera pela primeira e depois só faz
-  //     UPDATE. Por isso já não é preciso apanhar erro de unicidade
-  //     (código 23505) — o lock impede a colisão de acontecer, em vez
-  //     de a corrigir depois de acontecer.
-  //  3. A transição de estado passa a ser um update() escopado a um
-  //     único campo, nunca um save() sobre a entidade completa — nunca
-  //     arrasta relations carregadas nem pode desencadear cascades
-  //     inesperados.
-  //  4. O estado é revalidado depois de obter o lock, não só antes —
-  //     fecha a janela em que o pedido podia ter sido convertido ou
-  //     cancelado por outra operação entre a leitura inicial e o lock.
 
   async proposePrice(
     subcategoryServiceId: string,
@@ -257,18 +160,13 @@ export class SubcategoryServicesService {
     proposedPrice: number,
   ): Promise<SubcategoryServiceProposal> {
 
-    const entry =
-      await this.findById(subcategoryServiceId);
+    const entry = await this.findById(subcategoryServiceId);
 
-    if (
-      ![
-        SubcategoryServiceStatus.BROADCASTING,
-        SubcategoryServiceStatus.CLIENT_REVIEWING,
-      ].includes(entry.status)
-    ) {
-      throw new BadRequestException(
-        'Este pedido já não aceita novas propostas.',
-      );
+    if (![
+      SubcategoryServiceStatus.BROADCASTING,
+      SubcategoryServiceStatus.CLIENT_REVIEWING,
+    ].includes(entry.status)) {
+      throw new BadRequestException('Este pedido já não aceita novas propostas.');
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -278,49 +176,33 @@ export class SubcategoryServicesService {
     let proposal: SubcategoryServiceProposal;
 
     try {
-
-      const lockedEntry = await queryRunner.manager.findOne(
-        SubcategoryService,
-        {
-          where: { id: subcategoryServiceId },
-          lock: { mode: 'pessimistic_write' },
-        },
-      );
+      const lockedEntry = await queryRunner.manager.findOne(SubcategoryService, {
+        where: { id: subcategoryServiceId },
+        lock: { mode: 'pessimistic_write' },
+      });
 
       if (!lockedEntry) {
-        throw new NotFoundException(
-          'Pedido rápido não encontrado.',
-        );
+        throw new NotFoundException('Pedido rápido não encontrado.');
       }
 
-      if (
-        ![
-          SubcategoryServiceStatus.BROADCASTING,
-          SubcategoryServiceStatus.CLIENT_REVIEWING,
-        ].includes(lockedEntry.status)
-      ) {
-        throw new BadRequestException(
-          'Este pedido já não aceita novas propostas.',
-        );
+      if (![
+        SubcategoryServiceStatus.BROADCASTING,
+        SubcategoryServiceStatus.CLIENT_REVIEWING,
+      ].includes(lockedEntry.status)) {
+        throw new BadRequestException('Este pedido já não aceita novas propostas.');
       }
 
-      const existing = await queryRunner.manager.findOne(
-        SubcategoryServiceProposal,
-        { where: { subcategoryServiceId, providerId } },
-      );
+      const existing = await queryRunner.manager.findOne(SubcategoryServiceProposal, {
+        where: { subcategoryServiceId, providerId },
+      });
 
       if (existing) {
-
         existing.proposedPrice = proposedPrice;
         proposal = await queryRunner.manager.save(existing);
-
       } else {
-
-        const created = queryRunner.manager.create(
-          SubcategoryServiceProposal,
-          { subcategoryServiceId, providerId, proposedPrice },
-        );
-
+        const created = queryRunner.manager.create(SubcategoryServiceProposal, {
+          subcategoryServiceId, providerId, proposedPrice,
+        });
         proposal = await queryRunner.manager.save(created);
       }
 
@@ -335,29 +217,18 @@ export class SubcategoryServicesService {
       await queryRunner.commitTransaction();
 
     } catch (err) {
-
       await queryRunner.rollbackTransaction();
       throw err;
-
     } finally {
-
       await queryRunner.release();
-
     }
 
-    await this.notificationsService
-      .notifyServiceProposed(
-        entry.clientId,
-        'Prestador',
-        proposedPrice,
-      )
-      .catch(() => {});
+    await this.notificationsService.notifyServiceProposed(
+      entry.clientId, 'Prestador', proposedPrice,
+    ).catch(() => {});
 
     return proposal;
   }
-
-
-  // ── Prestador recusa ─────────────────────────────────────────────────
 
   async dismissForProvider(
     subcategoryServiceId: string,
@@ -366,31 +237,19 @@ export class SubcategoryServicesService {
 
     await this.findById(subcategoryServiceId);
 
-    const existing =
-      await this.dismissalRepo.findOne({
-        where: { subcategoryServiceId, providerId },
-      });
+    const existing = await this.dismissalRepo.findOne({
+      where: { subcategoryServiceId, providerId },
+    });
 
     if (existing) return;
 
-    const dismissal =
-      this.dismissalRepo.create({
-        subcategoryServiceId,
-        providerId,
-      });
+    const dismissal = this.dismissalRepo.create({ subcategoryServiceId, providerId });
 
-    await this.dismissalRepo
-      .save(dismissal)
-      .catch((err: any) => {
-        const pgErrorCode = err?.code ?? err?.driverError?.code;
-        if (pgErrorCode !== '23505') {
-          throw err;
-        }
-      });
+    await this.dismissalRepo.save(dismissal).catch((err: any) => {
+      const pgErrorCode = err?.code ?? err?.driverError?.code;
+      if (pgErrorCode !== '23505') throw err;
+    });
   }
-
-
-  // ── Cliente aceita proposta ──────────────────────────────────────────
 
   async acceptProposal(
     subcategoryServiceId: string,
@@ -398,116 +257,71 @@ export class SubcategoryServicesService {
     proposalId: string,
   ): Promise<Service> {
 
-    const queryRunner =
-      this.dataSource.createQueryRunner();
-
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
+      const entry = await queryRunner.manager.findOne(SubcategoryService, {
+        where: { id: subcategoryServiceId },
+        lock: { mode: 'pessimistic_write' },
+      });
 
-      const entry =
-        await queryRunner.manager.findOne(
-          SubcategoryService,
-          {
-            where: { id: subcategoryServiceId },
-            lock: { mode: 'pessimistic_write' },
-          },
-        );
-
-      if (!entry) {
-        throw new NotFoundException(
-          'Pedido rápido não encontrado.',
-        );
+      if (!entry) throw new NotFoundException('Pedido rápido não encontrado.');
+      if (entry.clientId !== clientId) throw new ForbiddenException('Sem permissão.');
+      if (entry.status !== SubcategoryServiceStatus.CLIENT_REVIEWING) {
+        throw new BadRequestException('Este pedido não tem uma proposta pendente para aceitar.');
       }
 
-      if (entry.clientId !== clientId) {
-        throw new ForbiddenException('Sem permissão.');
-      }
+      const proposal = await queryRunner.manager.findOne(SubcategoryServiceProposal, {
+        where: { id: proposalId, subcategoryServiceId },
+      });
 
-      if (
-        entry.status !==
-        SubcategoryServiceStatus.CLIENT_REVIEWING
-      ) {
-        throw new BadRequestException(
-          'Este pedido não tem uma proposta pendente para aceitar.',
-        );
-      }
+      if (!proposal) throw new NotFoundException('Proposta não encontrada.');
 
-      const proposal =
-        await queryRunner.manager.findOne(
-          SubcategoryServiceProposal,
-          {
-            where: { id: proposalId, subcategoryServiceId },
-          },
-        );
+      const service = queryRunner.manager.create(Service, {
+        title:       `Serviço Rápido — ${entry.subcategory}`,
+        description: `Pedido de ${entry.subcategory} (${entry.category}) via Serviços Rápidos.`,
+        category:    entry.category,
+        address:     entry.address,
+        budget:      proposal.proposedPrice,
+        agreedPrice: proposal.proposedPrice,
+        status:      ServiceStatus.ACCEPTED,
+        clientId:    entry.clientId,
+        providerId:  proposal.providerId,
+        acceptedAt:  new Date(),
+      });
 
-      if (!proposal) {
-        throw new NotFoundException('Proposta não encontrada.');
-      }
+      const savedService = await queryRunner.manager.save(service);
 
-      const service =
-        queryRunner.manager.create(
-          Service,
-          {
-            title: `Serviço Rápido — ${entry.subcategory}`,
-            description: `Pedido de ${entry.subcategory} (${entry.category}) via Serviços Rápidos.`,
-            category: entry.category,
-            address: entry.address,
-            budget: proposal.proposedPrice,
-            agreedPrice: proposal.proposedPrice,
-            status: ServiceStatus.ACCEPTED,
-            clientId: entry.clientId,
-            providerId: proposal.providerId,
-            acceptedAt: new Date(),
-          },
-        );
-
-      const savedService =
-        await queryRunner.manager.save(service);
-
-      entry.status = SubcategoryServiceStatus.CONVERTED;
+      entry.status             = SubcategoryServiceStatus.CONVERTED;
       entry.convertedServiceId = savedService.id;
-
       await queryRunner.manager.save(entry);
 
       await queryRunner.commitTransaction();
 
-      await this.notificationsService
-        .notifyProposalAccepted(
-          proposal.providerId,
-          Number(proposal.proposedPrice),
-        )
-        .catch(() => {});
+      await this.notificationsService.notifyProposalAccepted(
+        proposal.providerId, Number(proposal.proposedPrice),
+      ).catch(() => {});
 
       return savedService;
 
     } catch (err) {
-
       await queryRunner.rollbackTransaction();
       throw err;
-
     } finally {
-
       await queryRunner.release();
-
     }
   }
-
-
-  // ── Cliente rejeita pedido ───────────────────────────────────────────
 
   async rejectAndCancel(
     subcategoryServiceId: string,
     clientId: string,
   ): Promise<void> {
 
-    const entry =
-      await this.findById(subcategoryServiceId);
+    const entry = await this.findById(subcategoryServiceId);
 
-    if (entry.clientId !== clientId) {
-      throw new ForbiddenException('Sem permissão.');
-    }
+    if (entry.clientId !== clientId) throw new ForbiddenException('Sem permissão.');
 
     if (entry.status === SubcategoryServiceStatus.CONVERTED) {
       throw new BadRequestException(
@@ -515,20 +329,13 @@ export class SubcategoryServicesService {
       );
     }
 
-    const proposalProviderIds =
-      (entry.proposals ?? [])
-        .map(proposal => proposal.providerId);
+    const proposalProviderIds = (entry.proposals ?? []).map(p => p.providerId);
 
-    await this.subServiceRepo.delete({
-      id: subcategoryServiceId,
-    });
+    await this.subServiceRepo.delete({ id: subcategoryServiceId });
 
     await Promise.all(
-      proposalProviderIds.map(
-        providerId =>
-          this.notificationsService
-            .notifyProposalRejected(providerId)
-            .catch(() => {}),
+      proposalProviderIds.map(providerId =>
+        this.notificationsService.notifyProposalRejected(providerId).catch(() => {}),
       ),
     );
   }

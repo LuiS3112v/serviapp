@@ -26,6 +26,10 @@ export interface CreateSubcategoryServicePayload {
   category: string;
   subcategory: string;
   address: string;
+  // GPS real do cliente no momento da criação.
+  // Opcional — se não vier, backend usa fallback sem inventar localização.
+  clientLatitude?: number;
+  clientLongitude?: number;
 }
 
 export const subcategoryServicesApi = {
