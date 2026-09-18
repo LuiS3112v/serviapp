@@ -581,7 +581,7 @@ export default function ClientServiceDetailPage() {
     const unsub2 = on("payment_updated", () => { load(); });
     const unsub3 = on("dispute_updated", () => { load(); });
     return () => { unsub1(); unsub2(); unsub3(); };
-  }, [on, load]);
+  }, [on]);
 
   const act = async (key: string, fn: () => Promise<any>) => {
     setActL(key);
