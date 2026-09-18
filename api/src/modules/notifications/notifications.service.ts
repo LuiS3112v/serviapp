@@ -171,6 +171,33 @@ export class NotificationsService {
 
   // ─── KYC ─────────────────────────────────────────────────────────────────
 
+  // Emite new_service_request via socket a todos os providers verificados.
+  // Silencioso — sem push FCM, sem notificação na base de dados.
+  // Apenas actualiza a home do provider em tempo real para pedidos abertos.
+  // Não filtra por categoria porque findAvailableForProvider() mostra todos
+  // os pedidos REQUESTED a qualquer provider verificado — o provider pode
+  // depois filtrar por categoria na sua home se quiser.
+  async broadcastNewServiceToProviders(
+    serviceTitle: string,
+    excludeProviderId?: string,
+  ): Promise<void> {
+    try {
+      const providers = await this.userRepo.find({
+        where: { role: Role.PROVIDER, isVerified: true },
+        select: { id: true },
+      });
+      for (const provider of providers) {
+        if (excludeProviderId && provider.id === excludeProviderId) continue;
+        this.emitToUser(provider.id, 'new_service_request', {
+          serviceTitle,
+          silent: true,
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`[REALTIME] broadcastNewServiceToProviders falhou: ${err}`);
+    }
+  }
+
   async notifyKycApproved(userId: string) {
     await this.create({
       userId, type: NotificationType.KYC_APPROVED,
