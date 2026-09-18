@@ -7,6 +7,7 @@ import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
 import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
 import { getToken, getSession } from "@/lib/auth.api";
 import ServiceCard from "@/components/services/ServiceCard";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 
 const TABS = [
   { label: "Todos",       value: "" },
@@ -37,6 +38,7 @@ export default function ServicesPage() {
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const isRefreshRef = useRef(false);
+  const { on } = usePlatformRealtime();
 
   const loading = pageStatus !== "idle";
   const refreshing = pageStatus === "refreshing";
@@ -80,6 +82,14 @@ export default function ServicesPage() {
   }, [refreshKey]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Realtime: ao receber mudança de serviço, refetch silencioso
+  useEffect(() => {
+    return on("service_updated", () => {
+      isRefreshRef.current = false;
+      load();
+    });
+  }, [on, load]);
 
   const handleRefresh = () => {
     isRefreshRef.current = true;

@@ -10,6 +10,7 @@ import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
 import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
 import { chatApi } from "@/lib/chat.api";
 import { getSession } from "@/lib/auth.api";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 import { kycApi } from "@/lib/api/kyc.api";
 import { TOKENS, BOTTOM_NAV_HEIGHT, BOTTOM_NAV_SAFE_AREA } from "@/lib/design-tokens";
 import ProviderServiceActionCard from "@/components/services/ProviderServiceActionCard";
@@ -65,6 +66,7 @@ const HERO_PROV = "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?
 
 export default function ProviderHomePage() {
   const router = useRouter();
+  const { on } = usePlatformRealtime();
 
   const [user, setUser] = useState<any>(null);
   useEffect(() => { setUser(getSession()); }, []);
@@ -97,9 +99,21 @@ export default function ProviderHomePage() {
       }
     };
     fetchStats();
-    const interval = setInterval(fetchStats, 60_000);
-    return () => { cancelled = true; clearInterval(interval); };
+    // Polling de 60s removido — substituído por socket event abaixo
+    return () => { cancelled = true; };
   }, []);
+
+  // Realtime: novo pedido ou mudança de estado actualiza stats e lista
+  useEffect(() => {
+    const unsub1 = on("new_service_request", () => {
+      // Refetch stats e lista disponível ao receber novo pedido
+      servicesApi.getProviderStats().then(s => setStats(s)).catch(() => {});
+    });
+    const unsub2 = on("service_updated", () => {
+      servicesApi.getProviderStats().then(s => setStats(s)).catch(() => {});
+    });
+    return () => { unsub1(); unsub2(); };
+  }, [on]);
 
   // CORRIGIDO — mesmo bug da home do cliente: useCallback + cancelled
   // flag causava closure stale ao voltar do mapa, deixando o componente

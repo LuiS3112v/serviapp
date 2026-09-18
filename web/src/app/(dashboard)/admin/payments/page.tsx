@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { adminPaymentsApi, AdminPaymentRow, AdminDisputedService } from "@/lib/api/admin-payments.api";
 import ProofViewerModal from "@/components/shared/ProofViewerModal";
 import DisputeEvidenceSection from "@/components/shared/DisputeEvidenceSection";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 import {
   FileText, CheckCircle, X, Loader2, Eye, RefreshCw,
   Clock, AlertTriangle, Landmark, User, Building2,
@@ -325,7 +326,7 @@ function DisputedServiceCard({
 
       {/* Evidências — admin vê as duas partes */}
       <div style={{ background:"#0d1117", borderRadius:12, padding:"14px", marginBottom:14 }}>
-        <DisputeEvidenceSection serviceId={item.serviceId} mode="admin" theme="dark" />
+        <DisputeEvidenceSection serviceId={item.serviceId} mode="admin" />
       </div>
 
       <div style={{ display:"flex", gap:8 }}>
@@ -359,6 +360,7 @@ export default function AdminPaymentsPage() {
   const [rows, setRows]       = useState<AdminPaymentRow[]>([]);
   const [disputed, setDisputed] = useState<AdminDisputedService[]>([]);
   const [loading, setLoading] = useState(true);
+  const { on } = usePlatformRealtime();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [viewingProof, setViewingProof] = useState<{ proofId: string; fileType: string } | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -385,6 +387,13 @@ export default function AdminPaymentsPage() {
   }, [tab]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Realtime: nova prova, disputa aberta/resolvida → refetch admin
+  useEffect(() => {
+    const unsub1 = on("payment_updated", () => { load(); });
+    const unsub2 = on("dispute_updated", () => { load(); });
+    return () => { unsub1(); unsub2(); };
+  }, [on, load]);
 
   const handleConfirm = async (id: string) => {
     setActionLoading(`confirm-${id}`);

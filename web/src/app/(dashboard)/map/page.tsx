@@ -16,6 +16,7 @@ import { MapCoordinates } from '@/lib/map/map-provider.types';
 import { chatApi } from '@/lib/chat.api';
 import { CATEGORY_NAMES } from '@/lib/categories';
 import styles from './map-page.module.css';
+import { usePlatformRealtime } from '@/hooks/usePlatformRealtime';
 
 // CORRIGIDO — antes existia um array local ['Todos', 'Limpeza', ...,
 // 'Eletricista', ...] duplicado e desalinhado da lista oficial em
@@ -121,6 +122,7 @@ export default function MapPage() {
 
   const [activeService, setActiveService] = useState<ActiveServiceSummary | null>(null);
   const [checkingActiveService, setCheckingActiveService] = useState(true);
+  const { on } = usePlatformRealtime();
 
   const [viewMode, setViewMode] = useState<ViewMode>('map');
   const [search, setSearch] = useState('');
@@ -210,12 +212,28 @@ export default function MapPage() {
       activeServiceApi.getMyActiveService()
         .then((summary) => setActiveService(summary))
         .catch(() => setActiveService(null));
-    }, 20000);
+    }, 60000); // Reduzido para fallback de 60s — socket event é o canal principal
 
     return () => {
       if (activePollRef.current) clearInterval(activePollRef.current);
     };
   }, [activeService?.serviceId]);
+
+  // Realtime: ao receber service_updated ou payment_updated, re-verifica
+  // o serviço activo imediatamente sem esperar pelo polling de fallback.
+  useEffect(() => {
+    const unsub1 = on("service_updated", () => {
+      activeServiceApi.getMyActiveService()
+        .then((summary) => setActiveService(summary))
+        .catch(() => setActiveService(null));
+    });
+    const unsub2 = on("payment_updated", () => {
+      activeServiceApi.getMyActiveService()
+        .then((summary) => setActiveService(summary))
+        .catch(() => setActiveService(null));
+    });
+    return () => { unsub1(); unsub2(); };
+  }, [on]);
 
   const requestClientLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -479,7 +497,7 @@ export default function MapPage() {
 
     discoveryPollRef.current = setInterval(() => {
       loadDiscoveryProviders();
-    }, 25000);
+    }, 120000); // Fallback de 2min — socket events são o canal principal
 
     return () => {
       if (discoveryPollRef.current) clearInterval(discoveryPollRef.current);

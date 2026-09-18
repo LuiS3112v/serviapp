@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { MessageCircle, Search, Loader2 } from "lucide-react";
 import { chatApi, ChatRoom } from "@/lib/chat.api";
 import { getToken, getSession } from "@/lib/auth.api";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 
 function timeAgo(date: string): string {
   const diff = Date.now() - new Date(date).getTime();
@@ -21,15 +22,23 @@ export default function ProviderChatPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery]   = useState("");
   const user = getSession();
+  const { on } = usePlatformRealtime();
 
-  useEffect(() => {
+  const loadRooms = () => {
     const token = getToken();
     if (!token) { setLoading(false); return; }
     chatApi.getRooms()
       .then(setRooms)
-      .catch(() => setRooms([]))
+      .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { loadRooms(); }, []);
+
+  // Realtime: nova mensagem → actualiza preview e badge da lista
+  useEffect(() => {
+    return on("chat_unread_changed", () => { loadRooms(); });
+  }, [on]);
 
   const filtered = rooms.filter(r => {
     const other = user?.id === r.clientId ? r.provider : r.client;

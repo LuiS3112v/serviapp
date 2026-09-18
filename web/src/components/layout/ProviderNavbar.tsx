@@ -8,6 +8,7 @@ import { notificationsApi } from "@/lib/notifications.api";
 import { activateLocation, updateLocationSharing, type ProviderLocation } from "@/lib/geolocation.api";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 import { getToken, getSession } from "@/lib/auth.api";
 import { servicesApi } from "@/lib/services.api";
 import { subcategoryServicesApi } from "@/lib/subcategory-services.api";
@@ -90,15 +91,32 @@ export default function ProviderNavbar() {
     };
   }, []);
 
+  const { on } = usePlatformRealtime();
+
   useEffect(() => {
-    const fetchCounts = () => {
-      chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
-      notificationsApi.getUnreadCount().then(d => setUnreadNotif(d.count)).catch(() => {});
-    };
-    fetchCounts();
-    const id = setInterval(fetchCounts, 30_000);
-    return () => clearInterval(id);
+    // Carga inicial — uma única vez no mount
+    chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
+    notificationsApi.getUnreadCount().then(d => setUnreadNotif(d.count)).catch(() => {});
+    // Polling substituído por socket events (ver abaixo)
   }, []);
+
+  // Badge de notificações em realtime
+  useEffect(() => {
+    return on("notification_created", () => {
+      setUnreadNotif(c => c + 1);
+    });
+  }, [on]);
+
+  // Badge de chat em realtime
+  useEffect(() => {
+    return on("chat_unread_changed", (payload) => {
+      if (payload.delta !== undefined) {
+        setUnreadChat(c => Math.max(0, c + (payload.delta as number)));
+      } else {
+        chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
+      }
+    });
+  }, [on]);
 
   useEffect(() => {
     const handle = (e: MouseEvent) => {

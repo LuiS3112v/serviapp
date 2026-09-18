@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   MapPin, Briefcase, HelpCircle, ArrowRight, Loader2, Shield, Wrench,
@@ -13,7 +13,8 @@ import { servicesApi } from "@/lib/services.api";
 import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
 import { getSession } from "@/lib/auth.api";
 import ServiceCard from "@/components/services/ServiceCard";
-import { TOKENS, BOTTOM_NAV_HEIGHT, BOTTOM_NAV_SAFE_AREA } from "@/lib/design-tokens";
+import { TOKENS, BOTTOM_NAV_HEIGHT, BOTTOM_NAV_SAFE_AREA, MOBILE_BREAKPOINT } from "@/lib/design-tokens";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DESIGN NOTES (v2 — Home como app real, não landing page)
@@ -84,6 +85,7 @@ export default function HomePage() {
 
   const [myItems, setMyItems] = useState<ServiceListItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
+  const { on } = usePlatformRealtime();
 
   useEffect(() => {
     const session = getSession();
@@ -124,6 +126,16 @@ export default function HomePage() {
 
     return () => controller.abort();
   }, []);
+
+  // Realtime: quando qualquer serviço muda de estado, refetch silencioso
+  // para manter os cards da home actualizados sem reload.
+  useEffect(() => {
+    return on("service_updated", () => {
+      servicesApi.getMyServices()
+        .then(services => setMyItems(buildUnifiedList(services, []).slice(0, 3)))
+        .catch(() => {});
+    });
+  }, [on]);
 
   return (
     <>

@@ -10,6 +10,7 @@ import { buildUnifiedList, ServiceListItem } from "@/lib/service-list-item";
 import { getToken, getSession } from "@/lib/auth.api";
 import ProviderServiceActionCard from "@/components/services/ProviderServiceActionCard";
 import { CATEGORY_NAMES } from "@/lib/categories";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 
 const PROVINCES  = ["", "Luanda", "Benguela", "Huambo", "Huíla", "Malanje", "Namibe", "Kwanza Sul", "Kwanza Norte", "Bié", "Moxico", "Lunda Norte", "Lunda Sul", "Cunene", "Cabinda", "Zaire", "Uíge", "Bengo", "Cuando Cubango"];
 
@@ -49,6 +50,7 @@ function ProviderServicesInner() {
   const [items, setItems]             = useState<ServiceListItem[]>([]);
   const [loading, setLoading]         = useState(true);
   const [refreshing, setRefreshing]   = useState(false);
+  const { on } = usePlatformRealtime();
   const [error, setError]             = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filter, setFilter]           = useState<AvailableFilter>({});
@@ -104,6 +106,13 @@ function ProviderServicesInner() {
   useEffect(() => {
     load(tab, filter);
   }, [tab, JSON.stringify(filter)]);
+
+  // Realtime: novo pedido ou mudança de estado → refetch silencioso
+  useEffect(() => {
+    const unsub1 = on("new_service_request", () => { load(tab, filter); });
+    const unsub2 = on("service_updated",     () => { load(tab, filter); });
+    return () => { unsub1(); unsub2(); };
+  }, [on, tab, JSON.stringify(filter)]);
 
   const handleRefresh = () => {
     setRefreshing(true);

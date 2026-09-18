@@ -5,6 +5,7 @@ import {
   ArrowDownLeft, ArrowUpRight, RefreshCw,
   Loader2, TrendingUp, Landmark,
 } from "lucide-react";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 
 const TX_CFG: Record<string, { label: string; color: string; bg: string; plus: boolean }> = {
   deposit:        { label: "Depósito",           color: "#1D9E75", bg: "#e3f5ee", plus: true  },
@@ -29,6 +30,7 @@ export default function ProviderWalletPage() {
   const [txData, setTxData]   = useState<{ transactions: any[]; total: number }>({ transactions: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [txLoad, setTxLoad]   = useState(false);
+  const { on } = usePlatformRealtime();
   const [page, setPage]       = useState(1);
 
   const loadWallet = async () => {
@@ -50,6 +52,11 @@ export default function ProviderWalletPage() {
   }, []);
 
   useEffect(() => { init(); }, [init]);
+
+  // Realtime: payout ou pagamento actualizado → refetch wallet e txns
+  useEffect(() => {
+    return on('payment_updated', () => { init(); });
+  }, [on, init]);
 
   const totalPages = Math.ceil(txData.total / 20);
 

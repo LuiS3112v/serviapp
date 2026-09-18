@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import ProofViewerModal from "@/components/shared/ProofViewerModal";
 import DisputeEvidenceSection from "@/components/shared/DisputeEvidenceSection";
 import { servicesDetailApi, ServicePayment, PaymentBankAccount } from "@/lib/api/services-detail.api";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 import { paymentProofApi, PaymentProof } from "@/lib/api/payment-proof.api";
 import { bankAccountsApi } from "@/lib/api/bank-accounts.api";
 import { chatApi } from "@/lib/chat.api";
@@ -512,6 +513,7 @@ function ProviderPhotoZoom({
 export default function ClientServiceDetailPage() {
   const { id } = useParams() as { id: string };
   const router  = useRouter();
+  const { on } = usePlatformRealtime();
 
   const [service, setService]   = useState<any>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
@@ -571,6 +573,15 @@ export default function ClientServiceDetailPage() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Realtime: qualquer mudança de estado, pagamento ou disputa neste
+  // serviço específico → refetch silencioso do detalhe.
+  useEffect(() => {
+    const unsub1 = on("service_updated", () => { load(); });
+    const unsub2 = on("payment_updated", () => { load(); });
+    const unsub3 = on("dispute_updated", () => { load(); });
+    return () => { unsub1(); unsub2(); unsub3(); };
+  }, [on, load]);
 
   const act = async (key: string, fn: () => Promise<any>) => {
     setActL(key);

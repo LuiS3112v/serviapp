@@ -5,6 +5,7 @@ import ProofViewerModal from "@/components/shared/ProofViewerModal";
 import DisputeEvidenceSection from "@/components/shared/DisputeEvidenceSection";
 import { servicesDetailApi } from "@/lib/api/services-detail.api";
 import { paymentProofApi, PaymentProof } from "@/lib/api/payment-proof.api";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 import { chatApi } from "@/lib/chat.api";
 import { useProviderActiveServiceLocationBroadcast } from '@/hooks/useProviderActiveServiceLocationBroadcast';
 import {
@@ -106,6 +107,7 @@ function PinModal({ onSubmit, onClose, loading }: { onSubmit:(p:string)=>void; o
 export default function ProviderServiceDetailPage() {
   const { id } = useParams() as { id: string };
   const router  = useRouter();
+  const { on } = usePlatformRealtime();
 
   const [service, setService]   = useState<any>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
@@ -147,6 +149,14 @@ export default function ProviderServiceDetailPage() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Realtime: mudança de estado, pagamento ou disputa → refetch silencioso
+  useEffect(() => {
+    const unsub1 = on("service_updated", () => { load(); });
+    const unsub2 = on("payment_updated", () => { load(); });
+    const unsub3 = on("dispute_updated", () => { load(); });
+    return () => { unsub1(); unsub2(); unsub3(); };
+  }, [on, load]);
 
   const act = async (key: string, fn: () => Promise<any>) => {
     setActL(key);

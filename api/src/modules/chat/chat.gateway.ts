@@ -170,6 +170,25 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Emite para TODOS na sala (incluindo o remetente para confirmar)
       this.server.to(`room:${data.roomId}`).emit('new_message', message);
+
+      // Notifica o destinatário (que pode não estar na sala) para
+      // actualizar o badge de mensagens não lidas sem polling.
+      // Identifica o destinatário: é o participante da room que NÃO é o remetente.
+      try {
+        const room = await this.chatService.getRoomById(data.roomId);
+        if (room) {
+          const recipientId = room.clientId === userId ? room.providerId : room.clientId;
+          if (recipientId) {
+            this.server.to(`user:${recipientId}`).emit('platform_event', {
+              type: 'chat_unread_changed',
+              payload: { delta: 1, roomId: data.roomId },
+            });
+          }
+        }
+      } catch {
+        // Não bloqueia o envio da mensagem se falhar a notificação
+      }
+
       return message;
     } catch (e) {
       client.emit('message_error', { error: (e as any).message });

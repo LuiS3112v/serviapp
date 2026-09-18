@@ -5,13 +5,14 @@ import { Bell, Search, MapPin, Menu } from "lucide-react";
 import { chatApi } from "@/lib/chat.api";
 import { notificationsApi } from "@/lib/notifications.api";
 import { getSession, getToken } from "@/lib/auth.api";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 
 export default function Navbar() {
   const router = useRouter();
   const [unreadChat, setUnreadChat] = useState(0);
   const [unreadNotif, setUnreadNotif] = useState(0);
-
   const [initials, setInitials] = useState("?");
+  const { on } = usePlatformRealtime();
 
   useEffect(() => {
     const user = getSession();
@@ -20,15 +21,30 @@ export default function Navbar() {
     const token = getToken();
     if (!token) return;
 
-    const fetchCounts = () => {
-      chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
-      notificationsApi.getUnreadCount().then(d => setUnreadNotif(d.count)).catch(() => {});
-    };
-
-    fetchCounts();
-    const interval = setInterval(fetchCounts, 30_000);
-    return () => clearInterval(interval);
+    // Carga inicial — uma única vez no mount
+    chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
+    notificationsApi.getUnreadCount().then(d => setUnreadNotif(d.count)).catch(() => {});
+    // Polling substituído por socket events (ver abaixo) — sem setInterval
   }, []);
+
+  // Actualiza badge de notificações em realtime quando chega nova notificação
+  useEffect(() => {
+    return on("notification_created", () => {
+      setUnreadNotif(c => c + 1);
+    });
+  }, [on]);
+
+  // Actualiza badge de chat em realtime quando chega nova mensagem não lida
+  useEffect(() => {
+    return on("chat_unread_changed", (payload) => {
+      if (payload.delta !== undefined) {
+        setUnreadChat(c => Math.max(0, c + (payload.delta as number)));
+      } else {
+        // Fallback: re-fetch o contador real
+        chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
+      }
+    });
+  }, [on]);
 
   return (
     <>

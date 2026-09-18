@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from '../../database/entities/notification.entity';
@@ -11,6 +11,19 @@ import {
   NotificationType, NotificationStatus, NotificationPriority,
 } from '../../common/enums/notification.enum';
 import { Role } from '../../common/enums/role.enum';
+import { ChatGateway } from '../chat/chat.gateway';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REALTIME: tipos dos eventos emitidos via socket para o frontend.
+// O frontend escuta 'platform_event' com { type, payload } no namespace /chat.
+// ─────────────────────────────────────────────────────────────────────────────
+type PlatformEventType =
+  | 'service_updated'
+  | 'new_service_request'
+  | 'payment_updated'
+  | 'dispute_updated'
+  | 'notification_created'
+  | 'chat_unread_changed';
 
 @Injectable()
 export class NotificationsService {
@@ -24,7 +37,15 @@ export class NotificationsService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
     private firebaseService: FirebaseService,
+    // forwardRef evita dependência circular:
+    // NotificationsModule → ChatModule → (nada que precise de NotificationsModule)
+    // Mesmo assim usamos forwardRef por precaução dado que ambos os módulos
+    // são importados pelo AppModule e a ordem de resolução pode variar.
+    @Inject(forwardRef(() => ChatGateway))
+    private chatGateway: ChatGateway,
   ) {}
+
+  // ─── Emite evento realtime + cria notificação + push FCM ─────────────────
 
   async create(dto: CreateNotificationDto): Promise<Notification> {
     const notification = this.notificationRepo.create({
@@ -38,7 +59,29 @@ export class NotificationsService {
     });
     const saved = await this.notificationRepo.save(notification);
     await this.sendPush(dto.userId, dto.title, dto.body, { actionUrl: dto.actionUrl ?? '' });
+    // Após criar a notificação, emite evento socket para o destinatário
+    // actualizar o badge de notificações sem polling.
+    this.emitToUser(dto.userId, 'notification_created', {
+      id: saved.id,
+      title: dto.title,
+      body: dto.body,
+      actionUrl: dto.actionUrl,
+    });
     return saved;
+  }
+
+  // Helper central para emitir platform_event via socket.
+  // Silencioso em caso de erro — o socket não deve bloquear o fluxo REST.
+  private emitToUser(
+    userId: string,
+    type: PlatformEventType,
+    payload: Record<string, any> = {},
+  ): void {
+    try {
+      this.chatGateway.emitToUser(userId, 'platform_event', { type, payload });
+    } catch (err) {
+      this.logger.warn(`[REALTIME] emitToUser falhou para ${userId}: ${err}`);
+    }
   }
 
   async findByUser(userId: string, page = 1, limit = 20) {
@@ -107,10 +150,6 @@ export class NotificationsService {
     await this.firebaseService.sendToMultiple(tokens.map(t => t.token), title, body, data);
   }
 
-  // ── Notifica todos os admins ──────────────────────────────────────────────
-  // Helper usado pelos métodos notifyAdmin* — busca todos os utilizadores
-  // com role ADMIN e cria uma notificação para cada um, em vez de assumir
-  // um único admin fixo.
   private async notifyAllAdmins(title: string, body: string, actionUrl?: string) {
     const admins = await this.userRepo.find({
       where: { role: Role.ADMIN },
@@ -130,7 +169,7 @@ export class NotificationsService {
     );
   }
 
-  // ─── KYC individual ───────────────────────────────────────────────────────
+  // ─── KYC ─────────────────────────────────────────────────────────────────
 
   async notifyKycApproved(userId: string) {
     await this.create({
@@ -153,6 +192,8 @@ export class NotificationsService {
     });
   }
 
+  // ─── Serviços ─────────────────────────────────────────────────────────────
+
   async notifyServiceAccepted(clientId: string, providerId: string) {
     await this.create({
       userId: clientId, type: NotificationType.SERVICE_ACCEPTED,
@@ -161,6 +202,8 @@ export class NotificationsService {
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
     });
+    // Socket: cliente actualiza a lista de serviços e o detalhe do serviço
+    this.emitToUser(clientId, 'service_updated', { status: 'accepted', providerId });
   }
 
   async notifyServiceStarted(clientId: string, providerId: string) {
@@ -171,6 +214,7 @@ export class NotificationsService {
       priority: NotificationPriority.MEDIUM,
       actionUrl: '/services',
     });
+    this.emitToUser(clientId, 'service_updated', { status: 'in_progress', providerId });
   }
 
   async notifyServiceCompleted(clientId: string, providerId: string) {
@@ -181,6 +225,7 @@ export class NotificationsService {
       priority: NotificationPriority.CRITICAL,
       actionUrl: '/services',
     });
+    this.emitToUser(clientId, 'service_updated', { status: 'provider_completed', providerId });
   }
 
   async notifyPayment(userId: string, amount: number, description: string) {
@@ -192,6 +237,7 @@ export class NotificationsService {
       metadata: { amount },
       actionUrl: '/wallet',
     });
+    this.emitToUser(userId, 'payment_updated', { amount, description });
   }
 
   async notifyWallet(userId: string, amount: number, type: 'credit' | 'debit') {
@@ -202,6 +248,7 @@ export class NotificationsService {
       priority: NotificationPriority.MEDIUM,
       actionUrl: '/wallet',
     });
+    this.emitToUser(userId, 'payment_updated', { amount, walletType: type });
   }
 
   async notifyServiceProposed(clientId: string, providerName: string, proposedPrice: number) {
@@ -212,6 +259,7 @@ export class NotificationsService {
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
     });
+    this.emitToUser(clientId, 'service_updated', { status: 'proposal', providerName, proposedPrice });
   }
 
   async notifyProposalAccepted(providerId: string, agreedPrice: number) {
@@ -222,6 +270,7 @@ export class NotificationsService {
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider/services',
     });
+    this.emitToUser(providerId, 'service_updated', { status: 'accepted', agreedPrice });
   }
 
   async notifyProposalRejected(providerId: string) {
@@ -232,6 +281,7 @@ export class NotificationsService {
       priority: NotificationPriority.MEDIUM,
       actionUrl: '/provider/services',
     });
+    this.emitToUser(providerId, 'service_updated', { status: 'proposal_rejected' });
   }
 
   async notifyServiceRequested(providerId: string, clientName: string, serviceTitle: string) {
@@ -242,9 +292,11 @@ export class NotificationsService {
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider/services',
     });
+    // Socket: provider recebe novo pedido — aparece imediatamente na lista
+    this.emitToUser(providerId, 'new_service_request', { clientName, serviceTitle });
   }
 
-  // ─── Sistema de empresa ───────────────────────────────────────────────────
+  // ─── Empresa ──────────────────────────────────────────────────────────────
 
   async notifyCompanyInvitation(inviteeUserId: string, companyName: string) {
     const user = await this.userRepo.findOne({
@@ -324,13 +376,7 @@ export class NotificationsService {
     });
   }
 
-  // ══════════════════════════════════════════════════════════════════════
-  // Sistema de pagamento por comprovativo (novos) — cobrem a secção 14
-  // do prompt: cliente, prestador e admin recebem notificações em cada
-  // passo do fluxo de transferência bancária + comprovativo.
-  // ══════════════════════════════════════════════════════════════════════
-
-  // ── Cliente ──────────────────────────────────────────────────────────────
+  // ─── Pagamentos ───────────────────────────────────────────────────────────
 
   async notifyClientBankDetailsAvailable(clientId: string, amount: number) {
     await this.create({
@@ -340,6 +386,7 @@ export class NotificationsService {
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
     });
+    this.emitToUser(clientId, 'payment_updated', { status: 'bank_details_available', amount });
   }
 
   async notifyClientPaymentConfirmed(clientId: string) {
@@ -350,6 +397,8 @@ export class NotificationsService {
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
     });
+    this.emitToUser(clientId, 'payment_updated', { status: 'confirmed' });
+    this.emitToUser(clientId, 'service_updated', { status: 'confirmed' });
   }
 
   async notifyClientProofRejected(clientId: string, reason: string) {
@@ -361,9 +410,8 @@ export class NotificationsService {
       metadata: { reason },
       actionUrl: '/services',
     });
+    this.emitToUser(clientId, 'payment_updated', { status: 'proof_rejected', reason });
   }
-
-  // ── Prestador ────────────────────────────────────────────────────────────
 
   async notifyProviderProofSubmitted(providerId: string) {
     await this.create({
@@ -373,6 +421,7 @@ export class NotificationsService {
       priority: NotificationPriority.MEDIUM,
       actionUrl: '/provider/services',
     });
+    this.emitToUser(providerId, 'payment_updated', { status: 'proof_submitted' });
   }
 
   async notifyProviderPaymentConfirmed(providerId: string) {
@@ -383,6 +432,8 @@ export class NotificationsService {
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider/services',
     });
+    this.emitToUser(providerId, 'payment_updated', { status: 'confirmed' });
+    this.emitToUser(providerId, 'service_updated', { status: 'confirmed' });
   }
 
   async notifyProviderPayoutDone(providerId: string, amount: number) {
@@ -394,9 +445,8 @@ export class NotificationsService {
       metadata: { amount },
       actionUrl: '/provider/wallet',
     });
+    this.emitToUser(providerId, 'payment_updated', { status: 'payout_done', amount });
   }
-
-  // ── Administrador ────────────────────────────────────────────────────────
 
   async notifyAdminNewProof(paymentId: string) {
     await this.notifyAllAdmins(
@@ -422,7 +472,7 @@ export class NotificationsService {
     );
   }
 
-  // ── Disputa ──────────────────────────────────────────────────────────────
+  // ─── Disputas ─────────────────────────────────────────────────────────────
 
   async notifyClientDisputeResolved(clientId: string, favoredClient: boolean, resolution: string) {
     await this.create({
@@ -432,6 +482,14 @@ export class NotificationsService {
       body: resolution,
       priority: NotificationPriority.HIGH,
       actionUrl: '/services',
+    });
+    this.emitToUser(clientId, 'dispute_updated', {
+      status: 'resolved',
+      favoredClient,
+      resolution,
+    });
+    this.emitToUser(clientId, 'service_updated', {
+      status: favoredClient ? 'refunded' : 'completed',
     });
   }
 
@@ -443,6 +501,14 @@ export class NotificationsService {
       body: resolution,
       priority: NotificationPriority.HIGH,
       actionUrl: '/provider/services',
+    });
+    this.emitToUser(providerId, 'dispute_updated', {
+      status: 'resolved',
+      favoredProvider,
+      resolution,
+    });
+    this.emitToUser(providerId, 'service_updated', {
+      status: favoredProvider ? 'completed' : 'refunded',
     });
   }
 }

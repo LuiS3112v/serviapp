@@ -6,6 +6,7 @@ import {
   Landmark, RefreshCw, Loader2, CheckCircle,
   Clock, X, ChevronRight, Wallet as WalletIcon,
 } from "lucide-react";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 
 const PAYMENT_STATUS_CFG: Record<string, { label: string; color: string }> = {
   pending:          { label: "Aguarda transferência",     color: "#B45309" },
@@ -33,6 +34,7 @@ export default function ClientPaymentsHistoryPage() {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { on } = usePlatformRealtime();
 
   const load = useCallback(async () => {
     try {
@@ -52,6 +54,11 @@ export default function ClientPaymentsHistoryPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Realtime: pagamento actualizado → refetch silencioso da lista
+  useEffect(() => {
+    return on("payment_updated", () => { load(); });
+  }, [on, load]);
 
   const handleRefresh = () => {
     setRefreshing(true);

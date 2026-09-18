@@ -334,4 +334,10 @@ export class ChatService {
     }
     return room;
   }
+
+  // Busca uma room pelo id sem validação de participante — usado pelo
+  // gateway para identificar o destinatário da notificação de nova mensagem.
+  async getRoomById(roomId: string): Promise<ChatRoom | null> {
+    return this.roomRepo.findOne({ where: { id: roomId } });
+  }
 }

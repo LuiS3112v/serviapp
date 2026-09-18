@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { usePlatformRealtime } from "@/hooks/usePlatformRealtime";
 import {
   BarChart3, TrendingUp, Wallet, Star,
   Briefcase, Clock, ArrowRight, Loader2, AlertCircle,
@@ -56,6 +57,7 @@ export default function ProviderStatsPage() {
   const [stats, setStats] = useState<ProviderStatsByPeriod | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { on } = usePlatformRealtime();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,6 +73,11 @@ export default function ProviderStatsPage() {
   }, [activePeriod]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Realtime: serviço completado ou actualizado → stats reflectem imediatamente
+  useEffect(() => {
+    return on("service_updated", () => { load(); });
+  }, [on, load]);
 
   const fmtResponseTime = (hours: number | null) => {
     if (hours === null) return "—";
