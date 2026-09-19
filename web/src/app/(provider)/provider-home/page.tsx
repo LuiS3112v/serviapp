@@ -137,9 +137,11 @@ export default function ProviderHomePage() {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     const refresh = () => {
+      console.log("[REALTIME] provider-home recebeu evento — a refetch available...");
       servicesApi.getProviderStats().then(s => setStats(s)).catch(() => {});
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
+        console.log("[REALTIME] provider-home a executar fetchAvailable");
         fetchAvailableRef.current();
       }, 400);
     };

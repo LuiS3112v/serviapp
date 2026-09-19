@@ -52,22 +52,27 @@ function bindSocket() {
   socket.on("platform_event", (event: { type: PlatformEventType; payload: Record<string, any> }) => {
     if (!event?.type) return;
 
-    if (process.env.NODE_ENV === "development") {
-      console.log("[REALTIME]", event.type, event.payload);
-    }
+    // LOG SEMPRE VISÍVEL — remover após confirmar que funciona
+    console.log("[REALTIME] evento recebido:", event.type, event.payload);
 
     const cbs = globalListeners.get(event.type);
+    console.log("[REALTIME] callbacks registados para", event.type, ":", cbs?.size ?? 0);
     if (!cbs) return;
-    cbs.forEach(cb => { try { cb(event.payload ?? {}); } catch { /**/ } });
+    cbs.forEach(cb => { try { cb(event.payload ?? {}); } catch (err) { console.error("[REALTIME] erro no callback:", err); } });
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", (reason) => {
+    console.log("[REALTIME] socket desconectou:", reason);
     socketBound = false;
   });
 
-  if (process.env.NODE_ENV === "development") {
-    socket.on("connect", () => console.log("[REALTIME] socket connected:", socket.id));
-  }
+  socket.on("connect", () => {
+    console.log("[REALTIME] socket ligado ao /chat — id:", socket.id);
+  });
+
+  socket.on("connect_error", (err) => {
+    console.error("[REALTIME] erro de ligação:", err.message);
+  });
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
