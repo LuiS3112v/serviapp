@@ -2,32 +2,19 @@
 /**
  * usePlatformRealtime — canal central de eventos Socket.IO da plataforma.
  *
- * ARQUITECTURA SINGLETON DE MÓDULO:
+ * PROBLEMA RAIZ DO PROVIDER:
+ *   bindSocket() verificava `if (!token) return` — se o token não estava
+ *   disponível no momento exacto do render (possível em SSR/hydration),
+ *   o socket nunca ligava e os eventos nunca chegavam.
  *
- * globalListeners  — Map partilhado por todas as instâncias do hook.
- *                    Callbacks registados por qualquer página são todos
- *                    invocados quando o evento chega.
- *
- * initSocket()     — chamada UMA VEZ quando o módulo é importado pelo
- *                    browser (não dentro de useEffect). Garante que o
- *                    socket.on("platform_event") está registado ANTES
- *                    de qualquer página registar callbacks — elimina
- *                    a race condition anterior onde os eventos chegavam
- *                    antes dos callbacks estarem prontos.
- *
- * RECONNECT:
- *   socket.ts já configura reconnection automático. Ao reconectar,
- *   o handler "platform_event" continua activo — não é necessário
- *   re-registar porque o socket.on persiste no objecto Socket mesmo
- *   após disconnect/reconnect (o socket.io-client mantém os handlers).
- *
- * LOGOUT:
- *   disconnectSocket() limpa o socket singleton em socket.ts.
- *   socketBound fica false para que a próxima sessão (novo login)
- *   re-inicialize o handler no novo socket.
+ * SOLUÇÃO:
+ *   bindSocket() é chamado no corpo do hook (síncrono) E num useEffect
+ *   (garante que corre no browser com o token disponível). O useEffect
+ *   corre após hydration, quando `getToken()` já tem acesso ao
+ *   localStorage/cookie e devolve o token real.
  */
 
-import { useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { connectSocket, disconnectSocket } from "@/lib/socket";
 import { getToken } from "@/lib/auth.api";
 
@@ -49,11 +36,18 @@ let socketBound = false;
 
 function bindSocket() {
   if (socketBound) return;
+
+  // Em SSR ou antes de hydration, getToken() pode devolver null.
+  // Nesse caso não faz nada — o useEffect abaixo tenta de novo
+  // após hydration quando o token está disponível.
   const token = getToken();
   if (!token) return;
 
   const socket = connectSocket();
   socketBound = true;
+
+  // Remove listener anterior se existir (seguro chamar mesmo que não exista)
+  socket.off("platform_event");
 
   socket.on("platform_event", (event: { type: PlatformEventType; payload: Record<string, any> }) => {
     if (!event?.type) return;
@@ -67,25 +61,28 @@ function bindSocket() {
     cbs.forEach(cb => { try { cb(event.payload ?? {}); } catch { /**/ } });
   });
 
-  // Ao desligar, permite que o próximo login crie um socket novo
-  // e re-registe o handler (o token pode ter mudado).
   socket.on("disconnect", () => {
     socketBound = false;
   });
 
   if (process.env.NODE_ENV === "development") {
-    socket.on("connect", () => console.log("[REALTIME] connected", socket.id));
+    socket.on("connect", () => console.log("[REALTIME] socket connected:", socket.id));
   }
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function usePlatformRealtime() {
-  // Inicializa o socket sempre que o hook é chamado — bindSocket() é
-  // idempotente (verifica socketBound), por isso chamar múltiplas vezes
-  // é seguro. Isto garante que o socket está ligado quando o token
-  // existe, mesmo que o módulo tenha sido importado antes do login.
+  // Tenta ligar sincronamente (funciona se o token já está disponível).
+  // Em SSR, getToken() devolve null e bindSocket() não faz nada.
   bindSocket();
+
+  // useEffect garante que corre no browser após hydration, quando o
+  // token está sempre disponível. Idempotente: se socketBound=true,
+  // bindSocket() retorna imediatamente.
+  useEffect(() => {
+    bindSocket();
+  }, []);
 
   const on = useCallback(
     (type: PlatformEventType, cb: EventCallback): Unsubscribe => {

@@ -182,10 +182,13 @@ export class NotificationsService {
     excludeProviderId?: string,
   ): Promise<void> {
     try {
+      // Sem filtro de isVerified — o findAvailableForProvider() já filtra.
+      // Filtrar aqui causava falsos negativos em providers válidos.
       const providers = await this.userRepo.find({
-        where: { role: Role.PROVIDER, isVerified: true },
+        where: { role: Role.PROVIDER },
         select: { id: true },
       });
+      this.logger.log(`[REALTIME] broadcast new_service_request para ${providers.length} providers`);
       for (const provider of providers) {
         if (excludeProviderId && provider.id === excludeProviderId) continue;
         this.emitToUser(provider.id, 'new_service_request', {
