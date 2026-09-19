@@ -107,11 +107,20 @@ function ProviderServicesInner() {
     load(tab, filter);
   }, [tab, JSON.stringify(filter)]);
 
-  // Realtime: novo pedido ou mudança de estado → refetch silencioso
+  // Realtime: novo pedido ou mudança de estado → refetch silencioso.
+  // Debounce 400ms: múltiplos pedidos simultâneos agrupa-se num único load.
   useEffect(() => {
-    const unsub1 = on("new_service_request", () => { load(tab, filter); });
-    const unsub2 = on("service_updated",     () => { load(tab, filter); });
-    return () => { unsub1(); unsub2(); };
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const refresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => { load(tab, filter); }, 400);
+    };
+    const unsub1 = on("new_service_request", refresh);
+    const unsub2 = on("service_updated",     refresh);
+    return () => {
+      unsub1(); unsub2();
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
   }, [on, tab, JSON.stringify(filter)]);
 
   const handleRefresh = () => {

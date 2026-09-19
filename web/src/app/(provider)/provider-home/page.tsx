@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Briefcase, ArrowRight, ChevronRight,
   Shield, CheckCircle, AlertCircle, Loader2, ShoppingBag,
@@ -119,22 +119,39 @@ export default function ProviderHomePage() {
     }
   }, [currentUserId]);
 
+  // Ref sempre aponta para a versão mais recente de fetchAvailable.
+  // O listener de realtime usa este ref para evitar closures stale —
+  // sem isto, quando o evento chega, o callback tinha currentUserId=undefined
+  // porque foi registado antes do user ser carregado.
+  const fetchAvailableRef = useRef(fetchAvailable);
+  useEffect(() => { fetchAvailableRef.current = fetchAvailable; }, [fetchAvailable]);
+
   useEffect(() => {
     fetchAvailable();
   }, [fetchAvailable]);
 
-  // Realtime: novo pedido ou mudança de estado actualiza stats e lista
+  // Realtime: novo pedido ou mudança de estado actualiza stats e lista.
+  // Debounce de 400ms: se vários clientes enviarem pedidos ao mesmo tempo,
+  // agrupa os eventos e faz um único fetchAvailable em vez de N em paralelo.
   useEffect(() => {
-    const unsub1 = on("new_service_request", () => {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const refresh = () => {
       servicesApi.getProviderStats().then(s => setStats(s)).catch(() => {});
-      fetchAvailable();
-    });
-    const unsub2 = on("service_updated", () => {
-      servicesApi.getProviderStats().then(s => setStats(s)).catch(() => {});
-      fetchAvailable();
-    });
-    return () => { unsub1(); unsub2(); };
-  }, [on, fetchAvailable]);
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchAvailableRef.current();
+      }, 400);
+    };
+
+    const unsub1 = on("new_service_request", refresh);
+    const unsub2 = on("service_updated",     refresh);
+    return () => {
+      unsub1();
+      unsub2();
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
+  }, [on]);
 
   const heroStats = [
     { value: loadingStats ? "…" : stats ? String(stats.totalOrders) : "0", label: "Pedidos" },
