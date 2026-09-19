@@ -2,20 +2,32 @@
 /**
  * usePlatformRealtime — canal central de eventos Socket.IO da plataforma.
  *
- * PROBLEMA ANTERIOR:
- *   Cada chamada ao hook criava um listenersRef isolado. O ClientChrome
- *   montava o socket e escutava platform_event, mas as páginas chamavam
- *   o hook numa instância separada — os seus callbacks nunca eram invocados
- *   porque estavam num Map diferente.
+ * ARQUITECTURA SINGLETON DE MÓDULO:
  *
- * SOLUÇÃO:
- *   O mapa de listeners e o handler do socket vivem em variáveis de módulo
- *   (fora de qualquer componente). São partilhados por todas as instâncias
- *   do hook na mesma sessão de browser. O socket é iniciado uma vez e
- *   reutilizado em todas as páginas.
+ * globalListeners  — Map partilhado por todas as instâncias do hook.
+ *                    Callbacks registados por qualquer página são todos
+ *                    invocados quando o evento chega.
+ *
+ * initSocket()     — chamada UMA VEZ quando o módulo é importado pelo
+ *                    browser (não dentro de useEffect). Garante que o
+ *                    socket.on("platform_event") está registado ANTES
+ *                    de qualquer página registar callbacks — elimina
+ *                    a race condition anterior onde os eventos chegavam
+ *                    antes dos callbacks estarem prontos.
+ *
+ * RECONNECT:
+ *   socket.ts já configura reconnection automático. Ao reconectar,
+ *   o handler "platform_event" continua activo — não é necessário
+ *   re-registar porque o socket.on persiste no objecto Socket mesmo
+ *   após disconnect/reconnect (o socket.io-client mantém os handlers).
+ *
+ * LOGOUT:
+ *   disconnectSocket() limpa o socket singleton em socket.ts.
+ *   socketBound fica false para que a próxima sessão (novo login)
+ *   re-inicialize o handler no novo socket.
  */
 
-import { useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { connectSocket, disconnectSocket } from "@/lib/socket";
 import { getToken } from "@/lib/auth.api";
 
@@ -27,64 +39,53 @@ export type PlatformEventType =
   | "notification_created"
   | "chat_unread_changed";
 
-export interface PlatformEvent {
-  type: PlatformEventType;
-  payload: Record<string, any>;
-}
-
 type EventCallback = (payload: Record<string, any>) => void;
 type Unsubscribe = () => void;
 
-// ─── Singleton de módulo — partilhado por todas as instâncias do hook ────────
+// ─── Singleton de módulo ──────────────────────────────────────────────────────
 
-// Map global de callbacks — persiste entre renders e entre páginas.
 const globalListeners = new Map<PlatformEventType, Set<EventCallback>>();
+let socketBound = false;
 
-// Flag para garantir que o socket.on("platform_event") só é registado uma vez.
-let socketInitialised = false;
-
-function initSocket() {
-  if (socketInitialised) return;
+function bindSocket() {
+  if (socketBound) return;
   const token = getToken();
   if (!token) return;
 
   const socket = connectSocket();
-  socketInitialised = true;
+  socketBound = true;
 
-  socket.on("platform_event", (event: PlatformEvent) => {
+  socket.on("platform_event", (event: { type: PlatformEventType; payload: Record<string, any> }) => {
     if (!event?.type) return;
 
     if (process.env.NODE_ENV === "development") {
       console.log("[REALTIME]", event.type, event.payload);
     }
 
-    const callbacks = globalListeners.get(event.type);
-    if (!callbacks) return;
-    callbacks.forEach((cb) => {
-      try { cb(event.payload ?? {}); } catch { /* nunca bloqueia os outros */ }
-    });
+    const cbs = globalListeners.get(event.type);
+    if (!cbs) return;
+    cbs.forEach(cb => { try { cb(event.payload ?? {}); } catch { /**/ } });
   });
 
-  socket.on("connect", () => {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[REALTIME] socket connected/reconnected");
-    }
-  });
-
-  // Quando desliga (logout), repõe a flag para que a próxima sessão
-  // possa registar o handler de novo.
+  // Ao desligar, permite que o próximo login crie um socket novo
+  // e re-registe o handler (o token pode ter mudado).
   socket.on("disconnect", () => {
-    socketInitialised = false;
+    socketBound = false;
   });
+
+  if (process.env.NODE_ENV === "development") {
+    socket.on("connect", () => console.log("[REALTIME] connected", socket.id));
+  }
 }
 
-// ─── Hook — apenas regista/remove callbacks no mapa global ───────────────────
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function usePlatformRealtime() {
-  // Inicia o socket na primeira vez que qualquer componente monta o hook.
-  useEffect(() => {
-    initSocket();
-  }, []);
+  // Inicializa o socket sempre que o hook é chamado — bindSocket() é
+  // idempotente (verifica socketBound), por isso chamar múltiplas vezes
+  // é seguro. Isto garante que o socket está ligado quando o token
+  // existe, mesmo que o módulo tenha sido importado antes do login.
+  bindSocket();
 
   const on = useCallback(
     (type: PlatformEventType, cb: EventCallback): Unsubscribe => {
@@ -92,10 +93,7 @@ export function usePlatformRealtime() {
         globalListeners.set(type, new Set());
       }
       globalListeners.get(type)!.add(cb);
-
-      return () => {
-        globalListeners.get(type)?.delete(cb);
-      };
+      return () => { globalListeners.get(type)?.delete(cb); };
     },
     []
   );
