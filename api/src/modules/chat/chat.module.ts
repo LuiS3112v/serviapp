@@ -5,13 +5,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { ChatGateway } from './chat.gateway';
+import { RealtimeService } from './realtime.service';
 import { ChatRoom } from '../../database/entities/chat-room.entity';
 import { ChatMessage } from '../../database/entities/chat-message.entity';
 import { User } from '../../database/entities/user.entity';
 
 @Module({
   imports: [
-    // User adicionado para o gateway actualizar isOnline
     TypeOrmModule.forFeature([ChatRoom, ChatMessage, User]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -22,7 +22,7 @@ import { User } from '../../database/entities/user.entity';
     }),
   ],
   controllers: [ChatController],
-  providers: [ChatService, ChatGateway],
-  exports: [ChatService, ChatGateway],
+  providers: [ChatService, ChatGateway, RealtimeService],
+  exports: [ChatService, ChatGateway, RealtimeService],
 })
 export class ChatModule {}

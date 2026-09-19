@@ -1,7 +1,7 @@
 import {
   WebSocketGateway, SubscribeMessage, MessageBody,
   ConnectedSocket, WebSocketServer, OnGatewayConnection,
-  OnGatewayDisconnect,
+  OnGatewayDisconnect, OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +10,7 @@ import { ChatService } from './chat.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../../database/entities/user.entity';
+import { RealtimeService } from './realtime.service';
 
 // SECURITY FIX: throttle manual por socket para o evento send_message.
 // O ThrottlerGuard global (APP_GUARD em app.module.ts) só se aplica a
@@ -33,7 +34,7 @@ const MESSAGE_RATE_WINDOW_MS = 10_000;
   allowEIO3: true,
   namespace: '/chat',
 })
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -46,7 +47,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private config: ConfigService,
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    private realtimeService: RealtimeService,
   ) {}
+
+  // Chamado pelo NestJS quando o WebSocket adapter inicializa o server.
+  // É aqui que this.server fica disponível — antes disto está undefined.
+  afterInit(server: Server): void {
+    this.realtimeService.setServer(server);
+  }
 
   async handleConnection(client: Socket) {
     try {

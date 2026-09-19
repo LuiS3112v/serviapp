@@ -1,4 +1,4 @@
-import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from '../../database/entities/notification.entity';
@@ -11,7 +11,7 @@ import {
   NotificationType, NotificationStatus, NotificationPriority,
 } from '../../common/enums/notification.enum';
 import { Role } from '../../common/enums/role.enum';
-import { ChatGateway } from '../chat/chat.gateway';
+import { RealtimeService } from '../chat/realtime.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // REALTIME: tipos dos eventos emitidos via socket para o frontend.
@@ -37,12 +37,7 @@ export class NotificationsService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
     private firebaseService: FirebaseService,
-    // forwardRef evita dependência circular:
-    // NotificationsModule → ChatModule → (nada que precise de NotificationsModule)
-    // Mesmo assim usamos forwardRef por precaução dado que ambos os módulos
-    // são importados pelo AppModule e a ordem de resolução pode variar.
-    @Inject(forwardRef(() => ChatGateway))
-    private chatGateway: ChatGateway,
+    private realtimeService: RealtimeService,
   ) {}
 
   // ─── Emite evento realtime + cria notificação + push FCM ─────────────────
@@ -77,16 +72,7 @@ export class NotificationsService {
     type: PlatformEventType,
     payload: Record<string, any> = {},
   ): void {
-    try {
-      if (!this.chatGateway) {
-        this.logger.warn('[REALTIME] ChatGateway não disponível ainda — evento perdido');
-        return;
-      }
-      this.chatGateway.emitToUser(userId, 'platform_event', { type, payload });
-      this.logger.debug(`[REALTIME] emitido ${type} para user:${userId}`);
-    } catch (err) {
-      this.logger.warn(`[REALTIME] emitToUser falhou para ${userId}: ${err}`);
-    }
+    this.realtimeService.emitToUser(userId, type, payload);
   }
 
   async findByUser(userId: string, page = 1, limit = 20) {
