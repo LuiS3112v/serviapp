@@ -171,6 +171,7 @@ export class NotificationsService {
   async broadcastNewServiceToProviders(
     serviceTitle: string,
     excludeProviderId?: string,
+    meta?: { serviceId?: string; category?: string },
   ): Promise<void> {
     try {
       // Sem filtro de isVerified — o findAvailableForProvider() já filtra.
@@ -184,6 +185,8 @@ export class NotificationsService {
         if (excludeProviderId && provider.id === excludeProviderId) continue;
         this.emitToUser(provider.id, 'new_service_request', {
           serviceTitle,
+          serviceId: meta?.serviceId,
+          category: meta?.category,
           silent: true,
         });
       }

@@ -131,13 +131,21 @@ export default function ProviderHomePage() {
   }, [fetchAvailable]);
 
   // Realtime: novo pedido ou mudança de estado actualiza stats e lista.
-  // Debounce de 400ms: se vários clientes enviarem pedidos ao mesmo tempo,
-  // agrupa os eventos e faz um único fetchAvailable em vez de N em paralelo.
+  //
+  // Estratégia para vários clientes em simultâneo (ex: 3 clientes pedem
+  // electricista ao mesmo tempo):
+  // - Cada evento new_service_request chega com o serviceId do pedido.
+  // - Verificamos se já temos o pedido na lista (idempotente).
+  // - Se não temos, agendamos um refetch com debounce de 400ms.
+  // - O debounce agrupa os 3 eventos num único fetchAvailable, que devolve
+  //   os pedidos actuais da BD — sem duplicados, sem N requests paralelos.
+  //
+  // service_updated (pedido aceite/cancelado/expirado por outro provider):
+  // - Também com debounce para agrupar rajadas de eventos.
   useEffect(() => {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const refresh = () => {
-      console.log("[REALTIME] provider-home recebeu evento — a refetch available...");
+    const scheduleRefresh = () => {
       servicesApi.getProviderStats().then(s => setStats(s)).catch(() => {});
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
@@ -146,8 +154,34 @@ export default function ProviderHomePage() {
       }, 400);
     };
 
-    const unsub1 = on("new_service_request", refresh);
-    const unsub2 = on("service_updated",     refresh);
+    const onNewServiceRequest = (payload: Record<string, any>) => {
+      console.log("[REALTIME] provider-home recebeu new_service_request:", payload);
+      // Se já temos este pedido na lista, ignorar (idempotente).
+      // available é lido via closure — é a versão actual do estado.
+      if (payload.serviceId) {
+        setAvailable(prev => {
+          const alreadyHas = prev.some(item => item.id === payload.serviceId);
+          if (alreadyHas) {
+            console.log("[REALTIME] pedido já na lista, ignorar evento");
+            return prev;
+          }
+          // Não temos — agendar refetch
+          scheduleRefresh();
+          return prev; // ainda não alteramos o estado directamente
+        });
+        return;
+      }
+      // Sem serviceId no payload (evento legado) — refetch sempre
+      scheduleRefresh();
+    };
+
+    const onServiceUpdated = () => {
+      console.log("[REALTIME] provider-home recebeu service_updated — refetch");
+      scheduleRefresh();
+    };
+
+    const unsub1 = on("new_service_request", onNewServiceRequest);
+    const unsub2 = on("service_updated",     onServiceUpdated);
     return () => {
       unsub1();
       unsub2();

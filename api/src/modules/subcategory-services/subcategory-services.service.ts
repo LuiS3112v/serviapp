@@ -66,6 +66,8 @@ export class SubcategoryServicesService {
     // imediatamente sem precisar de recarregar a página.
     this.notificationsService.broadcastNewServiceToProviders(
       dto.subcategory ?? dto.category,
+      undefined,
+      { serviceId: saved.id, category: dto.category },
     ).catch(() => {});
 
     return saved;

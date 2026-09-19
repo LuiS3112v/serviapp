@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { clearAllSessions } from "@/lib/auth.api";
 import { resetViewport } from "@/lib/reset-viewport";
+import { resetRealtime } from "@/hooks/usePlatformRealtime";
 import BottomNav from "@/components/layout/BottomNav";
  
 const NAV = [
@@ -61,6 +62,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const handleLogout = () => {
     onClose?.();
     clearAllSessions();
+    resetRealtime();
     resetViewport();
 
     // FIX DEFINITIVO — mesmo raciocínio do Sidebar.tsx (cliente):

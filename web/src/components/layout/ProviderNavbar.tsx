@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Bell, MapPin, Loader2, Search, X, ChevronRight, Zap, Menu } from "lucide-react";
 import { chatApi } from "@/lib/chat.api";
 import { notificationsApi } from "@/lib/notifications.api";
@@ -47,6 +47,7 @@ function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number):
 
 export default function ProviderNavbar() {
   const router   = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
 
   const [unreadChat, setUnreadChat]   = useState(0);
@@ -100,23 +101,54 @@ export default function ProviderNavbar() {
     // Polling substituído por socket events (ver abaixo)
   }, []);
 
+  // Zera badge de notificações ao entrar na página de notificações do provider
+  useEffect(() => {
+    if (pathname === "/provider/notifications") {
+      setUnreadNotif(0);
+    }
+  }, [pathname]);
+
+  // Zera badge de chat ao entrar na página de chat do provider
+  useEffect(() => {
+    if (pathname === "/provider/chat") {
+      chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
+    }
+  }, [pathname]);
+
   // Badge de notificações em realtime
   useEffect(() => {
-    return on("notification_created", () => {
-      setUnreadNotif(c => c + 1);
+    return on("notification_created", (payload) => {
+      // _sync: true → evento de re-sincronização após reconexão; substitui total
+      if (payload._sync) {
+        setUnreadNotif(pathname === "/provider/notifications" ? 0 : (payload.total as number ?? 0));
+        return;
+      }
+      // Incrementa só se não estiver já na página de notificações
+      setUnreadNotif(c => (pathname === "/provider/notifications" ? 0 : c + 1));
     });
-  }, [on]);
+  }, [on, pathname]);
 
   // Badge de chat em realtime
   useEffect(() => {
     return on("chat_unread_changed", (payload) => {
+      // total: valor absoluto enviado após markAsRead — usar directamente
+      if (payload.total !== undefined) {
+        setUnreadChat(Math.max(0, payload.total as number));
+        return;
+      }
+      // Se estiver na página de chat, re-fetch para valor exacto
+      if (pathname === "/provider/chat" || /^\/provider\/chat\//.test(pathname)) {
+        chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
+        return;
+      }
+      // delta: incremento por nova mensagem
       if (payload.delta !== undefined) {
         setUnreadChat(c => Math.max(0, c + (payload.delta as number)));
       } else {
         chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
       }
     });
-  }, [on]);
+  }, [on, pathname]);
 
   useEffect(() => {
     const handle = (e: MouseEvent) => {

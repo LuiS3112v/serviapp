@@ -244,6 +244,15 @@ export default function ProviderNotificationsPage() {
 
   useEffect(() => { setIsLoggedIn(!!getToken()); }, []);
 
+  // Marca todas como lidas ao abrir a página — zera o badge da navbar
+  // imediatamente sem precisar que o utilizador clique no botão.
+  useEffect(() => {
+    if (unread > 0) {
+      markAllAsRead();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // só no mount
+
   const filtered = notifications.filter(n => {
     if (tab === "unread") return n.status === "unread";
     if (tab === "read")   return n.status === "read";

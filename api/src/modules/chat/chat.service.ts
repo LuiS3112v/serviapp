@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, ForbiddenException,
+  Injectable, NotFoundException, ForbiddenException, Inject, forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,6 +7,7 @@ import { ChatRoom } from '../../database/entities/chat-room.entity';
 import { ChatMessage, MessageType } from '../../database/entities/chat-message.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { SendMessageDto } from './dto/send-message.dto';
+import { RealtimeService } from './realtime.service';
 
 const BLOCKED_PATTERNS = [
   /(\+244|\+351|\+1|\+44)\s?\d{7,}/,
@@ -48,6 +49,8 @@ export class ChatService {
     private roomRepo: Repository<ChatRoom>,
     @InjectRepository(ChatMessage)
     private messageRepo: Repository<ChatMessage>,
+    @Inject(forwardRef(() => RealtimeService))
+    private realtimeService: RealtimeService,
   ) {}
 
   async getOrCreateRoom(
@@ -299,6 +302,16 @@ export class ChatService {
         { roomId, isRead: false, senderId: room.clientId },
         { isRead: true },
       );
+    }
+
+    // Notifica o frontend para actualizar o badge de chat sem polling.
+    // Envia o total actualizado em vez de um delta para garantir consistência
+    // (evita contadores negativos ou dessincronizados após reconexão).
+    try {
+      const total = await this.getTotalUnread(userId);
+      this.realtimeService.emitToUser(userId, 'chat_unread_changed', { total });
+    } catch {
+      // Não bloqueia o markAsRead se o emit falhar
     }
   }
 

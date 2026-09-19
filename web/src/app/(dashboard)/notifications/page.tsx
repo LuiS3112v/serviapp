@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Bell, CheckCircle, MessageCircle, Wallet, AlertCircle,
   Trash2, Check, Loader2, RefreshCw,
@@ -125,6 +125,17 @@ export default function NotificationsPage() {
 
   const [tab, setTab] = useState<TabFilter>("all");
   const isLoggedIn = !!getToken();
+
+  // Marca todas as notificações como lidas ao abrir a página — zera o badge
+  // da navbar imediatamente sem precisar de o utilizador clicar no botão.
+  // useNotifications.markAllAsRead() já actualiza o estado local (unread=0)
+  // e chama a API; o Navbar escuta pathname=/notifications e zera o badge.
+  useEffect(() => {
+    if (unread > 0) {
+      markAllAsRead();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // só no mount — [unread] causaria chamadas repetidas
 
   const filtered = notifications.filter(n => {
     if (tab === "unread") return n.status === "unread";
