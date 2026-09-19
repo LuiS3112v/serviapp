@@ -78,7 +78,12 @@ export class NotificationsService {
     payload: Record<string, any> = {},
   ): void {
     try {
+      if (!this.chatGateway) {
+        this.logger.warn('[REALTIME] ChatGateway não disponível ainda — evento perdido');
+        return;
+      }
       this.chatGateway.emitToUser(userId, 'platform_event', { type, payload });
+      this.logger.debug(`[REALTIME] emitido ${type} para user:${userId}`);
     } catch (err) {
       this.logger.warn(`[REALTIME] emitToUser falhou para ${userId}: ${err}`);
     }
