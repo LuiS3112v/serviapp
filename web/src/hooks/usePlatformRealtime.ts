@@ -96,21 +96,31 @@ function bindSocket() {
 
   socket.on("connect", () => {
     console.log("[REALTIME] socket ligado ao /chat — id:", socket.id);
-    // Após reconexão, sincroniza os contadores de chat e notificações
-    // para não ficarem desactualizados (eventos que chegaram enquanto
-    // estava offline não são reenviados pelo Socket.IO).
-    // Importação dinâmica para evitar dependência circular de módulo.
+
+    // Após reconexão (Render free tier adormece → socket desconecta →
+    // eventos emitidos durante o sono são perdidos para sempre).
+    // Disparamos eventos sintéticos de sync para todos os listeners
+    // activos — assim o provider-home faz refetch, e os badges de
+    // chat e notificações ficam actualizados sem o utilizador ter de
+    // actualizar a página.
+    //
+    // new_service_request sintético → provider-home faz fetchAvailable
+    const serviceCbs = globalListeners.get("new_service_request");
+    if (serviceCbs?.size) {
+      serviceCbs.forEach(cb => { try { cb({ _reconnect: true }); } catch {} });
+    }
+
+    // chat_unread_changed com total real
     import("@/lib/chat.api").then(({ chatApi }) => {
       chatApi.getUnread().then(d => {
         const cbs = globalListeners.get("chat_unread_changed");
         if (cbs) cbs.forEach(cb => { try { cb({ total: d.count }); } catch {} });
       }).catch(() => {});
     });
+
+    // notification_created sintético com total real
     import("@/lib/notifications.api").then(({ notificationsApi }) => {
       notificationsApi.getUnreadCount().then(d => {
-        // Dispara notification_created sintético com payload especial
-        // { _sync: true, total } para os Navbars poderem substituir
-        // o contador em vez de incrementar.
         const cbs = globalListeners.get("notification_created");
         if (cbs) cbs.forEach(cb => { try { cb({ _sync: true, total: d.count }); } catch {} });
       }).catch(() => {});

@@ -132,42 +132,62 @@ export default function ProviderHomePage() {
 
   // Realtime: novo pedido ou mudança de estado actualiza a lista.
   //
-  // REGISTO DO LISTENER:
-  // O on() é chamado no mount (useEffect com dep [on] estável).
-  // Para cobrir o intervalo entre o render e o useEffect correr
-  // (onde um evento poderia ser descartado), também fazemos refetch
-  // ao ganhar foco/visibilidade de página — assim qualquer pedido
-  // que tenha chegado enquanto o tab estava em background é apanhado.
+  // TRÊS MECANISMOS (defesa em profundidade para o Render free tier
+  // que adormece o backend e causa perda de eventos Socket.IO):
   //
-  // VÁRIOS CLIENTES EM SIMULTÂNEO:
-  // Debounce de 400ms agrupa múltiplos eventos num único fetchAvailable.
-  // O fetchAvailable substitui sempre a lista completa — sem duplicados.
+  // 1. Listener de socket (new_service_request / service_updated):
+  //    - Evento real em tempo real quando o socket está ligado
+  //    - Evento sintético (_reconnect:true) disparado pelo
+  //      usePlatformRealtime na reconexão após o backend acordar
+  //
+  // 2. visibilitychange: quando o utilizador volta ao tab após estar
+  //    noutras páginas ou ter o tab em background
+  //
+  // 3. Polling de 30s: safety net para o caso em que o socket não
+  //    reconecta a tempo ou os eventos são perdidos de outra forma.
+  //    Não é "polling agressivo" — 30s é suficiente para dar feedback
+  //    em tempo útil sem sobrecarregar o servidor.
   useEffect(() => {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-    const scheduleRefresh = () => {
+    const doRefresh = () => {
       servicesApi.getProviderStats().then(s => setStats(s)).catch(() => {});
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        fetchAvailableRef.current();
-      }, 400);
+      fetchAvailableRef.current();
     };
 
-    const unsub1 = on("new_service_request", () => scheduleRefresh());
-    const unsub2 = on("service_updated",     () => scheduleRefresh());
+    const scheduleRefresh = (immediate = false) => {
+      if (immediate) {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        doRefresh();
+        return;
+      }
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => doRefresh(), 400);
+    };
 
-    // Refetch ao ganhar visibilidade — apanha pedidos que chegaram
-    // enquanto o tab estava em background ou o utilizador noutras páginas.
+    // Evento real de socket ou sintético de reconexão
+    const unsub1 = on("new_service_request", (payload) => {
+      // _reconnect: disparado na reconexão — refetch imediato sem debounce
+      scheduleRefresh(payload._reconnect === true);
+    });
+    const unsub2 = on("service_updated", () => scheduleRefresh());
+
+    // Ganhar visibilidade de tab
     const onVisible = () => {
-      if (document.visibilityState === "visible") scheduleRefresh();
+      if (document.visibilityState === "visible") scheduleRefresh(true);
     };
     document.addEventListener("visibilitychange", onVisible);
+
+    // Polling de 30s — safety net
+    pollTimer = setInterval(() => doRefresh(), 30_000);
 
     return () => {
       unsub1();
       unsub2();
       document.removeEventListener("visibilitychange", onVisible);
       if (debounceTimer) clearTimeout(debounceTimer);
+      if (pollTimer) clearInterval(pollTimer);
     };
   }, [on]);
 
