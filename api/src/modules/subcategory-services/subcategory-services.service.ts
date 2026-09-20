@@ -148,9 +148,10 @@ export class SubcategoryServicesService {
       ),
     );
 
-    if (!categories.length) {
-      return [];
-    }
+    // Se o provider não tem categoria definida no perfil nem no catálogo,
+    // mostra todos os serviços rápidos disponíveis — mesmo comportamento
+    // dos serviços normais, que nunca filtram por categoria do provider.
+    const filterByCategory = categories.length > 0;
 
     const dismissedIds =
       await this.dismissalRepo.find({
@@ -182,11 +183,11 @@ export class SubcategoryServicesService {
           ],
         },
       )
-      .andWhere(
-        's.category IN (:...categories)',
-        { categories },
-      )
       .orderBy('s.createdAt', 'DESC');
+
+    if (filterByCategory) {
+      query.andWhere('s.category IN (:...categories)', { categories });
+    }
 
     const services = await query.getMany();
 

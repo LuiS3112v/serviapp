@@ -130,18 +130,18 @@ export default function ProviderHomePage() {
     fetchAvailable();
   }, [fetchAvailable]);
 
-  // Realtime: novo pedido ou mudança de estado actualiza stats e lista.
+  // Realtime: novo pedido ou mudança de estado actualiza a lista.
   //
-  // Estratégia para vários clientes em simultâneo (ex: 3 clientes pedem
-  // electricista ao mesmo tempo):
-  // - Cada evento new_service_request chega com o serviceId do pedido.
-  // - Verificamos se já temos o pedido na lista (idempotente).
-  // - Se não temos, agendamos um refetch com debounce de 400ms.
-  // - O debounce agrupa os 3 eventos num único fetchAvailable, que devolve
-  //   os pedidos actuais da BD — sem duplicados, sem N requests paralelos.
+  // REGISTO DO LISTENER:
+  // O on() é chamado no mount (useEffect com dep [on] estável).
+  // Para cobrir o intervalo entre o render e o useEffect correr
+  // (onde um evento poderia ser descartado), também fazemos refetch
+  // ao ganhar foco/visibilidade de página — assim qualquer pedido
+  // que tenha chegado enquanto o tab estava em background é apanhado.
   //
-  // service_updated (pedido aceite/cancelado/expirado por outro provider):
-  // - Também com debounce para agrupar rajadas de eventos.
+  // VÁRIOS CLIENTES EM SIMULTÂNEO:
+  // Debounce de 400ms agrupa múltiplos eventos num único fetchAvailable.
+  // O fetchAvailable substitui sempre a lista completa — sem duplicados.
   useEffect(() => {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -149,42 +149,24 @@ export default function ProviderHomePage() {
       servicesApi.getProviderStats().then(s => setStats(s)).catch(() => {});
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        console.log("[REALTIME] provider-home a executar fetchAvailable");
         fetchAvailableRef.current();
       }, 400);
     };
 
-    const onNewServiceRequest = (payload: Record<string, any>) => {
-      console.log("[REALTIME] provider-home recebeu new_service_request:", payload);
-      // Se já temos este pedido na lista, ignorar (idempotente).
-      // available é lido via closure — é a versão actual do estado.
-      if (payload.serviceId) {
-        setAvailable(prev => {
-          const alreadyHas = prev.some(item => item.id === payload.serviceId);
-          if (alreadyHas) {
-            console.log("[REALTIME] pedido já na lista, ignorar evento");
-            return prev;
-          }
-          // Não temos — agendar refetch
-          scheduleRefresh();
-          return prev; // ainda não alteramos o estado directamente
-        });
-        return;
-      }
-      // Sem serviceId no payload (evento legado) — refetch sempre
-      scheduleRefresh();
-    };
+    const unsub1 = on("new_service_request", () => scheduleRefresh());
+    const unsub2 = on("service_updated",     () => scheduleRefresh());
 
-    const onServiceUpdated = () => {
-      console.log("[REALTIME] provider-home recebeu service_updated — refetch");
-      scheduleRefresh();
+    // Refetch ao ganhar visibilidade — apanha pedidos que chegaram
+    // enquanto o tab estava em background ou o utilizador noutras páginas.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") scheduleRefresh();
     };
+    document.addEventListener("visibilitychange", onVisible);
 
-    const unsub1 = on("new_service_request", onNewServiceRequest);
-    const unsub2 = on("service_updated",     onServiceUpdated);
     return () => {
       unsub1();
       unsub2();
+      document.removeEventListener("visibilitychange", onVisible);
       if (debounceTimer) clearTimeout(debounceTimer);
     };
   }, [on]);

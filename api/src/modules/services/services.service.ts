@@ -149,6 +149,8 @@ export class ServicesService {
       // a home em tempo real sem polling.
       this.notificationsService.broadcastNewServiceToProviders(
         saved.title,
+        undefined,
+        { serviceId: saved.id, category: saved.category },
       ).catch(() => {});
     }
 
