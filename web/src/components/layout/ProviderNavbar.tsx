@@ -118,12 +118,10 @@ export default function ProviderNavbar() {
   // Badge de notificações em realtime
   useEffect(() => {
     return on("notification_created", (payload) => {
-      // _sync: true → evento de re-sincronização após reconexão; substitui total
       if (payload._sync) {
         setUnreadNotif(pathname === "/provider/notifications" ? 0 : (payload.total as number ?? 0));
         return;
       }
-      // Incrementa só se não estiver já na página de notificações
       setUnreadNotif(c => (pathname === "/provider/notifications" ? 0 : c + 1));
     });
   }, [on, pathname]);
@@ -131,17 +129,14 @@ export default function ProviderNavbar() {
   // Badge de chat em realtime
   useEffect(() => {
     return on("chat_unread_changed", (payload) => {
-      // total: valor absoluto enviado após markAsRead — usar directamente
       if (payload.total !== undefined) {
         setUnreadChat(Math.max(0, payload.total as number));
         return;
       }
-      // Se estiver na página de chat, re-fetch para valor exacto
       if (pathname === "/provider/chat" || /^\/provider\/chat\//.test(pathname)) {
         chatApi.getUnread().then(d => setUnreadChat(d.count)).catch(() => {});
         return;
       }
-      // delta: incremento por nova mensagem
       if (payload.delta !== undefined) {
         setUnreadChat(c => Math.max(0, c + (payload.delta as number)));
       } else {
@@ -477,9 +472,12 @@ export default function ProviderNavbar() {
         }
         .pnav-bell:hover { background: #F8FAFC; border-color: #CBD5E1; transform: translateY(-1px); }
         .pnav-bell-badge {
-          position: absolute; top: 6px; right: 6px;
-          width: 7px; height: 7px; border-radius: 50%;
-          background: #F59E0B; border: 1.5px solid #FFFFFF;
+          position: absolute; top: -4px; right: -4px;
+          min-width: 18px; height: 18px; border-radius: 99px;
+          background: #F59E0B; border: 2px solid #FFFFFF;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 9px; font-weight: 700; color: #fff; padding: 0 4px;
+          box-shadow: 0 1px 3px rgba(15,23,42,0.18);
         }
 
         /* ── Avatar ────────────────────────────────────────────────────── */
@@ -707,7 +705,7 @@ export default function ProviderNavbar() {
             aria-label="Notificações"
           >
             <Bell size={18} style={{ color:"#64748B" }}/>
-            {unreadNotif > 0 && <span className="pnav-bell-badge" aria-hidden="true"/>}
+            {unreadNotif > 0 && <span className="pnav-bell-badge">{unreadNotif > 99 ? "99+" : unreadNotif}</span>}
           </button>
 
           {/* Avatar */}

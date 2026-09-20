@@ -111,10 +111,14 @@ export class SubcategoryServicesService {
 
     const provider = await this.userRepo.findOne({
       where: { id: providerId },
-      select: { id: true, category: true, isVerified: true, profileVisible: true },
+      select: { id: true, category: true },
     });
 
-    if (!provider || !provider.isVerified || !provider.profileVisible) {
+    // Sem requisito de isVerified/profileVisible — mesmo critério dos
+    // serviços normais (services.service.ts findAvailableForProvider),
+    // que também não filtra por verificação. O provider autenticado vê
+    // os pedidos disponíveis independentemente do estado do KYC.
+    if (!provider) {
       return [];
     }
 
